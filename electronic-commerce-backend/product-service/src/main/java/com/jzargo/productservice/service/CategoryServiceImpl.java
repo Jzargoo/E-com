@@ -9,6 +9,9 @@ import com.jzargo.productservice.model.CreateAndUpdateCategoryDetails;
 import com.jzargo.productservice.repository.CategoryRepository;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,8 +32,11 @@ public class CategoryServiceImpl implements CategoryService{
         this.categoryReadMapper = categoryReadMapper;
     }
 
+    // It does not require updating of the catalog
+    // Because it has categories as mapped on specific products
     @Override
     @Transactional
+    @CacheEvict(value = "categories", allEntries = true)
     public CategoryDetails createCategory(
             CreateAndUpdateCategoryDetails createCategoryDetails
     ) throws MalformedDataError {
@@ -54,8 +60,8 @@ public class CategoryServiceImpl implements CategoryService{
 
         return categoryReadMapper.map(save);
     }
-
     @Override
+    @Cacheable("categories")
     public List<String> getCategories() {
         return categoryRepository
                 .findAll()
@@ -63,5 +69,20 @@ public class CategoryServiceImpl implements CategoryService{
                 .map(categoryReadMapper::map)
                 .map(CategoryDetails::getName)
                 .toList();
+    }
+
+    // It requires updating of the catalog
+    @Override
+    @Transactional
+    @CacheEvict(value = "categories", allEntries = true)
+    public String deleteCategory(Integer categoryId) {
+
+        categoryRepository.deleteById(categoryId);
+
+        if (categoryRepository.existsById(categoryId)) {
+            return "category.delete.success";
+        } else {
+            return "category.delete.failure";
+        }
     }
 }

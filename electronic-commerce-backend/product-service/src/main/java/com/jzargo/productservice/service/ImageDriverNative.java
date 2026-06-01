@@ -2,6 +2,7 @@ package com.jzargo.productservice.service;
 
 import com.jzargo.productservice.config.ApplicationPropertyStorage;
 import lombok.SneakyThrows;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;

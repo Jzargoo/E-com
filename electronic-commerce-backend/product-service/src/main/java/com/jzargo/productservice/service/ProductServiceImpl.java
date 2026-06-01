@@ -7,11 +7,12 @@ import com.jzargo.productservice.mapper.ReadProductDetailsMapper;
 import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
 import com.jzargo.productservice.model.ProductDetails;
 import com.jzargo.productservice.repository.ProductRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional(readOnly = true) // if not provided, data must be in immutable state
+@Transactional(readOnly = true)  // if not provided, data must be in immutable state
 public class ProductServiceImpl implements ProductService{
 
     private final ProductRepository productRepository;
@@ -25,6 +26,7 @@ public class ProductServiceImpl implements ProductService{
     }
 
     @Override
+    @Cacheable(value = "product", key = "#id")
     public ProductDetails getProductById(Long id) throws ProductNotFoundException{
         return productRepository
                 .findById(id)
@@ -32,14 +34,15 @@ public class ProductServiceImpl implements ProductService{
                 .orElseThrow(ProductNotFoundException::new);
     }
 
-    @Transactional
     @Override
+    @Transactional
     public String createProduct(CreateAndUpdateProductDetails createProductDetails) {
         return "Creation of the product started successfully";
     }
 
     @Override
     @Transactional
+    @Cacheable(value = "product", key = "#updateProductDetails.id")
     public ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails) throws ProductNotFoundException{
 
         // If null -> the data did not change
@@ -50,13 +53,12 @@ public class ProductServiceImpl implements ProductService{
                 .map((product) -> productCreateAndUpdateMapper.map(updateProductDetails, product))
                 .orElseThrow(ProductNotFoundException::new);
 
-        // TODO: implement update via table for Debezium
-
         return readProductDetailsMapper.map(newProduct);
     }
 
-    @Transactional
     @Override
+    @Transactional
+    @Cacheable(value = "product", key = "#productId")
     public String deleteProduct(Long productId) {
         return "Deletion of the process started successfully";
     }

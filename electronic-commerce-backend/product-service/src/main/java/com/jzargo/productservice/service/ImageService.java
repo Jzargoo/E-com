@@ -1,6 +1,7 @@
 package com.jzargo.productservice.service;
 
 import com.jzargo.productservice.exception.ProductNotFoundException;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
