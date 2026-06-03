@@ -2,14 +2,6 @@ spring:
 
   application:
     name: product-service
-
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri:
-
-
   datasource:
     driver-class-name: org.postgresql.Driver
     username: jzargo

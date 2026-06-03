@@ -6,3 +6,5 @@ spring:
     name: discovery-service
   config:
     import: 'configserver:http://localhost:8888'
+  profiles:
+    active: devconfig

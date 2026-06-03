@@ -1,4 +1,7 @@
+server:
+  port: 8888
+
 spring:
   application:
     name: config-server
-  profiles.active: git
+  profiles.active: git, vault
