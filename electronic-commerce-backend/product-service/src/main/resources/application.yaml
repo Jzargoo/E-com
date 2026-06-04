@@ -1,9 +1,9 @@
-spring:
+server:
+  port: ${random.int}
 
+spring:
   application:
     name: product-service
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    username: jzargo
-    password:  root123
-    url: jdbc:postgresql://localhost:5432/productdb
+  cloud:
+    config:
+      uri: "optional:configserver:http://localhost:8888"

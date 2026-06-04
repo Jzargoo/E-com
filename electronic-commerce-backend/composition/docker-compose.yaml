@@ -1,15 +1,23 @@
 volumes:
   postgres-data:
     driver: local
+  vault-file:
+    driver: local
 
 services:
   vault:
     image: hashicorp/vault:latest
     container_name: vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    command: server -config=/vault/opt/config/vault.hcl
     ports:
-      - "127.0.0.1:8200:8200"
+      - "8200:8200"
     volumes:
-      - ./vault-config:/vault/config
+      - ./vault-config:/vault/opt/config
+      - vault-file:/vault/file
   postgres:
     image: postgres:latest
     container_name: postgres

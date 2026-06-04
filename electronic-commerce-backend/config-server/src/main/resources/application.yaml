@@ -5,3 +5,20 @@ spring:
   application:
     name: config-server
   profiles.active: git, vault
+  cloud:
+    config:
+      server:
+        git:
+          uri: ${GITHUB_URI}
+          password: ${GITHUB_TOKEN}
+          username: ${GITHUB_USERNAME}
+        vault:
+          host: localhost
+          port: 8200
+          scheme: http
+          authentication: APPROLE
+          app-role:
+            app-role-path: approle
+            role-id: ${VAULT_ROLE_ID}
+            secret-id: ${VAULT_SECRET_ID}
+          backend: secret
