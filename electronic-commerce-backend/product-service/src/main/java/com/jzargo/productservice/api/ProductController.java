@@ -1,6 +1,7 @@
 package com.jzargo.productservice.api;
 
 import com.jzargo.productservice.model.*;
+import com.jzargo.productservice.saga.SagaProductCreation;
 import com.jzargo.productservice.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
 
     private final ProductService productService;
+    private final SagaProductCreation sagaProductCreation;
 
     @GetMapping("/{id}")
     ResponseEntity<ProductDetails>  getProductById(@PathVariable Long id){
@@ -28,6 +30,8 @@ public class ProductController {
     ResponseEntity<String> createProduct (
             @RequestBody CreateAndUpdateProductDetails createProductDetails,
             @AuthenticationPrincipal Jwt jwt) {
+
+        sagaProductCreation.startSaga();
         return ResponseEntity.ok("Product is initialized");
     }
 

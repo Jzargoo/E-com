@@ -24,7 +24,7 @@ public class ImageController {
             @RequestBody @NotNull List<MultipartFile> multipartFiles,
             @PathVariable Long productId,
             @AuthenticationPrincipal Jwt jwt) {
-        Long shopId= jwt.getClaim("shop_id");
+        Integer shopId= jwt.getClaim("shop_id");
         try {
 
              byte[][] images = (byte[][]) multipartFiles.stream().map((file) -> {
@@ -53,7 +53,7 @@ public class ImageController {
             @RequestBody @NotNull MultipartFile multipartFile,
             @PathVariable Long productId,
             @AuthenticationPrincipal Jwt jwt) {
-        Long shopId = jwt.getClaim("shop_id");
+        Integer shopId = jwt.getClaim("shop_id");
 
         try {
             imageService.addAvatar(multipartFile.getBytes(), productId, shopId);

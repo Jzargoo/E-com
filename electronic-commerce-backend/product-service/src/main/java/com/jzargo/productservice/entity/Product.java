@@ -31,7 +31,7 @@ public class Product {
     private String name;
     private String description;
     private Double stockPrice;
-    private Long shopId;
+    private Integer shopId;
 
     @Builder.Default
     private boolean available = false;
@@ -40,6 +40,10 @@ public class Product {
     @JdbcTypeCode(SqlTypes.JSON)
     @Builder.Default
     private Map<String, String> characteristics = Map.of();
+
+    @Enumerated(value = EnumType.STRING)
+    @Builder.Default
+    private Status status = Status.OUT_OF_STOCK;
 
     @ElementCollection
     @Builder.Default

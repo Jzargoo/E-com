@@ -1,0 +1,1 @@
+ALTER TABLE products ADD COLUMN status varchar(32)NOT NULL default "UNKNOWN";

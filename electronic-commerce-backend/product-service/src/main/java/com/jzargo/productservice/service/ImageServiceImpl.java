@@ -29,7 +29,7 @@ public class ImageServiceImpl implements ImageService {
 
     @Override
     @Transactional
-    public void addImages(byte[][] images, Long productId, Long shopId)
+    public void addImages(byte[][] images, Long productId, Integer shopId)
     throws ProductNotFoundException{
 
         Product product = productRepository
@@ -53,7 +53,7 @@ public class ImageServiceImpl implements ImageService {
 
     @Override
     @Transactional
-    public void addAvatar(byte[] image, Long productId, Long shopId)
+    public void addAvatar(byte[] image, Long productId, Integer shopId)
             throws IOException, ProductNotFoundException {
 
         Product product = productRepository
