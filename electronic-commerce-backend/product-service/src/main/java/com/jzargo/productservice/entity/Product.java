@@ -24,18 +24,19 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false,name = "avatar")
     private String avatar;
 
     @ManyToOne
     private Category category;
+    @Column(nullable = false,name = "name")
     private String name;
-    private String description;
+    @Column(nullable = false,name = "description")
+    private String description = "";
+    @Column(nullable = false,name = "stock_price")
     private Double stockPrice;
+    @Column(nullable = false,name = "shop_id")
     private Integer shopId;
-
-    @Builder.Default
-    private boolean available = false;
-
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Builder.Default
@@ -43,7 +44,7 @@ public class Product {
 
     @Enumerated(value = EnumType.STRING)
     @Builder.Default
-    private Status status = Status.OUT_OF_STOCK;
+    private Status status = Status.WAITING;
 
     @ElementCollection
     @Builder.Default
@@ -51,8 +52,5 @@ public class Product {
 
     public void addImages(List<String> imageNames) {
         images.addAll(imageNames);
-    }
-    public void addImage(String imageName){
-        images.add(imageName);
     }
 }

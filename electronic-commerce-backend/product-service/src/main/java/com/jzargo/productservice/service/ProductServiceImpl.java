@@ -9,6 +9,7 @@ import com.jzargo.productservice.mapper.ReadProductDetailsMapper;
 import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
 import com.jzargo.productservice.model.ProductDetails;
 import com.jzargo.productservice.repository.ProductRepository;
+import com.jzargo.productservice.saga.SagaProductCreationManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -22,11 +23,13 @@ public class ProductServiceImpl implements ProductService{
     private final ProductRepository productRepository;
     private final ReadProductDetailsMapper readProductDetailsMapper;
     private final ProductCreateAndUpdateMapper productCreateAndUpdateMapper;
+    private final SagaProductCreationManager sagaProductCreationManager;
 
-    public ProductServiceImpl(ProductRepository productRepository, ReadProductDetailsMapper readProductDetailsMapper, ProductCreateAndUpdateMapper productCreateAndUpdateMapper) {
+    public ProductServiceImpl(ProductRepository productRepository, ReadProductDetailsMapper readProductDetailsMapper, ProductCreateAndUpdateMapper productCreateAndUpdateMapper, SagaProductCreationManager sagaProductCreationManager) {
         this.productRepository = productRepository;
         this.readProductDetailsMapper = readProductDetailsMapper;
         this.productCreateAndUpdateMapper = productCreateAndUpdateMapper;
+        this.sagaProductCreationManager = sagaProductCreationManager;
     }
 
     @Override
@@ -82,5 +85,15 @@ public class ProductServiceImpl implements ProductService{
         productRepository.save(product);
 
         return "Deletion of the process started successfully";
+    }
+
+    @Override
+    public String startSaga(CreateAndUpdateProductDetails details) {
+        try{
+            sagaProductCreationManager.startSaga(details);
+            return "productCreateSaga.success";
+        } catch (Exception e) {
+            throw new InternalError("productCreateSaga.fail");
+        }
     }
 }

@@ -9,4 +9,6 @@ public interface ProductService {
     Long createProduct(CreateAndUpdateProductDetails createProductDetails);
     ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails) throws ProductNotFoundException;
     String deleteProduct(Long productId) throws ProductNotFoundException;
+
+    String startSaga(CreateAndUpdateProductDetails details);
 }

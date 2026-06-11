@@ -30,9 +30,11 @@ public class ProductController {
     ResponseEntity<String> createProduct (
             @RequestBody CreateAndUpdateProductDetails createProductDetails,
             @AuthenticationPrincipal Jwt jwt) {
-
-        sagaProductCreation.startSaga();
-        return ResponseEntity.ok("Product is initialized");
+        try {
+            return ResponseEntity.ok(productService.startSaga(createProductDetails));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")

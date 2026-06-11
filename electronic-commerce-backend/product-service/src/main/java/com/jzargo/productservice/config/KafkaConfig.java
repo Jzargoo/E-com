@@ -38,4 +38,26 @@ public class KafkaConfig {
                 )
                 .build();
     }
+
+    @Bean
+    public NewTopic productCreateSagaTopic() {
+        var productCreateSagaTopic = kafkaPropertyStorage
+                .getTopics()
+                .getProductCreateSaga();
+
+        return TopicBuilder
+                .name(
+                        productCreateSagaTopic.getName()
+                )
+                .replicas(
+                        productCreateSagaTopic.getReplicas()
+                )
+                .partitions(
+                        productCreateSagaTopic.getNumPartitions()
+                )
+                .config("min.insync.replicas",
+                        productCreateSagaTopic.getInSyncReplicas().toString()
+                )
+                .build();
+    }
 }

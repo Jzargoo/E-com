@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @ExtendWith(MockitoExtension.class)
 public class ProductServiceUnitTest {
     private final long PRODUCT_ID = 1L;
-    private final Long SHOP_ID = 123L;
+    private final Integer SHOP_ID = 123;
 
     private final Product PRODUCT = Product.builder()
             .id(PRODUCT_ID)

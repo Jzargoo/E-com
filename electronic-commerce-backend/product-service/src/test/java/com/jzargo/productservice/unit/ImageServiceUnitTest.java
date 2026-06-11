@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 public class ImageServiceUnitTest {
 
     static private Long PRODUCT_ID = 1L;
-    static private Long SHOP_ID = 1L;
+    static private Integer SHOP_ID = 1;
 
     Product product = Product.builder().build();
 
