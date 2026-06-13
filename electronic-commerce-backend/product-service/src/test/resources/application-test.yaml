@@ -1,0 +1,23 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+kafka:
+  topics:
+    productEventsTopic:
+      name: "product-events-topic"
+      numPartitions: 1
+      replicas: 1
+      inSyncReplicas: 1
+    productCreateSaga:
+      name: "product-create-saga-topic"
+      numPartitions: 1
+      replicas: 1
+      inSyncReplicas: 1
+eureka:
+  client:
+    enabled: false
+
+application:
+  image:
+    path:
