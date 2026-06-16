@@ -1,16 +1,6 @@
 package com.jzargo.core;
 
-public enum KafkaCustomHeaders {
-    IDEMPOTENCY_KEY("idempotent-messageId-key"),
-    SAGA_ID_KEY("sagaId-key");
-
-    private final String value;
-
-    KafkaCustomHeaders(String s) {
-        this.value = s;
-    }
-
-    public String getValue() {
-        return value;
-    }
+public class KafkaCustomHeaders {
+    public static final String IDEMPOTENCY_KEY = "idempotent-messageId-key";
+    public static final String SAGA_ID_KEY = "sagaId-key";
 }

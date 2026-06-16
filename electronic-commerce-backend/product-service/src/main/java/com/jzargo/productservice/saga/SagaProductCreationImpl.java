@@ -25,7 +25,7 @@ public class SagaProductCreationImpl implements SagaProductCreation {
 
         SagaProductEntity sagaEntity= SagaProductEntity.builder()
                 .id(productId)
-                .step(SagaStep.PENDING_INVENTORY)
+                .step(SagaStep.PENDING_MEDIA_APPROVE)
                 .build();
 
         sagaProductCreationRepository.save(sagaEntity);
@@ -52,7 +52,7 @@ public class SagaProductCreationImpl implements SagaProductCreation {
                 .findById(productId)
                 .orElseThrow(SagaEntityNotFoundException::new);
 
-        sagaProductEntity.setStep(SagaStep.PENDING_MEDIA);
+        sagaProductEntity.setStep(SagaStep.FINISHED);
 
         sagaProductCreationRepository.save(sagaProductEntity);
 
@@ -65,7 +65,7 @@ public class SagaProductCreationImpl implements SagaProductCreation {
                 .findById(productId)
                 .orElseThrow(SagaEntityNotFoundException::new);
 
-        sagaProductEntity.setStep(SagaStep.FINISHED);
+        sagaProductEntity.setStep(SagaStep.PENDING_INVENTORY);
 
         sagaProductCreationRepository.save(sagaProductEntity);
     }
@@ -105,5 +105,4 @@ public class SagaProductCreationImpl implements SagaProductCreation {
 
         sagaProductCreationRepository.save(sagaProductEntity);
     }
-
 }

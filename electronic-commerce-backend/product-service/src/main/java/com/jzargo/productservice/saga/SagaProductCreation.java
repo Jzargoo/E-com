@@ -15,10 +15,10 @@ public interface SagaProductCreation {
     void initiatedMediaEntry(Long productId) throws SagaEntityNotFoundException; // 4 STEP
 
 
+    void compensatedMediaEntry(Long productId) throws SagaEntityNotFoundException;
 
     void compensatedInventoryEntry(Long productId) throws SagaEntityNotFoundException;
 
     void compensatedPriceEntry(Long productId) throws SagaEntityNotFoundException;
 
-    void compensatedMediaEntry(Long productId) throws SagaEntityNotFoundException;
 }

@@ -4,6 +4,7 @@ import com.jzargo.core.KafkaCustomHeaders;
 import com.jzargo.core.command.createProductSaga.*;
 import com.jzargo.productservice.config.KafkaPropertyStorage;
 import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -11,16 +12,17 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class SagaProductCreationKafkaManager implements SagaProductCreationManager{
 
     private final SagaProductCreation sagaProductCreation;
-    private final KafkaTemplate<Long, Object> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final KafkaPropertyStorage kafkaPropertyStorage;
 
     public SagaProductCreationKafkaManager(
             SagaProductCreation sagaProductCreation,
-            KafkaTemplate<Long, Object> kafkaTemplate,
+            KafkaTemplate<String, Object> kafkaTemplate,
             KafkaPropertyStorage kafkaPropertyStorage
     ) {
         this.sagaProductCreation = sagaProductCreation;
@@ -38,9 +40,10 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
         kafkaTemplate.send(
                 createRecord(
                         new InventoryCommand(productId),
-                        productId
+                        productId.toString()
                 )
         );
+        log.info("Sent successfully notify inventory command into kafka topic");
     }
 
     @Override
@@ -48,7 +51,7 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
         kafkaTemplate.send(
                 createRecord(
                         new PricingCommand(productId, stockPrice),
-                        productId
+                        productId.toString()
                 )
         );
     }
@@ -58,7 +61,7 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
         kafkaTemplate.send(
                 createRecord(
                         new MediaCommand(productId),
-                        productId
+                        productId.toString()
                 )
         );
     }
@@ -68,7 +71,7 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
         kafkaTemplate.send(
                 createRecord(
                         new CompensateInventoryCommand(productId),
-                        productId
+                        productId.toString()
                 )
         );
     }
@@ -78,7 +81,7 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
         kafkaTemplate.send(
                 createRecord(
                         new CompensatePricingCommand(productId),
-                        productId
+                        productId.toString()
                 )
         );
     }
@@ -88,13 +91,13 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
         kafkaTemplate.send(
                 createRecord(
                         new CompensateMediaCommand(productId),
-                        productId
+                        productId.toString()
                 )
         );
     }
 
 
-    private <T> ProducerRecord<Long, T> createRecord(T body, Long productId) {
+    private <T> ProducerRecord<String, T> createRecord(T body, String productId) {
         var record = new ProducerRecord<>(
                 kafkaPropertyStorage.getTopics()
                         .getProductCreateSaga().getName(),
@@ -109,7 +112,7 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
         );
 
         record.headers().add(
-                KafkaCustomHeaders.SAGA_ID_KEY.getValue(), productId.toString().getBytes(StandardCharsets.UTF_8)
+                KafkaCustomHeaders.SAGA_ID_KEY.getValue(), productId.getBytes(StandardCharsets.UTF_8)
         );
 
         return record;

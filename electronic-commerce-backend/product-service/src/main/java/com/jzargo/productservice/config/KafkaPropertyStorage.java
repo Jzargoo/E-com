@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 @Data
 public class KafkaPropertyStorage {
     private Topics topics;
+    private String groupId;
 
     @Data
     public static class Topics{
