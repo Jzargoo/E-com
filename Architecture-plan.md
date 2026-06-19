@@ -5,6 +5,7 @@
     - `POST /products`
     - `PUT /products/{id}`
     - `GET /categories`
+    - `POST /categories`
     - `DELETE /products/{id}`
 2. **Catalog Service** (service with 2 reading models: Elasticsearch (Id + name) for string full-search + MongoDB (id + category + rate))
     - `GET /catalog/daily?count=*` – Endpoint for recommended products, e.g., select a random category every day like “The Day of Electronics” and return products from this category.
