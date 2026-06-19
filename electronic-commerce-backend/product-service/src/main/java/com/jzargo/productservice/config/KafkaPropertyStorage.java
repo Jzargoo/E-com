@@ -5,9 +5,11 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
 @RefreshScope
+@Validated
 @ConfigurationProperties(prefix = "kafka")
 @Data
 public class KafkaPropertyStorage {

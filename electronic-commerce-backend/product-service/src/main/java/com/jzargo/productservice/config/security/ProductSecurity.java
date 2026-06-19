@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
@@ -13,6 +14,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.util.PathMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -25,9 +27,17 @@ import java.util.stream.Stream;
 @Profile("!test")
 public class ProductSecurity {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource, PathMatcher pathMatcher) {
         return http
                 .authorizeHttpRequests( request -> request
+                        //.requestMatchers(HttpMethod.POST, "/api/products/category").hasRole("ROLE_ADMIN")
+                        //.requestMatchers("/healthcheck/**").hasRole("ROLE_ADMIN")
+
+                        //.requestMatchers(HttpMethod.POST, "/api/products/images/*").hasRole("ROLE_SHOP")
+                        //.requestMatchers(HttpMethod.PUT,"/api/products/images/*").hasRole("ROLE_SHOP")
+                        //.requestMatchers(HttpMethod.PUT,"/api/products/*").hasRole("ROLE_SHOP")
+                        //.requestMatchers(HttpMethod.DELETE,"/api/products/*").hasRole("ROLE_SHOP")
+
                         .anyRequest().permitAll()
                 )
                 .csrf(CsrfConfigurer::disable)

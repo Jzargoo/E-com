@@ -8,8 +8,6 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.kafka.annotation.EnableKafka;
 
 @SpringBootApplication
-@EnableCaching
-@EnableKafka
 @EnableConfigurationProperties
 public class ProductServiceApplication {
 
