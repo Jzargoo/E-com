@@ -11,6 +11,8 @@ import org.hibernate.type.SqlTypes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 
 @Data
@@ -32,7 +34,7 @@ public class Product {
     @Column(nullable = false,name = "name")
     private String name;
     @Column(nullable = false,name = "description")
-    private String description = "";
+    private String description;
     @Column(nullable = false,name = "stock_price")
     private Double stockPrice;
     @Column(nullable = false,name = "shop_id")
@@ -47,10 +49,26 @@ public class Product {
     private Status status = Status.WAITING;
 
     @ElementCollection
+    @CollectionTable(
+            joinColumns = {
+                    @JoinColumn(name = "media_content", referencedColumnName = "product_id")
+            }
+    )
     @Builder.Default
-    private List<String> images = new ArrayList<>();
+    private List<String> mediaContent = new ArrayList<>();
 
-    public void addImages(List<String> imageNames) {
-        images.addAll(imageNames);
+    @OneToMany(targetEntity = FallbackMediaContent.class, mappedBy = "product")
+    @Builder.Default
+    private List<FallbackMediaContent> fallbackMediaContents = new ArrayList<>();
+
+    public void addImages(List<String> filesId) {
+        mediaContent.addAll(filesId);
     }
 }
+
+/*
+1. Скинуть файл
+2. получить ответ
+3. удалить
+4. обновить бд
+ */

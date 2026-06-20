@@ -1,21 +1,20 @@
 package com.jzargo.productservice.service;
 
 import com.jzargo.productservice.exception.ProductNotFoundException;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
 
-public interface ImageService {
+public interface MediaService {
 
-    void addImages(byte[][] images, Long productId, Integer shopId)
+    void addMediaContent(List<MultipartFile> contents, Long productId, Integer shopId)
             throws IOException, ProductNotFoundException;
 
     void addAvatar(byte[] image, Long productId, Integer shopId)
             throws IOException, ProductNotFoundException;
 
-    List<byte[]> getImages(Long productId)
+    List<MultipartFile> getMediaContent(Long productId)
             throws IOException, ProductNotFoundException;
 
     byte[] getAvatar(Long productId)

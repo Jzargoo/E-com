@@ -1,7 +1,7 @@
 package com.jzargo.productservice.api;
 
 import com.jzargo.productservice.exception.ProductNotFoundException;
-import com.jzargo.productservice.service.ImageService;
+import com.jzargo.productservice.service.MediaService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,7 @@ import java.util.List;
 @RequestMapping("/api/products/images")
 @RequiredArgsConstructor
 public class ImageController {
-    private final ImageService imageService;
+    private final MediaService imageService;
 
     @PutMapping("/{productId}")
     public ResponseEntity<String> addImages(

@@ -6,7 +6,6 @@ import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
 import com.jzargo.productservice.repository.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,11 +16,11 @@ import java.util.List;
 @Slf4j
 @Service
 @Transactional(readOnly = true) // if not provided, data must be in immutable state
-public class ImageServiceImpl implements ImageService {
+public class MediaServiceImpl implements MediaService {
     private final ImageDriver imageDriver;
     private final ProductRepository productRepository;
 
-    public ImageServiceImpl(ImageDriver imageDriver, ProductRepository productRepository) {
+    public MediaServiceImpl(ImageDriver imageDriver, ProductRepository productRepository) {
         this.imageDriver = imageDriver;
         this.productRepository = productRepository;
     }
@@ -29,7 +28,7 @@ public class ImageServiceImpl implements ImageService {
 
     @Override
     @Transactional
-    public void addImages(byte[][] images, Long productId, Integer shopId)
+    public void addMediaContent(List<MultipartFile> mediaContent, Long productId, Integer shopId)
     throws ProductNotFoundException{
 
         Product product = productRepository
@@ -84,7 +83,7 @@ public class ImageServiceImpl implements ImageService {
     }
 
     @Override
-    public List<byte[]> getImages(Long productId)
+    public List<MultipartFile> getMediaContent(Long productId)
         throws ProductNotFoundException, IOException {
 
         List<String> allImages = productRepository

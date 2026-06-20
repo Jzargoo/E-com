@@ -4,6 +4,7 @@ import com.jzargo.productservice.config.ApplicationPropertyStorage;
 import lombok.SneakyThrows;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,10 +14,11 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-public class ImageDriverNative implements ImageDriver{
+public class FallbackImageDriverNative implements FallbackImageDriver{
+
     private final ApplicationPropertyStorage applicationPropertyStorage;
 
-    public ImageDriverNative(ApplicationPropertyStorage applicationPropertyStorage) {
+    public FallbackImageDriverNative (ApplicationPropertyStorage applicationPropertyStorage) {
         this.applicationPropertyStorage = applicationPropertyStorage;
     }
 
@@ -26,7 +28,7 @@ public class ImageDriverNative implements ImageDriver{
 
         Files.createDirectories(Path.of(path));
 
-        var image_name = "image" + UUID.randomUUID() + ".png";
+        var image_name = UUID.randomUUID() + ".png";
         var pathToFile = Path.of(path + "/" + image_name);
 
         Files.createFile(pathToFile);
@@ -36,17 +38,19 @@ public class ImageDriverNative implements ImageDriver{
         return image_name;
     }
 
-
+    @Override
+    public List<String> saveFiles(byte[][] images) throws IOException {
+        return List.of();
+    }
 
     @Override
-    public byte[] getImage(String name)
-            throws IOException {
-
-        Path path = Path.of(
-                applicationPropertyStorage.getImage().getPath() + "/" +
-                        name
-        );
-
-        return Files.readAllBytes(path);
+    public List<MultipartFile> getFiles(List<String> names) throws IOException {
+        return List.of();
     }
+
+    @Override
+    public byte[] getFile(String name) throws IOException {
+        return new byte[0];
+    }
+
 }

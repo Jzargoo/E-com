@@ -5,7 +5,7 @@ import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.repository.ProductRepository;
 import com.jzargo.productservice.service.ImageDriverNative;
-import com.jzargo.productservice.service.ImageServiceImpl;
+import com.jzargo.productservice.service.MediaServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,9 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.parameters.P;
-import org.springframework.util.Assert;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -36,7 +33,7 @@ public class ImageServiceUnitTest {
     private ImageDriverNative imageDriverNative;
 
     @InjectMocks
-    private ImageServiceImpl imageService;
+    private MediaServiceImpl imageService;
 
     @Mock
     private ProductRepository productRepository;
