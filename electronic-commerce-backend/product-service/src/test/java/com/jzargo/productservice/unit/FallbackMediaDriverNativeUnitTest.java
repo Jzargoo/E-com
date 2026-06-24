@@ -1,7 +1,7 @@
 package com.jzargo.productservice.unit;
 
 import com.jzargo.productservice.config.ApplicationPropertyStorage;
-import com.jzargo.productservice.service.ImageDriverNative;
+import com.jzargo.productservice.service.FallbackMediaDriverNative;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,28 +20,28 @@ import java.util.List;
 // COMPLETED UNIT TEST
 
 @ExtendWith(MockitoExtension.class)
-public class ImageDriverUnitTest {
+public class FallbackMediaDriverNativeUnitTest {
 
     @Mock
     private ApplicationPropertyStorage applicationPropertyStorage;
 
     @InjectMocks
-    private ImageDriverNative imageDriverNative;
+    private FallbackMediaDriverNative mediaDriverNative;
 
     @TempDir
     private Path sharedTempDir;
 
     @BeforeEach
     public void setup() {
-        var image = new ApplicationPropertyStorage.Image();
+        var media = new ApplicationPropertyStorage.Media();
 
-        image.setPath(
+        media.setPath(
                 sharedTempDir.toAbsolutePath().toString()
         );
 
         Mockito.when(
-                applicationPropertyStorage.getImage()
-        ).thenReturn(image);
+                applicationPropertyStorage.getMedia()
+        ).thenReturn(media);
     }
 
     @Test
@@ -55,13 +55,13 @@ public class ImageDriverUnitTest {
 
         try {
 
-            List<String> imageNames = imageDriverNative.saveFiles(images);
+            List<String> imageNames = mediaDriverNative.saveFiles(images);
 
             for (int i = 0; i < imageNames.size(); i++) {
 
                 byte[] content = Files.readAllBytes(
                         Path.of(
-                                applicationPropertyStorage.getImage()
+                                applicationPropertyStorage.getMedia()
                                         .getPath() + "/" + imageNames.get(i)
                         )
                 );
@@ -83,17 +83,17 @@ public class ImageDriverUnitTest {
 
         try {
 
-            String name = imageDriverNative.saveFile(content);
+            String name = mediaDriverNative.saveFile(content);
 
             Assertions.assertTrue(
                     Files.exists(
-                            Path.of(applicationPropertyStorage.getImage()
+                            Path.of(applicationPropertyStorage.getMedia()
                                     .getPath() + "/" + name)
                     )
                     , "The saved file does not exist");
 
             Assertions.assertArrayEquals(content, Files.readAllBytes(
-                    Path.of(applicationPropertyStorage.getImage()
+                    Path.of(applicationPropertyStorage.getMedia()
                             .getPath() + "/" + name)
             ), "content does not match with actual file");
 
@@ -106,7 +106,7 @@ public class ImageDriverUnitTest {
     public void getImage_test_success() {
 
         String sPath = applicationPropertyStorage
-                .getImage().getPath() + "/";
+                .getMedia().getPath() + "/";
 
         String name = "image.png";
 
@@ -120,7 +120,7 @@ public class ImageDriverUnitTest {
 
             Files.write(path, content);
 
-            byte[] actualContent = imageDriverNative.getImage(name);
+            byte[] actualContent = mediaDriverNative.getFile(name);
 
             Assertions.assertArrayEquals(content, actualContent, "The content did not match");
 
@@ -133,16 +133,16 @@ public class ImageDriverUnitTest {
     public void getImages_test_success() {
 
         String folder = applicationPropertyStorage
-                .getImage().getPath() + "/";
+                .getMedia().getPath() + "/";
 
-        String name1 = "image1.png";
-        String name2 = "image2.png";
+        String name1 = "image1";
+        String name2 = "image2";
 
         byte[] content = {1,2,3,4};
 
         try {
 
-            Path  path1 = Path.of(folder + name1);
+            Path path1 = Path.of(folder + name1);
             Path path2 = Path.of(folder + name2);
 
             Files.createFile(path1);
@@ -151,12 +151,12 @@ public class ImageDriverUnitTest {
             Files.write(path1, content);
             Files.write(path2, content);
 
+            var names = List.of(name1, name2);
 
-            byte[] actualContent1 = imageDriverNative.getImage(name1);
-            byte[] actualContent2 = imageDriverNative.getImage(name2);
+            var actualContent = mediaDriverNative.getContent(names);
 
-            Assertions.assertArrayEquals(content, actualContent1, "The content of image 1 did not match");
-            Assertions.assertArrayEquals(content, actualContent2, "The content of image 2 did not match");
+            Assertions.assertArrayEquals(content, actualContent.getFirst(), "The content of image 1 did not match");
+            Assertions.assertArrayEquals(content, actualContent.getLast(), "The content of image 2 did not match");
 
         } catch (IOException e) {
             Assertions.fail("Test threw unexpected io exception");

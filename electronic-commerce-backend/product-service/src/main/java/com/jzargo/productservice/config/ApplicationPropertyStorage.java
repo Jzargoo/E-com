@@ -16,10 +16,10 @@ import java.util.List;
 @ConfigurationProperties(prefix = "application")
 public class ApplicationPropertyStorage {
     @NotNull
-    private Image image;
+    private Media media;
 
     @Data
-    public static class Image {
+    public static class Media{
         @NotNull
         private String path;
     }

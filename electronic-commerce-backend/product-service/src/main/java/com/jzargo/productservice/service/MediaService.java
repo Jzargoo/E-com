@@ -11,13 +11,13 @@ public interface MediaService {
     void addMediaContent(List<MultipartFile> contents, Long productId, Integer shopId)
             throws IOException, ProductNotFoundException;
 
-    void addAvatar(byte[] image, Long productId, Integer shopId)
+    void addAvatar(MultipartFile image, Long productId, Integer shopId)
             throws IOException, ProductNotFoundException;
 
     List<MultipartFile> getMediaContent(Long productId)
             throws IOException, ProductNotFoundException;
 
-    byte[] getAvatar(Long productId)
+    MultipartFile getAvatar(Long productId)
                 throws IOException, ProductNotFoundException;
 
 }
