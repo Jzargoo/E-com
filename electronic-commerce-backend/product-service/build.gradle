@@ -41,8 +41,6 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine'
 
     implementation 'com.jzargo:core:0.0.1-SNAPSHOT'
-    implementation 'org.jcodec:jcodec:0.2.5'
-    implementation 'org.apache.tika:tika-core:3.3.1'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
     testImplementation 'org.springframework.kafka:spring-kafka-test'

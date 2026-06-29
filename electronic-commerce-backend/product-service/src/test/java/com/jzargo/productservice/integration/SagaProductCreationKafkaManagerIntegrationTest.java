@@ -1,14 +1,14 @@
 package com.jzargo.productservice.integration;
 
 import com.jzargo.core.command.createProductSaga.InventoryCommand;
+import com.jzargo.productservice.client.MediaServiceClientImpl;
 import com.jzargo.productservice.config.ApplicationPropertyStorage;
-import com.jzargo.productservice.config.KafkaConfig;
+import com.jzargo.productservice.driver.FallbackMediaDriverNative;
 import com.jzargo.productservice.repository.CategoryRepository;
 import com.jzargo.productservice.repository.ProductRepository;
 import com.jzargo.productservice.repository.SagaProductCreationRepository;
 import com.jzargo.productservice.saga.SagaProductCreationImpl;
 import com.jzargo.productservice.saga.SagaProductCreationKafkaManager;
-import com.jzargo.productservice.service.ImageDriverNative;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +33,7 @@ import org.springframework.kafka.test.utils.ContainerTestUtils;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
 import java.util.concurrent.TimeUnit;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -86,7 +84,9 @@ public class SagaProductCreationKafkaManagerIntegrationTest {
     @MockitoBean
     public ApplicationPropertyStorage applicationPropertyStorage;
     @MockitoBean
-    public ImageDriverNative imageDriverNative;
+    public FallbackMediaDriverNative fallbackMediaDriverNative;
+    @MockitoBean
+    public MediaServiceClientImpl mediaServiceClientImpl;
     @MockitoBean
     public ProductRepository productRepository;
     @MockitoBean

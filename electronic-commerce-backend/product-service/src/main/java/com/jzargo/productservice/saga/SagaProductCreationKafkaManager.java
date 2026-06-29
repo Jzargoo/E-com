@@ -108,11 +108,11 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
         var id = UUID.randomUUID().toString();
 
         record.headers().add(
-                KafkaCustomHeaders.IDEMPOTENCY_KEY.getValue(), id.getBytes(StandardCharsets.UTF_8)
+                KafkaCustomHeaders.IDEMPOTENCY_KEY, id.getBytes(StandardCharsets.UTF_8)
         );
 
         record.headers().add(
-                KafkaCustomHeaders.SAGA_ID_KEY.getValue(), productId.getBytes(StandardCharsets.UTF_8)
+                KafkaCustomHeaders.SAGA_ID_KEY, productId.getBytes(StandardCharsets.UTF_8)
         );
 
         return record;

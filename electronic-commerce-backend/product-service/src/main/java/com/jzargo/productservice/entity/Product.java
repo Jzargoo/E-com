@@ -61,14 +61,7 @@ public class Product {
     @Builder.Default
     private List<FallbackMediaContent> fallbackMediaContents = new ArrayList<>();
 
-    public void addImages(List<String> filesId) {
+    public void addMedia(List<String> filesId) {
         mediaContent.addAll(filesId);
     }
 }
-
-/*
-1. Скинуть файл
-2. получить ответ
-3. удалить
-4. обновить бд
- */

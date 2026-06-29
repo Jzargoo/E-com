@@ -1,4 +1,4 @@
-package com.jzargo.productservice.service;
+package com.jzargo.productservice.client;
 
 import com.jzargo.productservice.model.PlainFile;
 import org.springframework.stereotype.Component;

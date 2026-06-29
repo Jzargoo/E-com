@@ -1,10 +1,6 @@
-package com.jzargo.productservice.service;
-
-import com.jzargo.productservice.entity.ContentType;
-import org.springframework.web.multipart.MultipartFile;
+package com.jzargo.productservice.driver;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public interface FallbackMediaDriver {

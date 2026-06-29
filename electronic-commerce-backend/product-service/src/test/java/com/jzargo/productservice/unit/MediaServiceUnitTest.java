@@ -4,9 +4,10 @@ package com.jzargo.productservice.unit;
 import com.jzargo.productservice.entity.ContentType;
 import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.exception.ProductNotFoundException;
+import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
 import com.jzargo.productservice.model.PlainFile;
 import com.jzargo.productservice.repository.ProductRepository;
-import com.jzargo.productservice.service.MediaServiceClientImpl;
+import com.jzargo.productservice.client.MediaServiceClientImpl;
 import com.jzargo.productservice.service.MediaServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,10 +27,10 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
-public class ImageServiceUnitTest {
+public class MediaServiceUnitTest {
 
-    static private Long PRODUCT_ID = 1L;
-    static private Integer SHOP_ID = 1;
+    static private final Long PRODUCT_ID = 1L;
+    static private final Integer SHOP_ID = 1;
 
     Product product = Product.builder().build();
 
@@ -107,31 +108,41 @@ public class ImageServiceUnitTest {
             ).findById(PRODUCT_ID);
 
 
-        } catch (ProductNotFoundException e) {
+        } catch (ProductNotFoundException | ShopDoesNotOwnProductException e) {
             Assertions.fail("Product was not found in the repository");
         }
     }
 
     @Test
-    public void addAvatar_test_success() {
+    public void addAvatar_test_success() throws ShopDoesNotOwnProductException {
         byte[] content= {1,2,3};
 
         var image = "image.png";
 
+        var plainFile = new PlainFile(content, ContentType.PNG);
+
         try {
             Mockito.when(
-                    mediaServiceClient.sendFile(PlainFile)
+                    mediaServiceClient.sendFile(plainFile)
             ).thenReturn(image);
 
-            imageService.addAvatar(content, PRODUCT_ID, SHOP_ID);
+            mediaService.addAvatar(
+                    new MockMultipartFile(
+                            "image1.png",
+                            image,
+                            "image/png",
+                            content
+                    ),
+                    PRODUCT_ID, SHOP_ID
+            );
 
             Assertions.assertEquals(image, product.getAvatar());
 
             Mockito.verify(
-                    imageDriverNative,
+                    mediaServiceClient,
                     Mockito.times(1)
-            ).saveFile(
-                    any(byte[].class)
+            ).sendFile(
+                    plainFile
             );
 
             Mockito.verify(
@@ -150,28 +161,32 @@ public class ImageServiceUnitTest {
     @Test
     public void getAvatar_test_success(){
 
-        product.setAvatar("image.png");
+        var avatarName = "image.png";
+        product.setAvatar(avatarName);
 
         byte[] content = {1,2};
 
         try {
 
             Mockito.when(
-                    mediaServiceClient.sendFiles(
-                            L
+                    mediaServiceClient.receiveFile(avatarName)
+            ).thenReturn(
+                    new MockMultipartFile(
+                            "image.png",
+                            avatarName,
+                            "image/png",
+                            content
                     )
-            ).thenReturn(content);
+            );
 
-            PlainFile avatar = mediaService.getAvatar(PRODUCT_ID);
+            MultipartFile avatar = mediaService.getAvatar(PRODUCT_ID);
 
-            Assertions.assertArrayEquals(content, avatar.getContent(), "Content of the avatar does not match");
+            Assertions.assertArrayEquals(content, avatar.getBytes(), "Content of the avatar does not match");
 
             Mockito.verify(
-                    imageDriverNative,
+                    mediaServiceClient,
                     Mockito.times(1)
-            ).getImage(
-                    product.getAvatar()
-            );
+            ).receiveFile(avatarName);
 
             Mockito.verify(
                     productRepository,
@@ -194,33 +209,45 @@ public class ImageServiceUnitTest {
                 new byte[]{1, 2, 3, 4, 5}
         );
 
-        List<String> images = List.of("image1.png", "image2.png");
+        List<String> media = List.of("image1.png", "video1.mp4");
 
-        product.setImages(images);
+        product.addMedia(media);
+        List<MultipartFile> listMockFiles = List.of(
+                new MockMultipartFile(
+                        "video.mp4",
+                        media.get(1),
+                        "video/mp4",
+                        contents.get(1)
+                ),
+                new MockMultipartFile(
+                        "image1.png",
+                        media.getFirst(),
+                        "image/png",
+                        contents.getFirst()
+                )
+        );
 
         try {
             Mockito.when(
-                    imageDriverNative.getImages(images)
-            ).thenReturn(contents);
+                    mediaServiceClient.receiveFiles(media)
+            ).thenReturn(listMockFiles);
 
-            List<byte[]> returnedImages = imageService.getImages(PRODUCT_ID);
+            List<MultipartFile> returnedImages = mediaService.getMediaContent(PRODUCT_ID);
 
             Assertions.assertEquals(
-                    contents.size(),
                     returnedImages.size(),
+                    listMockFiles.size(),
                     "The returned number of images does not match with actual number"
             );
 
             for (int i = 0; i < returnedImages.size(); i++) {
-                Assertions.assertArrayEquals(contents.get(i), returnedImages.get(i));
+                Assertions.assertArrayEquals(contents.get(i), returnedImages.get(i).getBytes(), "Content of the images does not match");
             }
 
             Mockito.verify(
-                    imageDriverNative,
+                    mediaServiceClient,
                     Mockito.times(1)
-            ).getImages(
-                images
-            );
+            ).receiveFiles(media);
 
             Mockito.verify(
                     productRepository,

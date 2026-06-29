@@ -1,13 +1,8 @@
-package com.jzargo.productservice.service;
+package com.jzargo.productservice.driver;
 
 import com.jzargo.productservice.config.ApplicationPropertyStorage;
-import com.jzargo.productservice.entity.ContentType;
-import jakarta.transaction.Transactional;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URI;
@@ -74,20 +69,10 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
 
     @Override
     public byte[] getFile(String name) throws IOException {
-        try {
+        var path = Path.of(
+                applicationPropertyStorage.getMedia().getPath() + "\\" + name
+        );
 
-            var path = java.nio.file.Path.of(
-                        new URI(
-                                applicationPropertyStorage.getMedia().getPath() + "/" + name
-                        )
-            );
-
-            return Files.readAllBytes(path);
-
-
-        } catch (URISyntaxException e) {
-            log.error("The incorrect uri syntax exception occurred with media id {}", name);
-            throw new IOException("URI problems");
-        }
+        return Files.readAllBytes(path);
     }
 }

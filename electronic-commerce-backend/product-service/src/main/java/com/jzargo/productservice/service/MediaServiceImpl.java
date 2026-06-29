@@ -1,6 +1,7 @@
 package com.jzargo.productservice.service;
 
 
+import com.jzargo.productservice.client.MediaServiceClient;
 import com.jzargo.productservice.entity.ContentType;
 import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.exception.ProductNotFoundException;
@@ -16,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -35,7 +37,7 @@ public class MediaServiceImpl implements MediaService {
     @CircuitBreaker(name = "mediaService", fallbackMethod = "fallbackAddingMediaContent")
     @Bulkhead(name = "mediaService", fallbackMethod = "fallbackAddingMediaContent")
     public void addMediaContent(List<MultipartFile> mediaContent, Long productId, Integer shopId)
-        throws ProductNotFoundException {
+            throws ProductNotFoundException, ShopDoesNotOwnProductException {
 
         Product product = productRepository
                 .findById(productId)
@@ -45,23 +47,36 @@ public class MediaServiceImpl implements MediaService {
             throw new ShopDoesNotOwnProductException();
         }
 
-        List<String> names = mediaServiceClient.sendFiles(mediaContent);
+        List<PlainFile> plainFiles = mediaContent.stream().map(
+                file -> {
+                    try {
+                        return new PlainFile(
+                                file.getBytes(),
+                                ContentType.parse(Objects.requireNonNull(file.getContentType()))
+                        );
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+        ).toList();
 
-        product.addImages(names);
+        List<String> names = mediaServiceClient.sendFiles(plainFiles);
+
+        product.addMedia(names);
 
         productRepository.save(product);
     }
 
-    public void fallbackAddingMediaContent(List<MultipartFile> mediaContent, Long productId, Integer shopId){
+    public void fallbackAddingMediaContent(List<MultipartFile> mediaContent, Long productId, Integer shopId) {
         log.debug("Fallback method for adding multiple media content was invoked");
     }
 
     @Override
     @Transactional
-    @CircuitBreaker(name = "mediaService", fallbackMethod = "fallbackAddingMediaFile")
-    @Bulkhead(name = "mediaService", fallbackMethod = "fallbackAddingMediaFile")
+    @CircuitBreaker(name = "mediaService", fallbackMethod = "fallbackAddingAvatar")
+    @Bulkhead(name = "mediaService", fallbackMethod = "fallbackAddingAvatar")
     public void addAvatar(MultipartFile image, Long productId, Integer shopId)
-            throws IOException, ProductNotFoundException {
+            throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException {
 
         Product product = productRepository
                 .findById(productId)
@@ -71,19 +86,24 @@ public class MediaServiceImpl implements MediaService {
             throw new ShopDoesNotOwnProductException();
         }
 
-        String imageName = mediaServiceClient.sendFile(image);
+        String imageName = mediaServiceClient.sendFile(
+                new PlainFile(
+                        image.getBytes(),
+                        ContentType.parse(Objects.requireNonNull(image.getContentType()))
+                )
+        );
 
         product.setAvatar(imageName);
 
         productRepository.save(product);
     }
 
-    public void fallbackAddingMediaFile(MultipartFile image, Long productId, Integer shopId){
+    public void fallbackAddingAvatar(MultipartFile image, Long productId, Integer shopId) {
         log.debug("Fallback method for adding one file was invoked");
     }
 
     @Override
-    public PlainFile getAvatar(Long productId)
+    public MultipartFile getAvatar(Long productId)
         throws ProductNotFoundException, IOException {
 
         String avatar = productRepository
@@ -91,25 +111,20 @@ public class MediaServiceImpl implements MediaService {
                 .map(Product::getAvatar)
                 .orElseThrow(ProductNotFoundException::new);
 
-        MultipartFile multipartFile = mediaServiceClient.receiveFile(avatar);
-
-        ContentType contentType = ContentType.valueOf(multipartFile.getContentType());
-
-        return new PlainFile(multipartFile.getBytes(), contentType);
-
+        return mediaServiceClient.receiveFile(avatar);
     }
 
     @Override
     public List<MultipartFile> getMediaContent(Long productId)
-        throws ProductNotFoundException, IOException {
+        throws ProductNotFoundException {
 
         List<String> allImages = productRepository
                 .findById(productId)
-                .map(Product::getImages)
+                .map(Product::getMediaContent)
                 .orElseThrow(
                         ProductNotFoundException::new
                 );
 
-        return imageDriver.getImages(allImages);
+        return mediaServiceClient.receiveFiles(allImages);
     }
 }

@@ -73,7 +73,7 @@ public class ProductCreationSagaUnitTest {
         ).save(
                 argThat(entity ->
                         entity.getId().equals(PRODUCT_ID) &&
-                                entity.getStep().equals(SagaStep.PENDING_INVENTORY)
+                                entity.getStep().equals(SagaStep.PENDING_MEDIA_APPROVE)
                 )
         );
 

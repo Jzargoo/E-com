@@ -1,9 +1,10 @@
 package com.jzargo.productservice.service;
 
 import com.jzargo.productservice.entity.Product;
-import com.jzargo.productservice.entity.SagaProductEntity;
 import com.jzargo.productservice.entity.Status;
+import com.jzargo.productservice.exception.InvalidUpdateRequest;
 import com.jzargo.productservice.exception.ProductNotFoundException;
+import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
 import com.jzargo.productservice.mapper.ProductCreateAndUpdateMapper;
 import com.jzargo.productservice.mapper.ReadProductDetailsMapper;
 import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
@@ -55,21 +56,33 @@ public class ProductServiceImpl implements ProductService{
         return product.getId();
     }
 
+
     @Override
     @Transactional
     @Cacheable(value = "product", key = "#updateProductDetails.id")
-    public ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails) throws ProductNotFoundException{
+    public ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails, Integer shopId)
+            throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest {
 
-        // If null -> the data did not change
+        // Null -> the field was not changed
 
-        // TODO: fill nulls with previous info fields that did not change
+        if (
+                productRepository.findById(
+                        updateProductDetails.getId()
+                        ).orElseThrow()
+                        .getShopId().equals(shopId)
+        ) {
+            throw new ShopDoesNotOwnProductException();
+        }
 
-        Product newProduct = productRepository
+        Product product = productRepository
                 .findById(updateProductDetails.getId())
-                .map((product) -> productCreateAndUpdateMapper.map(updateProductDetails, product))
                 .orElseThrow(ProductNotFoundException::new);
 
-        return readProductDetailsMapper.map(newProduct);
+        productCreateAndUpdateMapper.updateMap(updateProductDetails, product);
+
+        productRepository.save(product);
+
+        return readProductDetailsMapper.map(product);
     }
 
     @Override
@@ -77,6 +90,9 @@ public class ProductServiceImpl implements ProductService{
     @Cacheable(value = "product", key = "#productId")
     public String deleteProduct(Long productId)
             throws ProductNotFoundException {
+
+        log.info("Product deletion starting...");
+
         Product product = productRepository.findById(productId)
                 .orElseThrow(ProductNotFoundException::new);
 
@@ -90,6 +106,7 @@ public class ProductServiceImpl implements ProductService{
     @Override
     public String startSaga(CreateAndUpdateProductDetails details) {
         try{
+            log.info("Starting saga processing...");
             sagaProductCreationManager.startSaga(details);
             return "productCreateSaga.success";
         } catch (Exception e) {

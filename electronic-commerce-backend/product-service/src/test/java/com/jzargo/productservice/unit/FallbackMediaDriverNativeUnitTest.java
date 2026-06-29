@@ -1,7 +1,7 @@
 package com.jzargo.productservice.unit;
 
 import com.jzargo.productservice.config.ApplicationPropertyStorage;
-import com.jzargo.productservice.service.FallbackMediaDriverNative;
+import com.jzargo.productservice.driver.FallbackMediaDriverNative;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

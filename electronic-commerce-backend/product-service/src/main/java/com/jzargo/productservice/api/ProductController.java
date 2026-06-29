@@ -1,5 +1,8 @@
 package com.jzargo.productservice.api;
 
+import com.jzargo.productservice.exception.InvalidUpdateRequest;
+import com.jzargo.productservice.exception.ProductNotFoundException;
+import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
 import com.jzargo.productservice.model.*;
 import com.jzargo.productservice.saga.SagaProductCreation;
 import com.jzargo.productservice.service.ProductService;
@@ -15,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
 
     private final ProductService productService;
-    private final SagaProductCreation sagaProductCreation;
 
     @GetMapping("/{id}")
     ResponseEntity<ProductDetails>  getProductById(@PathVariable Long id){
@@ -42,7 +44,11 @@ public class ProductController {
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody CreateAndUpdateProductDetails createAndUpdateProductDetails
-            ) {
+            ) throws ShopDoesNotOwnProductException, InvalidUpdateRequest, ProductNotFoundException {
+        Integer shopId = jwt.getClaim("shop_id");
+
+        productService.updateProduct(createAndUpdateProductDetails, shopId);
+
         return ResponseEntity.ok(new ProductDetails());
     }
 
