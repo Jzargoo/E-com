@@ -40,39 +40,20 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
     }
 
     @Override
-    public List<String> saveFiles(byte[][] content) throws IOException {
-
-        List<String> output = new ArrayList<>();
-
-        for (byte[] file: content) {
-            output.add(
-                saveFile(file)
-            );
-        }
-
-        return output;
-    }
-
-    @Override
-    public List<byte[]> getContent(List<String> mediaIds) throws IOException {
-
-        List<byte[]> files = new ArrayList<>();
-
-        for (String mediaId: mediaIds) {
-            files.add(
-                    getFile(mediaId)
-            );
-        }
-
-        return files;
-    }
-
-    @Override
     public byte[] getFile(String name) throws IOException {
         var path = Path.of(
                 applicationPropertyStorage.getMedia().getPath() + "\\" + name
         );
 
         return Files.readAllBytes(path);
+    }
+
+    @Override
+    public void deleteFile(String fileName) throws IOException {
+        var path = Path.of(
+                applicationPropertyStorage.getMedia().getPath() + "\\" + fileName
+        );
+
+        Files.deleteIfExists(path);
     }
 }

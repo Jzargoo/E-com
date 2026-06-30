@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Table
 @Entity
 @Data
@@ -20,9 +22,19 @@ public class FallbackMediaContent {
     @Enumerated(EnumType.STRING)
     private ContentType contentType;
 
-    private String mediaId;
+    @Builder.Default
+    private String mediaId = UUID.randomUUID().toString();
 
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
+
+    @Builder.Default
+    private Boolean isAvatar = false;
+
+    public void setProduct(Product product) {
+        this.product = product;
+
+        product.addFallbackMedia(this);
+    }
 }

@@ -48,7 +48,7 @@ public class Product {
     @Builder.Default
     private Status status = Status.WAITING;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
             joinColumns = {
                     @JoinColumn(name = "media_content", referencedColumnName = "product_id")
@@ -57,11 +57,15 @@ public class Product {
     @Builder.Default
     private List<String> mediaContent = new ArrayList<>();
 
-    @OneToMany(targetEntity = FallbackMediaContent.class, mappedBy = "product")
+    @OneToMany(targetEntity = FallbackMediaContent.class, mappedBy = "product", fetch = FetchType.LAZY)
     @Builder.Default
     private List<FallbackMediaContent> fallbackMediaContents = new ArrayList<>();
 
     public void addMedia(List<String> filesId) {
         mediaContent.addAll(filesId);
+    }
+
+    public void addFallbackMedia(FallbackMediaContent fallbackMediaContent) {
+        fallbackMediaContents.add(fallbackMediaContent);
     }
 }
