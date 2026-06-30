@@ -1,0 +1,45 @@
+syntax="proto3";
+
+option java_package = "com.jzargo.protobuf";
+option java_multiple_files = true;
+
+service MediaService{
+  rpc addMediaContent(MediaContentPlainFiles) returns (MediaContentIds) {}
+  rpc changeAvatar(ChangeAvatarRequest) returns (ChangeAvatarId) {}
+
+  rpc getMediaContent(MediaContentIds) returns (MediaContentPlainFiles) {}
+  rpc getAvatar(ChangeAvatarId) returns (AvatarFileResponse) {}
+}
+
+message ChangeAvatarId {
+  string avatarId = 1;
+}
+
+message AvatarFileResponse {
+  bytes content = 1;
+}
+
+message MediaContentPlainFiles {
+  int32 mediaCount = 1;
+  repeated PlainFile content = 2;
+}
+
+message ChangeAvatarRequest {
+  bytes content = 1;
+  optional string previousAvatar = 2;
+}
+
+message MediaContentIds {
+  repeated string mediaIds = 1;
+}
+
+message PlainFile {
+  bytes content = 1;
+  ContentType contentType = 2;
+}
+
+enum ContentType {
+  JPEG = 0;
+  PNG = 1;
+  MP4 = 2;
+}
