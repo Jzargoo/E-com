@@ -1,11 +1,11 @@
-package com.jzargo.media.service;
+package com.jzargo.media.backend;
 
 import com.jzargo.protobuf.PlainFile;
 
 import java.util.List;
 
 
-public interface MediaStorageService {
+public interface MediaPersistentStorageBackend {
     List<String> storeFiles(List<PlainFile> files);
 
     String storeFile(PlainFile file);

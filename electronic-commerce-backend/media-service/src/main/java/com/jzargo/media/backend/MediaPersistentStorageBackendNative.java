@@ -1,4 +1,4 @@
-package com.jzargo.media.service;
+package com.jzargo.media.backend;
 
 import com.jzargo.media.config.ApplicationPropertyStorage;
 import com.jzargo.media.exceptions.ErrorDuringAddingContent;
@@ -13,10 +13,10 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class MediaStorageServiceNative implements MediaStorageService{
+public class MediaPersistentStorageBackendNative implements MediaPersistentStorageBackend {
     private final ApplicationPropertyStorage applicationPropertyStorage;
 
-    public MediaStorageServiceNative(ApplicationPropertyStorage applicationPropertyStorage) {
+    public MediaPersistentStorageBackendNative(ApplicationPropertyStorage applicationPropertyStorage) {
         this.applicationPropertyStorage = applicationPropertyStorage;
     }
 
@@ -53,7 +53,7 @@ public class MediaStorageServiceNative implements MediaStorageService{
             return id;
         } catch (IOException e) {
             deleteFile(id);
-           throw new ErrorDuringAddingContent("Cannot create directories to path { %s }".formatted(savingPath));
+            throw new ErrorDuringAddingContent("Cannot create directories to path { %s }".formatted(savingPath));
         }
     }
 

@@ -1,5 +1,5 @@
 package com.jzargo.media.exceptions;
 
-public class BackendOutOfSpaceException extends RuntimeException {
+public class BackendOutOfSpaceException extends Exception {
     public BackendOutOfSpaceException() {}
 }

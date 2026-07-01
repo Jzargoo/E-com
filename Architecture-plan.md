@@ -55,16 +55,47 @@ Cart service → product service (check existing, in-variants) → inventory ser
 
 Create a product (orchestration):
 
-product service → inventory service → shop service → notification service
+product service + grpc (media) → media service(approve) → inventory service → shop service → notification service
 
 Update a product (choreography):
 
-product service → {catalog service; pricing service; statistical analysis}
+product service → {catalog service; pricing service}
 
 availability of a product (event):
 
-inventory service →  catalog service
+inventory service → product service.
+product service → catalog service
 
 Add to catalog(event):
 
-reaction service → catalog service
+reaction service → catalog service.
+
+How media service works:
+
+The Media Service utilizes a high-throughput, low-latency local object storage (such as a local MinIO instance) 
+as its Primary Ingestion Buffer. When a client uploads a file, the Media Service immediately generates a permanent,
+unique identifier (UUID) and writes the raw bytes directly to this primary storage. 
+Concurrently, it publishes an initial event to the ingestion Kafka topic: “File X is available in Primary Storage”. 
+This decoupled design ensures sub-millisecond API responses, hiding cloud network latency from the end-user.
+
+
+Downstream persistent cloud storages ( local long-term archives) run autonomous worker threads. 
+Each storage type operates within its own independent Kafka Consumer Group, 
+allowing them to track their read-offsets completely isolated from one another.
+
+The fastest worker to process the ingestion event downloads the asset from the Primary Storage and 
+persists it to its respective cloud bucket. 
+Immediately following a successful write, this fast worker invokes a deletion command on the 
+Primary Storage to keep the ingestion buffer compact and performant. 
+Finally, it broadcasts a "gossip" event to the P2P Replication topic: “Storage [Azure] now hosts File X”
+
+
+Slower, rate-limited, or recovering workers will eventually process the ingestion event, 
+attempt to fetch the file from the Primary Storage, and encounter an expected 404 Not Found error 
+due to the fast worker's cleanup. This is a non-breaking, standard operational routine.
+
+Instead of throwing a critical exception, the worker emits a warning log and shifts its focus 
+to the P2P Replication topic. By reading the gossip log, it discovers alternative peer sources 
+(e.g., “Storage [Azure] hosts File X”). The worker then executes an Idempotency Check against 
+its own local registry: if the file is missing, it bypasses the deleted primary storage entirely 
+and replicates the bytes directly from the active peer node.

@@ -1,13 +1,21 @@
 package com.jzargo.media.config.balancing;
 
+import com.jzargo.media.exceptions.BackendOutOfSpaceException;
+import com.jzargo.media.exceptions.CannotAddFileIntoStorageException;
+import lombok.extern.slf4j.Slf4j;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.aop.TargetSource;
+import org.springframework.cglib.proxy.MethodProxy;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class RoundRobinTargetSource implements TargetSource {
+@Slf4j
+public class RoundRobinTargetSource implements TargetSource, MethodInterceptor {
     private final List<?> targets;
     private final AtomicInteger counter;
     private final Class<?> targetClass;
@@ -40,5 +48,15 @@ public class RoundRobinTargetSource implements TargetSource {
     @Override
     public void releaseTarget(@NonNull Object target) throws Exception {
         // Spring manages with it
+    }
+
+
+    @Override
+    public @Nullable Object invoke(MethodInvocation invocation) throws Throwable {
+        try {
+            return invocation.proceed();
+        } catch (BackendOutOfSpaceException | CannotAddFileIntoStorageException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
