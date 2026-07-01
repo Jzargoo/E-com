@@ -1,5 +1,6 @@
 plugins {
-    id 'java'
+    id 'java-library'
+    id 'maven-publish'
     id 'org.springframework.boot' version '4.1.0'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.google.protobuf' version '0.10.0'
@@ -10,6 +11,7 @@ version = '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 protobuf {
@@ -27,6 +29,10 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-java'
 }
 
-test {
-    useJUnitPlatform()
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
 }
