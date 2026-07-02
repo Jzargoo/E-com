@@ -1,5 +1,4 @@
-package com.jzargo.media.service;
+package com.jzargo.media.storages.primary;
 
 public interface MediaPrimaryStorageService {
-
 }
