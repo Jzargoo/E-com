@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "application")
 public class ApplicationPropertyStorage {
     private NativeStorageOptions nativeStorageOptions;
+    private Aws aws;
 
     @Data
     @NoArgsConstructor
@@ -20,4 +21,12 @@ public class ApplicationPropertyStorage {
     public static class NativeStorageOptions {
         private String savingPath;
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Aws{
+        private String bucketName;
+    }
+
 }

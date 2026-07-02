@@ -1,4 +1,4 @@
-package com.jzargo.media.backend;
+package com.jzargo.media.storages.persistent;
 
 import com.jzargo.protobuf.PlainFile;
 

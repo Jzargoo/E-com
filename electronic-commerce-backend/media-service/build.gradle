@@ -20,10 +20,14 @@ repositories {
 }
 
 dependencies {
+    implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.2.1")
+    implementation"io.awspring.cloud:spring-cloud-aws-starter-s3"
+
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-grpc-server'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-kafka-test'
     testCompileOnly 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

@@ -22,3 +22,4 @@ spring:
             role-id: ${VAULT_ROLE_ID}
             secret-id: ${VAULT_SECRET_ID}
           backend: secret
+          kv-version: 2
