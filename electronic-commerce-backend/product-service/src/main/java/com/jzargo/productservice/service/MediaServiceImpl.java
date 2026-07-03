@@ -3,8 +3,6 @@ package com.jzargo.productservice.service;
 
 import com.jzargo.productservice.client.MediaServiceClient;
 import com.jzargo.productservice.driver.FallbackMediaDriver;
-import com.jzargo.productservice.driver.FallbackMediaDriverNative;
-import com.jzargo.productservice.entity.ContentType;
 import com.jzargo.productservice.entity.FallbackMediaContent;
 import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.exception.ProductNotFoundException;
@@ -24,8 +22,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
-import java.util.function.IntFunction;
+
+import static com.jzargo.productservice.helper.ContentTypeParser.parse;
+import static com.jzargo.productservice.helper.ContentTypeParser.parseImage;
 
 @Slf4j
 @Service
@@ -65,7 +64,7 @@ public class MediaServiceImpl implements MediaService {
                     try {
                         return new PlainFile(
                                 file.getBytes(),
-                                ContentType.parse(Objects.requireNonNull(file.getContentType()))
+                                parse(Objects.requireNonNull(file.getContentType()))
                         );
                     } catch (IOException e) {
                         throw new RuntimeException(e);
@@ -100,9 +99,7 @@ public class MediaServiceImpl implements MediaService {
 
             FallbackMediaContent build = FallbackMediaContent.builder()
                     .contentType(
-                            ContentType.parse(
-                                    Objects.requireNonNull(file.getContentType())
-                            )
+                            parse(Objects.requireNonNull(file.getContentType()))
                     )
                     .build();
 
@@ -143,7 +140,7 @@ public class MediaServiceImpl implements MediaService {
         String imageName = mediaServiceClient.sendFile(
                 new PlainFile(
                         image.getBytes(),
-                        ContentType.parse(Objects.requireNonNull(image.getContentType()))
+                        parse(Objects.requireNonNull(image.getContentType()))
                 )
         );
 
@@ -168,7 +165,7 @@ public class MediaServiceImpl implements MediaService {
         FallbackMediaContent content = FallbackMediaContent.builder()
                 .isAvatar(true)
                 .contentType(
-                        ContentType.parseImage(
+                        parseImage(
                                 Objects.requireNonNull(image.getContentType())
                         )
                 )
@@ -206,4 +203,7 @@ public class MediaServiceImpl implements MediaService {
 
         return mediaServiceClient.receiveFiles(allImages);
     }
+
+
+
 }

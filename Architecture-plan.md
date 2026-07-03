@@ -72,14 +72,13 @@ reaction service → catalog service.
 
 How media service works:
 
-The Media Service utilizes a high-throughput, low-latency local object storage (such as a local MinIO instance) 
+The Media Service utilizes a high-throughput, low-latency local object storage (such as a local MinIO instance)
 as its Primary Ingestion Buffer. When a client uploads a file, the Media Service immediately generates a permanent,
-unique identifier (UUID) and writes the raw bytes directly to this primary storage. 
+uri for the file and writes the raw bytes directly to this primary storage. 
 Concurrently, it publishes an initial event to the ingestion Kafka topic: “File X is available in Primary Storage”. 
-This decoupled design ensures sub-millisecond API responses, hiding cloud network latency from the end-user.
 
-
-Downstream persistent cloud storages ( local long-term archives) run autonomous worker threads. 
+Downstream persistent storages (local long-term archives or secondary storages) run 
+as virtualProcessors because they consume events from a bus. 
 Each storage type operates within its own independent Kafka Consumer Group, 
 allowing them to track their read-offsets completely isolated from one another.
 
@@ -87,7 +86,7 @@ The fastest worker to process the ingestion event downloads the asset from the P
 persists it to its respective cloud bucket. 
 Immediately following a successful write, this fast worker invokes a deletion command on the 
 Primary Storage to keep the ingestion buffer compact and performant. 
-Finally, it broadcasts a "gossip" event to the P2P Replication topic: “Storage [Azure] now hosts File X”
+Finally, it broadcasts a "gossip" event to the P2P Replication topic: “Storage [NATIVE_DISK] now hosts File X”
 
 
 Slower, rate-limited, or recovering workers will eventually process the ingestion event, 
@@ -95,7 +94,14 @@ attempt to fetch the file from the Primary Storage, and encounter an expected 40
 due to the fast worker's cleanup. This is a non-breaking, standard operational routine.
 
 Instead of throwing a critical exception, the worker emits a warning log and shifts its focus 
-to the P2P Replication topic. By reading the gossip log, it discovers alternative peer sources 
-(e.g., “Storage [Azure] hosts File X”). The worker then executes an Idempotency Check against 
+to the Replication topic. By reading the gossip log, it discovers alternative peer sources 
+(e.g., “Storage [NATIVE_DISK] hosts File X”). The worker then executes an Idempotency Check against 
 its own local registry: if the file is missing, it bypasses the deleted primary storage entirely 
-and replicates the bytes directly from the active peer node.
+and replicates the bytes directly from the active peer node 
+with registry instance to get an implementation of a specific, related service.
+
+Some services can throw exceptions that indicate that a service is not working properly(e.g. out of memory).
+Then it has to delete itself from a registry(Graceful shutdown or graceful cuicide) 
+Above all virtual processors  will check if their related service is active or not.
+
+There is no need to implement idempotency keys because 

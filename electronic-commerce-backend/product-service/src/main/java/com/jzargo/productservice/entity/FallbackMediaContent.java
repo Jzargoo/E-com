@@ -1,5 +1,6 @@
 package com.jzargo.productservice.entity;
 
+import com.jzargo.protobuf.ContentType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

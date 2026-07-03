@@ -1,7 +1,6 @@
 package com.jzargo.productservice.unit;
 
 
-import com.jzargo.productservice.entity.ContentType;
 import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
@@ -9,6 +8,7 @@ import com.jzargo.productservice.model.PlainFile;
 import com.jzargo.productservice.repository.ProductRepository;
 import com.jzargo.productservice.client.MediaServiceClientImpl;
 import com.jzargo.productservice.service.MediaServiceImpl;
+import com.jzargo.protobuf.ContentType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
