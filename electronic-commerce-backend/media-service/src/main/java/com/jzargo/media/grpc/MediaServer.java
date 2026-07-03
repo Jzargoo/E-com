@@ -3,13 +3,12 @@ package com.jzargo.media.grpc;
 import com.jzargo.media.exceptions.CorruptedMediaRequest;
 import com.jzargo.media.exceptions.ErrorDuringAddingContent;
 import com.jzargo.media.service.MediaStorageService;
-import com.jzargo.protobuf.MediaContentIds;
 import com.jzargo.protobuf.MediaContentPlainFiles;
+import com.jzargo.protobuf.MediaContentURIs;
 import com.jzargo.protobuf.MediaServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.grpc.server.service.GrpcService;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
@@ -25,7 +24,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
     }
 
     @Override
-    public void addMediaContent(MediaContentPlainFiles files, StreamObserver<MediaContentIds> ids)  {
+    public void addMediaContent(MediaContentPlainFiles files, StreamObserver<MediaContentURIs> ids)  {
         log.info("Adding a media content was invoked for files {}", files.getContentCount());
 
         if (files.getContentList().size() != files.getContentCount()) {
@@ -36,7 +35,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
             List<String> contentIds = mediaStorageService.storeFiles(files.getContentList());
 
             ids.onNext(
-                    MediaContentIds.newBuilder().addAllMediaIds(contentIds).build()
+                    MediaContentURIs.newBuilder().addAllMediaURIs(contentIds).build()
             );
 
             ids.onCompleted();

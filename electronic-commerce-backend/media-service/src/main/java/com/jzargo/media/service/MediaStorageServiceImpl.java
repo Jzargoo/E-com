@@ -1,18 +1,22 @@
 package com.jzargo.media.service;
 
-import com.jzargo.media.config.ApplicationPropertyStorage;
-import com.jzargo.media.exceptions.ErrorDuringAddingContent;
+import com.jzargo.media.exceptions.WrongContentTypeException;
+import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.protobuf.PlainFile;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.UUID;
 
 @Service
-public class MediaStorageServiceImpl implements MediaPrimaryStorageService {
+public class MediaStorageServiceImpl implements MediaStorageService {
 
+    @Override
+    public void storeFiles(List<PlainFile> files) throws WrongContentTypeException, IOException {
+        for  (PlainFile file : files) {
+            MediaHelper.checkContentType(file);
+        }
+
+
+    }
 }

@@ -13,4 +13,6 @@ public interface MediaPersistentStorageBackend {
     void replaceFile(PlainFile plainFile, String id);
 
     void deleteFile(String id);
+
+    StorageType getStorageType();
 }

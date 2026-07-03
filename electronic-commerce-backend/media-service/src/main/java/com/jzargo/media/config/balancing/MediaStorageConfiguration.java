@@ -1,6 +1,7 @@
 package com.jzargo.media.config.balancing;
 
 import com.jzargo.media.service.MediaStorageService;
+import com.jzargo.media.storages.persistent.MediaPersistentStorageBackend;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,15 +14,19 @@ public class MediaStorageConfiguration {
 
     @Bean
     @Primary
-    public MediaStorageService mediaStorageService(List<MediaStorageService> services) {
-        RoundRobinTargetSource roundRobinTargetSource = new RoundRobinTargetSource(services, MediaStorageService.class);
+    public MediaPersistentStorageBackend mediaStorageService(
+            List<MediaPersistentStorageBackend> services,
+            MediaPersistentStorageBackendRegistry registry) {
+
+        RoundRobinTargetSource roundRobinTargetSource =
+                new RoundRobinTargetSource(services, MediaPersistentStorageBackend.class, registry);
 
         ProxyFactory proxyFactory = new ProxyFactory();
 
         proxyFactory.setTargetSource(roundRobinTargetSource);
 
-        proxyFactory.addInterface(MediaStorageService.class);
+        proxyFactory.addInterface(MediaPersistentStorageBackend.class);
 
-        return (MediaStorageService) proxyFactory.getProxy();
+        return (MediaPersistentStorageBackend) proxyFactory.getProxy();
     }
 }
