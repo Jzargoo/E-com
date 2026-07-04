@@ -15,4 +15,6 @@ public interface MediaPersistentStorageBackend {
     void deleteFile(String id);
 
     StorageType getStorageType();
+
+    boolean existsByURL(String fileUri);
 }

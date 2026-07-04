@@ -3,6 +3,7 @@ package com.jzargo.media.config;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 @Profile("kafka")
 @NoArgsConstructor
 @AllArgsConstructor
+@ConditionalOnBooleanProperty("kafka.enabled")
 @ConfigurationProperties(prefix = "kafka")
 public class KafkaPropertyStorage {
     // Topic that publish from primary storage into secondary(archives)

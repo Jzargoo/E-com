@@ -2,13 +2,14 @@ package com.jzargo.media.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.config.TopicConfig;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
-@Profile("kafka")
+@ConditionalOnBooleanProperty("kafka.enabled")
 public class KafkaConfig {
 
     private final KafkaPropertyStorage kafkaPropertyStorage;

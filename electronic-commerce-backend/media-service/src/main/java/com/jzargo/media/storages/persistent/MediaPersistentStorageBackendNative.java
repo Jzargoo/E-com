@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
-@Service
 public class MediaPersistentStorageBackendNative implements MediaPersistentStorageBackend {
     private final ApplicationPropertyStorage applicationPropertyStorage;
 
@@ -65,5 +64,15 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
     @Override
     public void deleteFile(String id) {
 
+    }
+
+    @Override
+    public StorageType getStorageType() {
+        return StorageType.NATIVE_DISK;
+    }
+
+    @Override
+    public boolean existsByURL(String fileUri) {
+        return false; //
     }
 }

@@ -48,7 +48,6 @@ public class MediaHelper {
     private byte[] getPosterFromVideo(PlainFile plainFile) throws IOException {
         FFmpegBuilder builder = new FFmpegBuilder();
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-
         builder
                 .setInput("pipe:0")
                 .setFormat(plainFile.getContentType().name().toLowerCase());
@@ -62,5 +61,7 @@ public class MediaHelper {
         FFmpegExecutor ffMpegExecutor = new FFmpegExecutor(
                 new FFmpeg("ffmpeg")
         );
+
+        ffMpegExecutor.createJob(builder);
     }
 }
