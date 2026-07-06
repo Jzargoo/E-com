@@ -1,9 +1,12 @@
 package com.jzargo.media.storages.primary;
 
-public interface MediaPrimaryStorageService {
-    void deleteFile();
+import com.jzargo.media.exceptions.CannotDownloadFileException;
+import com.jzargo.media.model.DownloadedFile;
 
-    void downloadFile();
+public interface MediaPrimaryStorageService {
+    void deleteFile(String fileUri);
+
+    DownloadedFile downloadFile(String fileUri) throws CannotDownloadFileException;
 
     void uploadFile();
 }

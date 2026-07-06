@@ -2,6 +2,7 @@ package com.jzargo.media.storages.persistent;
 
 import com.jzargo.media.config.ApplicationPropertyStorage;
 import com.jzargo.media.exceptions.ErrorDuringAddingContent;
+import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.protobuf.PlainFile;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +26,7 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
     }
 
     @Override
-    public String storeFile(PlainFile file) {
+    public String storeFile(DownloadedFile file) {
         String savingPath = applicationPropertyStorage.getNativeStorageOptions().getSavingPath();
 
         String id = UUID.randomUUID().toString();
@@ -46,7 +47,7 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
                                     file.getContentType().toString().toLowerCase()
                             )
                     ),
-                    file.getContent().toByteArray()
+                    file.getContent()
             );
 
             return id;
@@ -57,7 +58,7 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
     }
 
     @Override
-    public void replaceFile(PlainFile plainFile, String id) {
+    public void replaceFile(DownloadedFile file, String id) {
 
     }
 
@@ -74,5 +75,10 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
     @Override
     public boolean existsByURL(String fileUri) {
         return false; //
+    }
+
+    @Override
+    public DownloadedFile getFile(String fileUri) {
+        return null;
     }
 }

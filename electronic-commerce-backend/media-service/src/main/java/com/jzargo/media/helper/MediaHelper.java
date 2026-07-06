@@ -1,6 +1,7 @@
 package com.jzargo.media.helper;
 
 import com.jzargo.media.exceptions.WrongContentTypeException;
+import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.protobuf.ContentType;
 import com.jzargo.protobuf.PlainFile;
 import net.bramp.ffmpeg.FFmpeg;
@@ -9,6 +10,8 @@ import net.bramp.ffmpeg.builder.FFmpegBuilder;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.progress.ProgressListener;
 import org.apache.tika.Tika;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -41,16 +44,18 @@ public class MediaHelper {
         };
     }
 
-    private boolean isVideo(ContentType contentType) {
+    private static boolean isVideo(ContentType contentType) {
         return contentType.equals(ContentType.MP4)  || contentType.equals(ContentType.WEBM);
     }
 
-    private byte[] getPosterFromVideo(PlainFile plainFile) throws IOException {
+    private static byte[] getPosterFromVideo(byte[] bytes, String contentType) throws IOException {
         FFmpegBuilder builder = new FFmpegBuilder();
+
         ByteArrayOutputStream output = new ByteArrayOutputStream();
+
         builder
                 .setInput("pipe:0")
-                .setFormat(plainFile.getContentType().name().toLowerCase());
+                .setFormat(contentType);
 
         builder
                 .addOutput("pipe:1")
@@ -63,5 +68,22 @@ public class MediaHelper {
         );
 
         ffMpegExecutor.createJob(builder);
+    }
+
+    public static DownloadedFile createFileRepresentation(
+            ResponseInputStream<GetObjectResponse> stream,
+            String contentType,
+            String fileUri ) throws IOException {
+
+        ContentType parsedContentType = parseContentType(contentType);
+        if (isVideo(parsedContentType)) {
+            return null;
+        } else {
+            return DownloadedFile.builder()
+                    .fileUri(fileUri)
+                    .contentType(parsedContentType)
+                    .content(stream.readAllBytes())
+                    .build();
+        }
     }
 }
