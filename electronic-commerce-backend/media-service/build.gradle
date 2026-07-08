@@ -34,7 +34,13 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
 
     implementation 'com.jzargo:protobuf-common:1.0-SNAPSHOT'
-    implementation 'net.bramp.ffmpeg:ffmpeg:0.9.2'
+
+    implementation 'org.bytedeco:javacv:1.5.11'
+
+    implementation("org.bytedeco:ffmpeg:8.0.1-1.5.13:windows-x86_64")
+    implementation 'org.bytedeco:opencv:4.13.0-1.5.13:windows-x86_64'
+    implementation 'org.bytedeco:openblas:0.3.31-1.5.13:windows-x86_64'
+
     implementation 'org.apache.tika:tika-core:3.2.2'
 }
 

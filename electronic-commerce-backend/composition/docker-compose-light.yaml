@@ -14,6 +14,8 @@ volumes:
 
 services:
 
+
+
   vault:
     image: hashicorp/vault:latest
     container_name: vault
@@ -28,6 +30,8 @@ services:
     volumes:
       - ./vault-config:/vault/opt/config
       - vault-file:/vault/file
+
+
 
   minio:
     image: firstfinger/minio:latest
@@ -47,6 +51,7 @@ services:
       - minio-data:/data
 
 
+
   postgres:
     image: postgres:latest
     container_name: postgres
@@ -60,6 +65,8 @@ services:
     volumes:
       - ./postgres-sqls:/docker-entrypoint-initdb.d
       - postgres-data:/var/lib/postgresql
+
+
 
   keycloak:
     image: quay.io/keycloak/keycloak:latest
@@ -76,6 +83,9 @@ services:
     command: start-dev --verbose
     depends_on:
       - postgres
+
+
+
   kafka1:
     image: apache/kafka:latest
     container_name: kafka1
@@ -98,6 +108,9 @@ services:
       KAFKA_NUM_PARTITIONS: 3
     volumes:
       - kafka1-data:/var/lib/kafka/data
+
+
+
   kafka2:
     image: apache/kafka:latest
     container_name: kafka2
@@ -120,6 +133,9 @@ services:
       KAFKA_NUM_PARTITIONS: 3
     volumes:
       - kafka2-data:/var/lib/kafka/data
+
+
+
   kafka3:
     image: apache/kafka:latest
     container_name: kafka3

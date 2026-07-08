@@ -20,6 +20,8 @@ public class KafkaPropertyStorage {
     private Topic fileTransferTopic;
     // Topic that synchronize files from all the secondary storages
     private Topic fileSyncTopic;
+    // dlq topic to handle when a business logic is failed
+    private Topic failedFileOperationTopic;
 
     @Data
     @AllArgsConstructor

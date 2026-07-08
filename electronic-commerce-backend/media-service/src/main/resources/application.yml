@@ -3,3 +3,6 @@ spring:
     name: media-service
   profiles:
     active: devconfig
+  grpc:
+    server:
+      port: ${random.int}

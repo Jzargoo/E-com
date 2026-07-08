@@ -2,11 +2,16 @@ package com.jzargo.media.storages.primary;
 
 import com.jzargo.media.config.ApplicationPropertyStorage;
 import com.jzargo.media.exceptions.CannotDownloadFileException;
+import com.jzargo.media.exceptions.CannotProcessException;
+import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.media.model.DownloadedFile;
+import com.jzargo.protobuf.ContentType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
@@ -26,20 +31,24 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
 
 
     @Override
-    public void deleteFile(String fileUri) {
+    public void deleteFile(String fileUri) throws CannotProcessException {
+        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest
+                .builder()
+                .bucket(bucketName)
+                .key(fileUri)
+                .build();
+        try {
+            s3Client.deleteObject(deleteObjectRequest);
+        } catch (SdkClientException e) {
+            throw new CannotProcessException();
+        }
 
     }
 
     @Override
     public DownloadedFile downloadFile(String fileUri) throws CannotDownloadFileException {
 
-        var request = HeadObjectRequest.builder()
-                .bucket(bucketName)
-                .key(fileUri)
-                .build();
-
         try {
-            HeadObjectResponse headObjectResponse = s3Client.headObject(request);
 
             var getRequest = GetObjectRequest
                     .builder()
@@ -51,10 +60,9 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
             ResponseInputStream<GetObjectResponse> object = s3Client.getObject(getRequest);
 
 
-            String contentType = headObjectResponse.contentType();
+            String contentType = object.response().contentType();
 
             return MediaHelper.createFileRepresentation(object, contentType, fileUri);
-
 
         } catch (NoSuchBucketException e) {
             log.warn("The bucket was not initialized, it might be deleted. Creating a bucket with name {}", bucketName);
@@ -74,11 +82,55 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
                     ", expecting that a deleter will publish sync event and will be available");
 
             throw new CannotDownloadFileException("The file was deleted!");
+        } catch (CannotProcessException e) {
+            throw new RuntimeException(e);
+        } catch (WrongContentTypeException e) {
+            log.error("The function cannot treat a file because it provide incorrect ");
+            throw new RuntimeException(e);
         }
+
     }
 
     @Override
-    public void uploadFile() {
+    public void uploadPartOfFile(String uploadId, String key, byte[] bytes) {
 
+        UploadPartRequest build = UploadPartRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .uploadId(uploadId)
+                .contentLength((long) bytes.length)
+                .build();
+
+        RequestBody body = RequestBody.fromBytes(bytes);
+
+        s3Client.uploadPart(build, body);
+    }
+
+    @Override
+    public String startUploadingFile(ContentType contentType, String key) throws WrongContentTypeException {
+
+        CreateMultipartUploadRequest request =
+                CreateMultipartUploadRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .contentType(MediaHelper.parseToMime(contentType))
+                        .build();
+
+        CreateMultipartUploadResponse multipartUpload
+                = s3Client.createMultipartUpload(request);
+
+        return multipartUpload.uploadId();
+    }
+
+    @Override
+    public void abortMultipartFile(String key, String uploadId) {
+        AbortMultipartUploadRequest build = AbortMultipartUploadRequest
+                .builder()
+                .bucket(bucketName)
+                .key(key)
+                .uploadId(uploadId)
+                .build();
+
+        s3Client.abortMultipartUpload(build);
     }
 }

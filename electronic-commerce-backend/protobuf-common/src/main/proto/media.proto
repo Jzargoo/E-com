@@ -4,39 +4,27 @@ option java_package = "com.jzargo.protobuf";
 option java_multiple_files = true;
 
 service MediaService{
-  rpc addMediaContent(MediaContentPlainFiles) returns (MediaContentURIs) {}
-  rpc changeAvatar(ChangeAvatarRequest) returns (AvatarUri) {}
+  // Server-streaming
+  rpc getMediaContent(MediaContentURI) returns (stream MediaFile) {}
 
-  rpc getMediaContent(MediaContentURIs) returns (MediaContentPlainFiles) {}
-  rpc getAvatar(AvatarUri) returns (AvatarFileResponse) {}
+  // Client-streaming
+  // change avatar is a remote method that replaces current file by the same uri
+  rpc changeMediaFile(stream ChangeMediaFile) returns (MediaContentURI) {}
+  rpc addMediaFile(stream MediaFile) returns (MediaContentURI) {}
 }
 
-message AvatarUri {
-  string avatarId = 1;
+message MediaFile{
+  ContentType contentType = 1;
+  bytes contentChunk = 2;
 }
 
-message AvatarFileResponse {
-  bytes content = 1;
+message ChangeMediaFile {
+  ContentType contentType = 1;
+  bytes contentChunk = 2;
+  string  fileUri = 3;
 }
 
-message MediaContentPlainFiles {
-  int32 mediaCount = 1;
-  repeated PlainFile content = 2;
-}
 
-message ChangeAvatarRequest {
-  bytes content = 1;
-  optional string previousAvatar = 2;
-}
-
-message MediaContentURIs {
-  repeated string mediaURIs = 1;
-}
-
-message PlainFile {
-  bytes content = 1;
-  ContentType contentType = 2;
-}
 
 enum ContentType {
   JPEG = 0;
@@ -44,4 +32,8 @@ enum ContentType {
   MP4  = 2;
   WEBP = 3;
   WEBM = 4;
+}
+
+message MediaContentURI {
+  string mediaURI = 1;
 }

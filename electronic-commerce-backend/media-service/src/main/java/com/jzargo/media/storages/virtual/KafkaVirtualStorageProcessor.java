@@ -45,13 +45,51 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
         this.registry = registry;
     }
 
+
     @Override
     public StorageType getStorageType() {
         return storageType;
     }
 
+
+    private void logUnavailableService(String fileURL){
+        log.trace(
+                "The kafka virtual storage processor for storage type {} received a request {}; " +
+                        "however, it cannot process because service is not active", storageType, fileURL
+        );
+    }
+
+
+    private void logFileExist(String fileURL){
+        log.trace("File {} already exists", fileURL);
+    }
+
+
+
+    @KafkaListener(
+            topics = {
+                    "#{kafkaPropertyStorage.fileTransferTopic.name}",
+            },
+            groupId = "#{__listener.consumerGroupId}",
+            properties = {"enable.auto.commit=false"},
+            containerFactory = "manualAckFactory"
+    )
+    public void handleFileRequestEvent(FileRequestEvent event, Acknowledgment acknowledgment) {
+
+        try {
+            processFileRequestEvent(event);
+
+            acknowledgment.acknowledge();
+
+        } catch (CannotProcessException e) {
+            log.error(e.getMessage());
+        }
+
+    }
+
     @Override
     public void processFileRequestEvent(FileRequestEvent event) throws CannotProcessException {
+
         MediaPersistentStorageBackend mediaBackend =
                 registry.getBackendByStorageType(storageType);
 
@@ -86,6 +124,32 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
 
 
 
+
+    @KafkaListener(
+            topics = {
+                    "#{kafkaPropertyStorage.fileSyncTopic.name}"
+            },
+            groupId = "#{__listener.consumerGroupId}",
+            properties = {"enable.auto.commit=false"},
+            containerFactory = "manualAckFactory"
+
+    )
+    public void handleFileCreatedSyncEvent(FileCreatedSyncEvent event, Acknowledgment acknowledgment) {
+
+        try {
+            processFileCreatedSyncEvent(event);
+            acknowledgment.acknowledge();
+        } catch (CannotProcessException e) {
+            log.error(e.getMessage());
+            // We move offset because it is uncoverable error.
+            // We cannot process it e.g. unavailable service.
+            // We just reserve it in a special topic
+
+            dlqPublisher.reserveUnprocessedEventUnavailableService(event);
+        }
+    }
+
+
     @Override
     public void processFileCreatedSyncEvent(FileCreatedSyncEvent event) throws CannotProcessException {
         MediaPersistentStorageBackend myBackend =
@@ -113,54 +177,6 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
                 new FileCreatedSyncEvent(
                         storageType, event.getFileURL()
                 )
-        );
-    }
-
-    @KafkaListener(
-            topics = {
-                    "#{kafkaPropertyStorage.fileSyncTopic.name}"
-            },
-            groupId = "#{__listener.consumerGroupId}"
-
-    )
-    public void handleFileCreatedSyncEvent(FileCreatedSyncEvent event, Acknowledgment acknowledgment) {
-
-        try {
-            processFileCreatedSyncEvent(event);
-            acknowledgment.acknowledge();
-        } catch (CannotProcessException e) {
-            log.error(e.getMessage());
-            // We move offset because it is uncoverable error.
-            // We cannot process it e.g. unavailable service.
-            // We just reserve it in a special topic
-
-            dlqPublisher.reserveUnprocessedEventUnavailableService(event);
-        }
-    }
-
-    private void logFileExist(String fileURL){
-        log.trace("File {} already exists", fileURL);
-    }
-
-    @KafkaListener(
-            topics = {
-                    "#{kafkaPropertyStorage.fileTransferTopic.name}",
-            },
-            groupId = "#{__listener.consumerGroupId}"
-    )
-    public void handleFileRequestEvent(FileRequestEvent event, Acknowledgment acknowledgment) {
-        try {
-            processFileRequestEvent(event);
-            acknowledgment.acknowledge();
-        } catch (CannotProcessException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    private void logUnavailableService(String fileURL){
-        log.trace(
-                "The kafka virtual storage processor for storage type {} received a request {}; " +
-                "however, it cannot process because service is not active", storageType, fileURL
         );
     }
 }

@@ -1,6 +1,5 @@
 package com.jzargo.media.config.balancing;
 
-import com.jzargo.media.service.MediaStorageService;
 import com.jzargo.media.storages.persistent.MediaPersistentStorageBackend;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.context.annotation.Bean;
