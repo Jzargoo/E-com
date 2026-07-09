@@ -35,6 +35,15 @@ public class ApplicationPropertyStorage {
     @AllArgsConstructor
     public static class Aws{
         private String bucketName;
+        private SmartBufferProperties smartStreamProperties;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SmartBufferProperties {
+        private Integer bufferSize;
+        private Integer threshold;
     }
 
     @Data

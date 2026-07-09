@@ -16,6 +16,11 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.TemporalUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -92,7 +97,7 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
     }
 
     @Override
-    public void uploadPartOfFile(String uploadId, String key, byte[] bytes) {
+    public String uploadPartOfFile(String uploadId, String key, byte[] bytes) {
 
         UploadPartRequest build = UploadPartRequest.builder()
                 .bucket(bucketName)
@@ -103,7 +108,9 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
 
         RequestBody body = RequestBody.fromBytes(bytes);
 
-        s3Client.uploadPart(build, body);
+        UploadPartResponse uploadPartResponse = s3Client.uploadPart(build, body);
+
+        return uploadPartResponse.eTag();
     }
 
     @Override
@@ -112,6 +119,9 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
         CreateMultipartUploadRequest request =
                 CreateMultipartUploadRequest.builder()
                         .bucket(bucketName)
+                        .expires(
+                                Instant.now().plus(1, TimeUnit.DAYS.toChronoUnit())
+                        )
                         .key(key)
                         .contentType(MediaHelper.parseToMime(contentType))
                         .build();
@@ -120,6 +130,37 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
                 = s3Client.createMultipartUpload(request);
 
         return multipartUpload.uploadId();
+    }
+
+    @Override
+    public void finishFileUploading(String key, String uploadId, List<String> tags) throws CannotProcessException {
+        List<CompletedPart> completedParts = new ArrayList<>();
+
+        for (int i = 0; i < tags.size(); i++) {
+            completedParts.add(
+                    CompletedPart.builder()
+                            .eTag(tags.get(i))
+                            .partNumber(i)
+                            .build()
+            );
+        }
+
+        CompleteMultipartUploadRequest request = CompleteMultipartUploadRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .uploadId(uploadId)
+                .multipartUpload(
+                        CompletedMultipartUpload.builder()
+                                .parts(completedParts)
+                                .build()
+                )
+                .build();
+
+        try {
+            s3Client.completeMultipartUpload(request);
+        } catch (SdkClientException e) {
+            throw new CannotProcessException();
+        }
     }
 
     @Override

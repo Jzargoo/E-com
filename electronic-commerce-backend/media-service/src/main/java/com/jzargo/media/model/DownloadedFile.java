@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -14,7 +15,7 @@ import java.io.OutputStream;
 @NoArgsConstructor
 @Builder
 public class DownloadedFile {
-    OutputStream content;
+    InputStream content;
 
     String fileUri;
 
