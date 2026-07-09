@@ -46,7 +46,7 @@ public class MediaHelper {
         return contentType.equals(ContentType.MP4)  || contentType.equals(ContentType.WEBM);
     }
 
-    private static void getPosterFromVideo(InputStream bytes, OutputStream os, ContentType contentType) throws IOException, CannotProcessException, WrongContentTypeException {
+    private static InputStream getPosterFromVideo(InputStream bytes, ContentType contentType) throws IOException, CannotProcessException, WrongContentTypeException {
 
         if (
                 isVideo(contentType)
@@ -74,7 +74,19 @@ public class MediaHelper {
         try(Java2DFrameConverter converter = new Java2DFrameConverter()){
             BufferedImage convert = converter.convert(frame);
 
-            ImageIO.write(convert, "png", os);
+            PipedInputStream inputStream = new PipedInputStream();
+
+            PipedOutputStream outputStream = new PipedOutputStream(inputStream);
+
+            new Thread(() -> {
+                try (outputStream) {
+                    ImageIO.write(convert, "jpeg", outputStream);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }).start();
+
+            return inputStream;
 
         } finally {
             fFmpegFrameGrabber.stop();
@@ -82,26 +94,26 @@ public class MediaHelper {
     }
 
     public static DownloadedFile createFileRepresentation(
-            ResponseInputStream<GetObjectResponse> stream,
+            InputStream stream,
             String contentType,
             String fileUri ) throws IOException, CannotProcessException, WrongContentTypeException {
 
         ContentType parsedContentType = parseContentType(contentType);
 
-        OutputStream outputStream = new ByteArrayOutputStream();
 
         if (isVideo(parsedContentType)) {
 
-            getPosterFromVideo(stream, outputStream, parsedContentType);
+            var is = getPosterFromVideo(stream, parsedContentType);
 
-        } else {
-
-            stream.transferTo(outputStream);
-
+            return DownloadedFile.builder()
+                    .content(is)
+                    .fileUri(fileUri)
+                    .contentType(parsedContentType)
+                    .build();
         }
 
         return DownloadedFile.builder()
-                .content(outputStream)
+                .content(stream)
                 .fileUri(fileUri)
                 .contentType(parsedContentType)
                 .build();
@@ -109,13 +121,25 @@ public class MediaHelper {
 
     public static String getMediaPostfix(ContentType contentType) throws WrongContentTypeException {
         return switch (contentType){
-            case PNG -> ".png";
-            case JPEG -> ".jpeg";
-            case WEBP -> ".webp";
-            case WEBM -> ".webm";
-            case MP4 -> ".mp4";
+            case PNG -> "png";
+            case JPEG -> "jpeg";
+            case WEBP -> "webp";
+            case WEBM -> "webm";
+            case MP4 -> "mp4";
             default -> throw new WrongThreadException();
         };
+    }
+
+    public static ContentType getTypeByPostfix(String postfix) {
+        return switch (postfix){
+            case "png" -> ContentType.PNG;
+            case "jpeg" ->  ContentType.JPEG;
+            case  "webp" -> ContentType.WEBP;
+            case  "webm" -> ContentType.WEBM;
+            case "mp4" ->  ContentType.MP4;
+            default -> throw new WrongThreadException();
+        };
+
     }
 
     public static String parseToMime(ContentType contentType) throws WrongContentTypeException {

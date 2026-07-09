@@ -1,23 +1,20 @@
 package com.jzargo.media.storages.persistent;
 
+import com.jzargo.media.exceptions.CannotProcessException;
+import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.model.DownloadedFile;
-import com.jzargo.protobuf.PlainFile;
-
-import java.util.List;
-
 
 public interface MediaPersistentStorageBackend {
-    List<String> storeFiles(List<PlainFile> files);
 
-    String storeFile(DownloadedFile file);
+    String storeFile(DownloadedFile file) throws CannotProcessException;
 
-    void replaceFile(DownloadedFile file, String previousFileUri);
+    String replaceFile(DownloadedFile file, String previousFileUri) throws CannotProcessException;
 
-    void deleteFile(String id);
+    void deleteFile(String fileUri) throws CannotProcessException;
 
     StorageType getStorageType();
 
-    boolean existsByURL(String fileUri);
+    boolean existsByURI(String fileUri) throws CannotProcessException;
 
-    DownloadedFile getFile(String fileUri);
+    DownloadedFile getFile(String fileUri) throws CannotProcessException, WrongContentTypeException;
 }
