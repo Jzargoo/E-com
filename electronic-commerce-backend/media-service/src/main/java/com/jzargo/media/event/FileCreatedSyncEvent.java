@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class FileCreatedSyncEvent {
     private StorageType storageType;
-    private String fileURL;
+    private String fileUri;
 }

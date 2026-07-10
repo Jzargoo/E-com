@@ -9,8 +9,6 @@ import org.apache.tika.Tika;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -46,7 +44,7 @@ public class MediaHelper {
         return contentType.equals(ContentType.MP4)  || contentType.equals(ContentType.WEBM);
     }
 
-    private static InputStream getPosterFromVideo(InputStream bytes, ContentType contentType) throws IOException, CannotProcessException, WrongContentTypeException {
+    public static InputStream getPosterFromVideo(InputStream bytes, ContentType contentType) throws IOException, CannotProcessException, WrongContentTypeException {
 
         if (
                 isVideo(contentType)

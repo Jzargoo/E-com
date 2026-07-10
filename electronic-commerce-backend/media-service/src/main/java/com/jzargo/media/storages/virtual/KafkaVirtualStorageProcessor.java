@@ -7,6 +7,7 @@ import com.jzargo.media.event.FileCreatedSyncEvent;
 import com.jzargo.media.event.FileRequestEvent;
 import com.jzargo.media.exceptions.CannotDownloadFileException;
 import com.jzargo.media.exceptions.CannotProcessException;
+import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.media.storages.persistent.MediaPersistentStorageBackend;
 import com.jzargo.media.storages.persistent.StorageType;
@@ -98,7 +99,7 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
             throw new CannotProcessException();
         }
 
-        if (mediaBackend.existsByURL(event.getFileURL())) {
+        if (mediaBackend.existsByURI(event.getFileURL())) {
             logFileExist(event.getFileURL());
             return;
         }
@@ -156,8 +157,8 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
                 registry.getBackendByStorageType(storageType);
 
 
-        if (myBackend.existsByURL(event.getFileURL())) {
-            logFileExist(event.getFileURL());
+        if (myBackend.existsByURI(event.getFileUri())) {
+            logFileExist(event.getFileUri());
             return;
         }
 
@@ -165,17 +166,23 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
                 registry.getBackendByStorageType(event.getStorageType());
 
         if  (backendByStorageType == null) {
-            logUnavailableService(event.getFileURL());
+            logUnavailableService(event.getFileUri());
             throw new CannotProcessException();
         }
 
-        DownloadedFile file = backendByStorageType.getFile(event.getFileURL());
+        DownloadedFile file;
+
+        try {
+            file = backendByStorageType.getFile(event.getFileUri());
+        } catch (WrongContentTypeException ignored) {
+            throw new CannotProcessException();
+        }
 
         myBackend.storeFile(file);
 
         eventPublisher.publishFileCreatedSyncEvent(
                 new FileCreatedSyncEvent(
-                        storageType, event.getFileURL()
+                        storageType, event.getFileUri()
                 )
         );
     }
