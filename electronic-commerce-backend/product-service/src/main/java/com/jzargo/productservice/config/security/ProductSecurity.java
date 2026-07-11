@@ -27,10 +27,11 @@ import java.util.stream.Stream;
 @Profile("!test")
 public class ProductSecurity {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource, PathMatcher pathMatcher) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) {
         return http
                 .authorizeHttpRequests( request -> request
                         //.requestMatchers(HttpMethod.POST, "/api/products/category").hasRole("ROLE_ADMIN")
+
                         //.requestMatchers("/healthcheck/**").hasRole("ROLE_ADMIN")
 
                         //.requestMatchers(HttpMethod.POST, "/api/products/images/*").hasRole("ROLE_SHOP")

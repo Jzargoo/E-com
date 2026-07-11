@@ -79,8 +79,8 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD_JZARGO}
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloakdb
     ports:
-      - "127.0.0.1:8890:8890"
-    command: start-dev --verbose
+      - "8890:8080"
+    command: start-dev --verbose --features=scripts
     depends_on:
       - postgres
 

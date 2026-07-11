@@ -4,6 +4,7 @@ server:
 spring:
   application:
     name: product-service
-  cloud:
-    config:
-      uri: "optional:configserver:http://localhost:8888"
+  config:
+    import: configserver:http://localhost:8888
+  profiles:
+    active: devconfig

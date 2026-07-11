@@ -1,4 +1,4 @@
-package com.jzargo.media;
+package com.jzargo.media.unitTests;
 
 public class MediaStorageServiceImplUnitTest {
 }

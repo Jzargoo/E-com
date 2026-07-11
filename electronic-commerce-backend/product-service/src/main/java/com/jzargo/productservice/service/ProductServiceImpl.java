@@ -24,13 +24,11 @@ public class ProductServiceImpl implements ProductService{
     private final ProductRepository productRepository;
     private final ReadProductDetailsMapper readProductDetailsMapper;
     private final ProductCreateAndUpdateMapper productCreateAndUpdateMapper;
-    private final SagaProductCreationManager sagaProductCreationManager;
 
-    public ProductServiceImpl(ProductRepository productRepository, ReadProductDetailsMapper readProductDetailsMapper, ProductCreateAndUpdateMapper productCreateAndUpdateMapper, SagaProductCreationManager sagaProductCreationManager) {
+    public ProductServiceImpl(ProductRepository productRepository, ReadProductDetailsMapper readProductDetailsMapper, ProductCreateAndUpdateMapper productCreateAndUpdateMapper) {
         this.productRepository = productRepository;
         this.readProductDetailsMapper = readProductDetailsMapper;
         this.productCreateAndUpdateMapper = productCreateAndUpdateMapper;
-        this.sagaProductCreationManager = sagaProductCreationManager;
     }
 
     @Override
@@ -103,14 +101,4 @@ public class ProductServiceImpl implements ProductService{
         return "Deletion of the process started successfully";
     }
 
-    @Override
-    public String startSaga(CreateAndUpdateProductDetails details) {
-        try{
-            log.info("Starting saga processing...");
-            sagaProductCreationManager.startSaga(details);
-            return "productCreateSaga.success";
-        } catch (Exception e) {
-            throw new InternalError("productCreateSaga.fail");
-        }
-    }
 }

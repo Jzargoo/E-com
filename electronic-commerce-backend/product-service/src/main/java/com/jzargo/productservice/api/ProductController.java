@@ -5,6 +5,7 @@ import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
 import com.jzargo.productservice.model.*;
 import com.jzargo.productservice.saga.SagaProductCreation;
+import com.jzargo.productservice.saga.SagaProductCreationManager;
 import com.jzargo.productservice.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
 
     private final ProductService productService;
+    private final SagaProductCreationManager sagaProductCreationManager;
 
     @GetMapping("/{id}")
     ResponseEntity<ProductDetails>  getProductById(@PathVariable Long id){
@@ -33,7 +35,8 @@ public class ProductController {
             @RequestBody CreateAndUpdateProductDetails createProductDetails,
             @AuthenticationPrincipal Jwt jwt) {
         try {
-            return ResponseEntity.ok(productService.startSaga(createProductDetails));
+            sagaProductCreationManager.startSaga(createProductDetails);
+            return ResponseEntity.ok("Product created successfully");
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }

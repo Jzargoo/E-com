@@ -1,4 +1,4 @@
-package com.jzargo.media;
+package com.jzargo.media.unitTests;
 
 import com.google.protobuf.ByteString;
 import com.jzargo.media.exceptions.WrongContentTypeException;
@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;

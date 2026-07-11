@@ -12,5 +12,4 @@ public interface ProductService {
     ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails, Integer shopId) throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest;
     String deleteProduct(Long productId) throws ProductNotFoundException;
 
-    String startSaga(CreateAndUpdateProductDetails details);
 }

@@ -108,11 +108,11 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
             var downloadedFile = primaryStorageService.downloadFile(event.getFileURL());
 
 
-            mediaBackend.storeFile(downloadedFile);
+            String fileUri = mediaBackend.storeFile(downloadedFile);
 
             eventPublisher.publishFileCreatedSyncEvent(
                     new FileCreatedSyncEvent(
-                            storageType, event.getFileURL()
+                            storageType, fileUri
                     )
             );
 
@@ -178,11 +178,11 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
             throw new CannotProcessException();
         }
 
-        myBackend.storeFile(file);
+        String uri = myBackend.storeFile(file);
 
         eventPublisher.publishFileCreatedSyncEvent(
                 new FileCreatedSyncEvent(
-                        storageType, event.getFileUri()
+                        storageType, uri
                 )
         );
     }

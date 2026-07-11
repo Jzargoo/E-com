@@ -50,10 +50,12 @@ public class Product {
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
+            name = "media_content",
             joinColumns = {
-                    @JoinColumn(name = "media_content", referencedColumnName = "product_id")
+                    @JoinColumn(name = "product_id", referencedColumnName = "id")
             }
     )
+    @Column(name = "media_content")
     @Builder.Default
     private List<String> mediaContent = new ArrayList<>();
 

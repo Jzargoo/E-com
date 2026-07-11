@@ -9,6 +9,15 @@ databaseChangeLog:
         - sqlFile:
             path: db/changelog/sqls/create_product_table.sql
         - sqlFile:
-            path: db/changelog/sqls/create_images_table.sql
+            path: db/changelog/sqls/create_media_content_table.sql
+  - changeSet:
+      id: 1
+      author: jzargo
+      comment: "Add the special tables"
+      changes:
         - sqlFile:
             path: db/changelog/sqls/create_fallback_media_content.sql
+        - sqlFile:
+            path: db/changelog/sqls/create_message_type_table.sql
+        - sqlFile:
+            path: db/changelog/sqls/create_table_saga_product.sql

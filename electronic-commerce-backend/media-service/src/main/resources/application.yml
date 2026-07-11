@@ -5,4 +5,4 @@ spring:
     active: devconfig
   grpc:
     server:
-      port: ${random.int}
+      port: 0
