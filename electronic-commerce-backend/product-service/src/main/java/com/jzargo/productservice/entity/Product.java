@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 
 @Data
-@Table
+@Table(name = "products")
 @Entity
 @Builder
 @NoArgsConstructor

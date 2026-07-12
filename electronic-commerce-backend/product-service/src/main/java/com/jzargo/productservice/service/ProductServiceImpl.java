@@ -1,7 +1,9 @@
 package com.jzargo.productservice.service;
 
+import com.jzargo.productservice.config.ApplicationPropertyStorage;
 import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.entity.Status;
+import com.jzargo.productservice.exception.CategoryNotFoundException;
 import com.jzargo.productservice.exception.InvalidUpdateRequest;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
@@ -9,9 +11,11 @@ import com.jzargo.productservice.mapper.ProductCreateAndUpdateMapper;
 import com.jzargo.productservice.mapper.ReadProductDetailsMapper;
 import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
 import com.jzargo.productservice.model.ProductDetails;
+import com.jzargo.productservice.repository.CategoryRepository;
 import com.jzargo.productservice.repository.ProductRepository;
 import com.jzargo.productservice.saga.SagaProductCreationManager;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,11 +28,15 @@ public class ProductServiceImpl implements ProductService{
     private final ProductRepository productRepository;
     private final ReadProductDetailsMapper readProductDetailsMapper;
     private final ProductCreateAndUpdateMapper productCreateAndUpdateMapper;
+    private final ApplicationPropertyStorage applicationPropertyStorage;
+    private final CategoryRepository categoryRepository;
 
-    public ProductServiceImpl(ProductRepository productRepository, ReadProductDetailsMapper readProductDetailsMapper, ProductCreateAndUpdateMapper productCreateAndUpdateMapper) {
+    public ProductServiceImpl(ProductRepository productRepository, ReadProductDetailsMapper readProductDetailsMapper, ProductCreateAndUpdateMapper productCreateAndUpdateMapper, ApplicationPropertyStorage applicationPropertyStorage, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.readProductDetailsMapper = readProductDetailsMapper;
         this.productCreateAndUpdateMapper = productCreateAndUpdateMapper;
+        this.applicationPropertyStorage = applicationPropertyStorage;
+        this.categoryRepository = categoryRepository;
     }
 
     @Override
@@ -40,14 +48,32 @@ public class ProductServiceImpl implements ProductService{
                 .orElseThrow(ProductNotFoundException::new);
     }
 
+
+
     @Override
     @Transactional
-    public Long createProduct(CreateAndUpdateProductDetails createProductDetails) {
+    public Long createProduct(CreateAndUpdateProductDetails createProductDetails) throws CategoryNotFoundException {
         log.debug("Product creation starting...");
 
-        Product product = productRepository.save(
-                productCreateAndUpdateMapper.map(createProductDetails)
+        if (!categoryRepository.existsByName(createProductDetails.getCategory())) {
+            throw new CategoryNotFoundException();
+        }
+
+        String defaultAvatarUri = applicationPropertyStorage.getMedia().getDefaultAvatarUri();
+
+        createProductDetails.setAvatarUri(defaultAvatarUri);
+
+        Product map = productCreateAndUpdateMapper.map(createProductDetails);
+
+        map.setCategory(
+                categoryRepository.findByName(
+                        createProductDetails.getCategory()
+                ).orElseThrow(
+                        CategoryNotFoundException::new
+                )
         );
+
+        Product product = productRepository.save(map);
 
         log.info("Product was created with id {}", product.getId());
 
@@ -55,9 +81,10 @@ public class ProductServiceImpl implements ProductService{
     }
 
 
+
     @Override
     @Transactional
-    @Cacheable(value = "product", key = "#updateProductDetails.id")
+    @CacheEvict(value = "product", key = "#updateProductDetails.id")
     public ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails, Integer shopId)
             throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest {
 
@@ -85,7 +112,7 @@ public class ProductServiceImpl implements ProductService{
 
     @Override
     @Transactional
-    @Cacheable(value = "product", key = "#productId")
+    @CacheEvict(value = "product", key = "#productId")
     public String deleteProduct(Long productId)
             throws ProductNotFoundException {
 

@@ -1,6 +1,7 @@
 package com.jzargo.productservice.service;
 
 import com.jzargo.productservice.entity.Category;
+import com.jzargo.productservice.exception.CategoryNotFoundException;
 import com.jzargo.productservice.exception.MalformedDataError;
 import com.jzargo.productservice.mapper.CategoryCreateAndUpdateMapper;
 import com.jzargo.productservice.mapper.CategoryReadMapper;
@@ -36,7 +37,7 @@ public class CategoryServiceImpl implements CategoryService{
     // Because it has categories as mapped on specific products
     @Override
     @Transactional
-    @CacheEvict(value = "categories", allEntries = true)
+    @CacheEvict(value = "categories", key = "#createCategoryDetails.name")
     public CategoryDetails createCategory(
             CreateAndUpdateCategoryDetails createCategoryDetails
     ) throws MalformedDataError {
@@ -61,7 +62,6 @@ public class CategoryServiceImpl implements CategoryService{
         return categoryReadMapper.map(save);
     }
     @Override
-    @Cacheable("categories")
     public List<String> getCategories() {
         return categoryRepository
                 .findAll()
@@ -74,15 +74,25 @@ public class CategoryServiceImpl implements CategoryService{
     // It requires updating of the catalog
     @Override
     @Transactional
-    @CacheEvict(value = "categories", allEntries = true)
-    public String deleteCategory(Integer categoryId) {
+    @CacheEvict(value = "categories", key = "#categoryName")
+    public String deleteCategoryByName(String categoryName) {
 
-        categoryRepository.deleteById(categoryId);
+        categoryRepository.deleteByName(categoryName);
 
-        if (categoryRepository.existsById(categoryId)) {
+        if (categoryRepository.existsByName(categoryName)) {
             return "category.delete.success";
         } else {
             return "category.delete.failure";
         }
+    }
+
+    @Override
+    @Cacheable(value = "categories")
+    public CategoryDetails getCategoryByName(String categoryName) throws CategoryNotFoundException {
+        return categoryReadMapper.map(
+                categoryRepository
+                        .findByName(categoryName)
+                        .orElseThrow(CategoryNotFoundException::new)
+        );
     }
 }
