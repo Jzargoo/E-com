@@ -3,6 +3,7 @@ package com.jzargo.productservice.saga;
 import com.jzargo.core.KafkaCustomHeaders;
 import com.jzargo.core.command.createProductSaga.*;
 import com.jzargo.productservice.config.KafkaPropertyStorage;
+import com.jzargo.productservice.exception.CategoryNotFoundException;
 import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -31,8 +32,8 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
     }
 
     @Override
-    public void startSaga(CreateAndUpdateProductDetails details) {
-        sagaProductCreation.initiatedProductCreation(details);
+    public void startSaga(CreateAndUpdateProductDetails details) throws CategoryNotFoundException {
+        sagaProductCreation.initiateProductCreation(details);
     }
 
     @Override
@@ -51,16 +52,6 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
         kafkaTemplate.send(
                 createRecord(
                         new PricingCommand(productId, stockPrice),
-                        productId.toString()
-                )
-        );
-    }
-
-    @Override
-    public void notifyMediaService(Long productId) {
-        kafkaTemplate.send(
-                createRecord(
-                        new MediaCommand(productId),
                         productId.toString()
                 )
         );
@@ -87,10 +78,10 @@ public class SagaProductCreationKafkaManager implements SagaProductCreationManag
     }
 
     @Override
-    public void notifyMediaServiceCompensation(Long productId) {
+    public void notifyProductServiceCompensation(Long productId) {
         kafkaTemplate.send(
                 createRecord(
-                        new CompensateMediaCommand(productId),
+                        new CompensateProductCommand(productId),
                         productId.toString()
                 )
         );

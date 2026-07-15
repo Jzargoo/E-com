@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("api/products")
+@RequestMapping("/api/products")
 public class ProductController {
 
     private final ProductService productService;
@@ -36,6 +36,12 @@ public class ProductController {
             @RequestBody CreateAndUpdateProductDetails createProductDetails,
             @AuthenticationPrincipal Jwt jwt) {
         try {
+            Integer shopId = (Integer) jwt.getClaim("shop_id");
+
+            if(shopId == null){
+                return ResponseEntity.badRequest().build();
+            }
+
             sagaProductCreationManager.startSaga(createProductDetails);
             return ResponseEntity.ok("Product created successfully");
         } catch (Exception e) {
