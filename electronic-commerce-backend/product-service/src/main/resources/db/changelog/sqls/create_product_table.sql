@@ -4,7 +4,7 @@ CREATE TABLE
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(64),
     description VARCHAR(512),
-    shopId INTEGER,
+    shop_id INTEGER,
     characteristics jsonb,
     status varchar(32) NOT NULL,
     stock_price DECIMAL(10, 2),

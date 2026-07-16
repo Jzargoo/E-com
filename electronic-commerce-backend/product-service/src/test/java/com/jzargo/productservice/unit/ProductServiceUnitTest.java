@@ -17,6 +17,7 @@ import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -40,7 +41,9 @@ public class ProductServiceUnitTest {
             )
             .shopId(SHOP_ID)
             .description("Test desc")
-            .stockPrice(14.2)
+            .stockPrice(
+                    BigDecimal.valueOf(12.0)
+            )
             .characteristics(new HashMap<>())
             .build();
 

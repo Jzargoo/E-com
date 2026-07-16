@@ -1,4 +1,7 @@
 spring:
+  cloud:
+    config:
+      enabled: false
   kafka:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     properties:
@@ -14,9 +17,6 @@ spring:
       bootstrap-servers: ${spring.embedded.kafka.brokers}
       group-id: "test-product-service"
 
-  cloud:
-    config:
-      enabled: false
 kafka:
   topics:
     productEventsTopic:
@@ -36,3 +36,7 @@ eureka:
 application:
   image:
     path:
+
+logging:
+    level:
+      root: TRACE

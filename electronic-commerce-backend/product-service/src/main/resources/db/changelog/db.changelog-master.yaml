@@ -21,3 +21,10 @@ databaseChangeLog:
             path: db/changelog/sqls/create_message_type_table.sql
         - sqlFile:
             path: db/changelog/sqls/create_table_saga_product.sql
+  - changeSet:
+      id: 2
+      author: jzargo
+      comment: "Alters of the tables"
+      changes:
+        - sqlFile:
+            path: db/changelog/sqls/alter_products.sql

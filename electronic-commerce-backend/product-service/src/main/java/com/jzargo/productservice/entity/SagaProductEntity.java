@@ -21,4 +21,7 @@ public class SagaProductEntity {
     @Builder.Default
     private SagaStep step = SagaStep.PENDING_INVENTORY;
 
+    @Version
+    private Long version;
+
 }

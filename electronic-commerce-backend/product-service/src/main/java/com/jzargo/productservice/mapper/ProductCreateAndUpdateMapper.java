@@ -23,6 +23,12 @@ public class ProductCreateAndUpdateMapper implements Mapper<CreateAndUpdateProdu
                 .name(from.getName())
                 .description(from.getDescription())
                 .characteristics(from.getCharacteristics())
+                .avatar(
+                        from.getAvatarUri()
+                )
+                .shopId(
+                        from.getShopId()
+                )
                 .stockPrice(from.getPrice())
                 .build();
     }

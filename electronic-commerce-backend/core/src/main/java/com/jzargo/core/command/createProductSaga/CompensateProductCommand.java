@@ -7,6 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CompensateMediaCommand {
+public class CompensateProductCommand{
     private Long productId;
 }

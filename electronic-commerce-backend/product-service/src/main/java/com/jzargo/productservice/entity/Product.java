@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,7 @@ import java.util.stream.Stream;
 
 
 @Data
-@Table
+@Table(name = "products")
 @Entity
 @Builder
 @NoArgsConstructor
@@ -36,7 +37,7 @@ public class Product {
     @Column(nullable = false,name = "description")
     private String description;
     @Column(nullable = false,name = "stock_price")
-    private Double stockPrice;
+    private BigDecimal stockPrice;
     @Column(nullable = false,name = "shop_id")
     private Integer shopId;
 

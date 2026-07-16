@@ -2,6 +2,7 @@ package com.jzargo.productservice.unit;
 
 import com.jzargo.productservice.entity.SagaProductEntity;
 import com.jzargo.productservice.entity.SagaStep;
+import com.jzargo.productservice.exception.CategoryNotFoundException;
 import com.jzargo.productservice.exception.SagaEntityNotFoundException;
 import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
 import com.jzargo.productservice.repository.SagaProductCreationRepository;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.math.BigDecimal;
 
 import java.util.HashMap;
 import java.util.Optional;
@@ -28,6 +30,7 @@ public class ProductCreationSagaUnitTest {
     private static final Long PRODUCT_ID = 12L;
 
     private SagaProductEntity product;
+
     private CreateAndUpdateProductDetails details;
 
     @InjectMocks
@@ -44,10 +47,12 @@ public class ProductCreationSagaUnitTest {
         details = new CreateAndUpdateProductDetails(
                 0L,
                 "product",
-                12.0,
+                "/products/default",
+                BigDecimal.valueOf(100),
                 HashMap.newHashMap(1),
                 "Good product",
-                "Electronics"
+                "Electronics",
+                12
         );
 
 
@@ -57,7 +62,7 @@ public class ProductCreationSagaUnitTest {
     }
 
     @Test
-    public void  test_initiatedProductCreation_success(){
+    public void  test_initiatedProductCreation_success() throws CategoryNotFoundException {
         // Arrange
 
         when(
@@ -65,7 +70,7 @@ public class ProductCreationSagaUnitTest {
         ).thenReturn(PRODUCT_ID);
 
         // Act
-        sagaProductCreation.initiatedProductCreation(details);
+        sagaProductCreation.initiateProductCreation(details);
 
         // Assert
         verify(
@@ -73,7 +78,7 @@ public class ProductCreationSagaUnitTest {
         ).save(
                 argThat(entity ->
                         entity.getId().equals(PRODUCT_ID) &&
-                                entity.getStep().equals(SagaStep.PENDING_MEDIA_APPROVE)
+                                entity.getStep().equals(SagaStep.PENDING_INVENTORY)
                 )
         );
 
@@ -85,31 +90,22 @@ public class ProductCreationSagaUnitTest {
         // Arrange
         when(repository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
 
+
         // Act
-        sagaProductCreation.initiatedInventoryEntry(PRODUCT_ID);
+        sagaProductCreation.createdInventoryEntry(PRODUCT_ID);
 
         // Assert
         verifyStepUpdate(SagaStep.PENDING_PRICE);
     }
 
     @Test
-    @DisplayName("Should update step to FINISHED when media is initiated")
-    void initiatedMediaEntry_Success() throws SagaEntityNotFoundException {
-        when(repository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
-
-        sagaProductCreation.initiatedMediaEntry(PRODUCT_ID);
-
-        verifyStepUpdate(SagaStep.FINISHED);
-    }
-
-    @Test
-    @DisplayName("Should update step to FAILED when media is compensated")
-    void compensatedMediaEntry_Success() throws SagaEntityNotFoundException {
+    @DisplayName("Should update step to COMPENSATE_PRODUCT when inventory is compensated")
+    void compensatedInventoryEntry_Success() throws SagaEntityNotFoundException {
         when(repository.findById(PRODUCT_ID)).thenReturn(Optional.ofNullable(product));
 
-        sagaProductCreation.compensatedMediaEntry(PRODUCT_ID);
+        sagaProductCreation.compensatedInventoryEntry(PRODUCT_ID);
 
-        verifyStepUpdate(SagaStep.FAILED);
+        verifyStepUpdate(SagaStep.COMPENSATE_PRODUCT);
     }
 
     @Test
@@ -121,7 +117,7 @@ public class ProductCreationSagaUnitTest {
         // Act & Assert
 
         assertThrows(SagaEntityNotFoundException.class,
-                () -> sagaProductCreation.initiatedInventoryEntry(PRODUCT_ID)
+                () -> sagaProductCreation.createdInventoryEntry(PRODUCT_ID)
         );
 
         verify(repository, never()).save(any());
@@ -129,14 +125,23 @@ public class ProductCreationSagaUnitTest {
 
     private void verifyStepUpdate(SagaStep expectedStep) {
 
-        ArgumentCaptor<SagaProductEntity> captor = ArgumentCaptor.forClass(SagaProductEntity.class);
 
-        verify(repository, times(1)).save(captor.capture());
+        verify(repository, times(1)).save(
+                argThat(
+                        entity -> {
 
-        SagaProductEntity entity = captor.getValue();
+                            assertEquals(entity.getStep(), expectedStep);
 
-        assertEquals(entity.getStep(), expectedStep);
-        assertEquals(PRODUCT_ID, entity.getId());
+                            assertEquals(PRODUCT_ID, entity.getId());
+
+                            return entity.getId().equals(PRODUCT_ID) &&
+                                    entity.getStep().equals(expectedStep);
+
+                        }
+                )
+        );
+
+
     }
 
 }
