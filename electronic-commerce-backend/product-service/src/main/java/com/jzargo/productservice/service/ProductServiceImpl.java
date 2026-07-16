@@ -88,8 +88,6 @@ public class ProductServiceImpl implements ProductService{
     public ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails, Integer shopId)
             throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest {
 
-        // Null -> the field was not changed
-
         if (
                 productRepository.findById(
                         updateProductDetails.getId()

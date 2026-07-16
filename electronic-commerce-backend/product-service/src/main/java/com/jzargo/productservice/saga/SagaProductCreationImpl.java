@@ -53,39 +53,12 @@ public class SagaProductCreationImpl implements SagaProductCreation {
     @Override
     @Transactional
     public void compensatedInventoryEntry(Long productId) throws SagaEntityNotFoundException {
-        SagaProductEntity sagaProductEntity = sagaProductCreationRepository
-                .findById(productId)
-                .orElseThrow(SagaEntityNotFoundException::new);
-
-        if(
-                ( !SagaStep.PENDING_INVENTORY.equals(sagaProductEntity.getStep()) ) &&
-                        ( !SagaStep.COMPENSATE_INVENTORY.equals(sagaProductEntity.getStep()) )
-        ) {
-
-            warn_unexpectedStep(productId, sagaProductEntity.getStep(), SagaStep.COMPENSATE_PRODUCT);
-
-            throw new SagaEntityNotFoundException(); //TODO: throw custom exception
-        }
-
         updateStep(productId, SagaStep.COMPENSATE_PRODUCT, SagaStep.PENDING_INVENTORY, SagaStep.COMPENSATE_INVENTORY);
     }
 
     @Override
     @Transactional
     public void compensatedPriceEntry(Long productId) throws SagaEntityNotFoundException {
-        SagaProductEntity sagaProductEntity = sagaProductCreationRepository
-                .findById(productId)
-                .orElseThrow(SagaEntityNotFoundException::new);
-
-        if(
-                !SagaStep.PENDING_PRICE.equals(sagaProductEntity.getStep())
-        ) {
-
-            warn_unexpectedStep(productId, sagaProductEntity.getStep(), SagaStep.COMPENSATE_INVENTORY);
-
-            throw new SagaEntityNotFoundException(); //TODO: throw custom exception
-        }
-
         updateStep(productId, SagaStep.COMPENSATE_INVENTORY, SagaStep.PENDING_PRICE);
     }
 
@@ -105,7 +78,9 @@ public class SagaProductCreationImpl implements SagaProductCreation {
 
         productService.deleteProduct(productId);
 
-        updateStep(productId, SagaStep.FAILED, SagaStep.COMPENSATE_PRODUCT);
+        sagaProductEntity.setStep(SagaStep.FAILED);
+
+        sagaProductCreationRepository.save(sagaProductEntity);
     }
 
 
@@ -118,6 +93,11 @@ public class SagaProductCreationImpl implements SagaProductCreation {
                 "Current step: {}, New step: {} ",
                 productId, sagaProductEntity.getStep(), newSagaStep);
 
+        if (Arrays.stream(expected).noneMatch(step -> step.equals(sagaProductEntity.getStep()))) {
+            warn_unexpectedStep(productId, sagaProductEntity.getStep(), newSagaStep);
+
+            throw new SagaEntityNotFoundException();
+        }
         sagaProductEntity.setStep(newSagaStep);
 
         sagaProductCreationRepository.save(sagaProductEntity);

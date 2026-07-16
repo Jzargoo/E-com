@@ -13,6 +13,7 @@ public class ReadProductDetailsMapper implements Mapper<Product, ProductDetails>
         return ProductDetails.builder()
                 .category(from.getCategory().getName())
                 .name(from.getName())
+                .shopId(from.getShopId())
                 .description(from.getDescription())
                 .characteristics(from.getCharacteristics())
                 .build();

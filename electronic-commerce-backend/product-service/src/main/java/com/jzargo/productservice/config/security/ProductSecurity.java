@@ -1,11 +1,10 @@
 package com.jzargo.productservice.config.security;
 
 import com.jzargo.productservice.config.ApplicationPropertyStorage;
-import com.nimbusds.jose.proc.SecurityContext;
-import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
@@ -30,24 +29,40 @@ import java.util.stream.Stream;
 public class ProductSecurity {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) {
-        return http
-                .authorizeHttpRequests( request -> request
-                        //.requestMatchers(HttpMethod.POST, "/api/products/category").hasRole("ROLE_ADMIN")
 
-                        //.requestMatchers("/healthcheck/**").hasRole("ROLE_ADMIN")
+        http.authorizeHttpRequests(request -> request
+                .requestMatchers(HttpMethod.POST, "/api/products/category").hasRole("ROLE_ADMIN")
 
-                        //.requestMatchers(HttpMethod.POST, "/api/products/images/*").hasRole("ROLE_SHOP")
-                        //.requestMatchers(HttpMethod.PUT,"/api/products/images/*").hasRole("ROLE_SHOP")
-                        //.requestMatchers(HttpMethod.PUT,"/api/products/*").hasRole("ROLE_SHOP")
-                        //.requestMatchers(HttpMethod.DELETE,"/api/products/*").hasRole("ROLE_SHOP")
+                .requestMatchers("/healthcheck/**").hasRole("ROLE_ADMIN")
 
-                        .anyRequest().permitAll()
-                )
-                .csrf(CsrfConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .oauth2ResourceServer(oauth-> oauth.jwt(Customizer.withDefaults()))
-                .cors(corsConfigurer -> corsConfigurer.configurationSource(corsConfigurationSource))
-                .build();
+                .requestMatchers(HttpMethod.POST, "/api/products/images/*").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/products/images/*").authenticated()
+
+                .requestMatchers(HttpMethod.PUT, "/api/products/*").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/products/*").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/products/*").authenticated()
+
+                .anyRequest().permitAll()
+        );
+
+        http.csrf(CsrfConfigurer::disable);
+
+        http.sessionManagement(
+                session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        );
+
+        http.oauth2ResourceServer(
+                oauth->
+                        oauth.jwt(Customizer.withDefaults())
+        );
+
+        http.cors(
+                corsConfigurer ->
+                        corsConfigurer.configurationSource(corsConfigurationSource)
+        );
+
+        return http.build();
     }
 
     @Bean

@@ -51,7 +51,8 @@ public class ProductCreationSagaUnitTest {
                 BigDecimal.valueOf(100),
                 HashMap.newHashMap(1),
                 "Good product",
-                "Electronics"
+                "Electronics",
+                12
         );
 
 
@@ -67,9 +68,6 @@ public class ProductCreationSagaUnitTest {
         when(
                 productService.createProduct(details)
         ).thenReturn(PRODUCT_ID);
-
-        doNothing()
-                .when(repository.save(any()));
 
         // Act
         sagaProductCreation.initiateProductCreation(details);
@@ -101,7 +99,7 @@ public class ProductCreationSagaUnitTest {
     }
 
     @Test
-    @DisplayName("Should update step to FAILED when inventory is compensated")
+    @DisplayName("Should update step to COMPENSATE_PRODUCT when inventory is compensated")
     void compensatedInventoryEntry_Success() throws SagaEntityNotFoundException {
         when(repository.findById(PRODUCT_ID)).thenReturn(Optional.ofNullable(product));
 
@@ -128,12 +126,22 @@ public class ProductCreationSagaUnitTest {
     private void verifyStepUpdate(SagaStep expectedStep) {
 
 
-        verify(repository, times(1)).save(captor.capture());
+        verify(repository, times(1)).save(
+                argThat(
+                        entity -> {
 
-        SagaProductEntity entity = captor.getValue();
+                            assertEquals(entity.getStep(), expectedStep);
 
-        assertEquals(entity.getStep(), expectedStep);
-        assertEquals(PRODUCT_ID, entity.getId());
+                            assertEquals(PRODUCT_ID, entity.getId());
+
+                            return entity.getId().equals(PRODUCT_ID) &&
+                                    entity.getStep().equals(expectedStep);
+
+                        }
+                )
+        );
+
+
     }
 
 }

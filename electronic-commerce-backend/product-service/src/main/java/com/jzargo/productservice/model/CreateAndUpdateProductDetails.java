@@ -4,9 +4,7 @@ import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -14,6 +12,8 @@ import java.util.HashMap;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
+@ToString
 public class CreateAndUpdateProductDetails {
     private Long id;
 
@@ -29,5 +29,7 @@ public class CreateAndUpdateProductDetails {
     private HashMap<String, String> characteristics;
     private String description;
     private String category;
+
+    private Integer shopId;
 
 }

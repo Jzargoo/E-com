@@ -1,5 +1,6 @@
 package com.jzargo.productservice.api;
 
+import com.jzargo.productservice.config.security.ProductSecurity;
 import com.jzargo.productservice.exception.InvalidUpdateRequest;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
@@ -9,9 +10,13 @@ import com.jzargo.productservice.saga.SagaProductCreationManager;
 import com.jzargo.productservice.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -31,29 +36,31 @@ public class ProductController {
         }
     }
 
+    @PreAuthorize(
+            "hasRole('SHOP_OWNER') and " +
+            "authentication.principal.claims['mode'] == 'OWNER'"
+    )
     @PostMapping
     ResponseEntity<String> createProduct (
-            @RequestBody CreateAndUpdateProductDetails createProductDetails,
-            @AuthenticationPrincipal Jwt jwt) {
-        try {
-            Integer shopId = (Integer) jwt.getClaim("shop_id");
+            @Validated @RequestBody CreateAndUpdateProductDetails createProductDetails) {
 
-            if(shopId == null){
-                return ResponseEntity.badRequest().build();
-            }
+        try {
 
             sagaProductCreationManager.startSaga(createProductDetails);
+
             return ResponseEntity.ok("Product created successfully");
+
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
+
     }
 
     @PutMapping("/{id}")
     ResponseEntity<ProductDetails> updateProduct(
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody CreateAndUpdateProductDetails createAndUpdateProductDetails
+            @Validated @RequestBody CreateAndUpdateProductDetails createAndUpdateProductDetails
             ) throws ShopDoesNotOwnProductException, InvalidUpdateRequest, ProductNotFoundException {
         Integer shopId = jwt.getClaim("shop_id");
 

@@ -1,8 +1,5 @@
 package com.jzargo.productservice.model;
 
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,5 +20,6 @@ public class ProductDetails {
     private Float avgRate;
     private BigDecimal price;
     private String description;
+    private Integer shopId;
     private Map<String, String> characteristics;
 }
