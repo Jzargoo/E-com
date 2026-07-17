@@ -8,8 +8,10 @@ import com.jzargo.productservice.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,8 +25,11 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @PostMapping
+    @PreAuthorize(
+            "hasAuthority('ROLE_ADMIN') or hasAuthority('SCOPE_ROLE_ADMIN') and " +
+                    "authentication.principal.claims['mode'] == 'ADMIN'")
     public ResponseEntity<CategoryDetails> createCategory(
-            @RequestBody CreateAndUpdateCategoryDetails createCategoryDetails
+            @RequestBody @Validated CreateAndUpdateCategoryDetails createCategoryDetails
     ) {
         log.debug("Creation a category started to execute");
 
@@ -65,6 +70,9 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{categoryName}")
+    @PreAuthorize(
+            "hasAuthority('ROLE_ADMIN') or hasAuthority('SCOPE_ROLE_ADMIN') and " +
+                    "authentication.principal.claims['mode'] == ADMIN")
     public ResponseEntity<String> deleteCategory(String categoryName) {
         log.debug("Delete category started to execute");
 

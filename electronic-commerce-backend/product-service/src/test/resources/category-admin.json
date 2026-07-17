@@ -1,0 +1,13 @@
+{
+  "sub": "user-12345",
+  "userId": "user-12345",
+  "username": "admin_system",
+  "mode": "ADMIN",
+  "scope": "ROLE_ADMIN",
+  "realm_access": {
+    "roles": [
+      "ADMIN"
+    ]
+  }
+
+}
