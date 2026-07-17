@@ -85,14 +85,16 @@ public class ProductServiceImpl implements ProductService{
     @Override
     @Transactional
     @CacheEvict(value = "product", key = "#updateProductDetails.id")
-    public ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails, Integer shopId)
+    public ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails)
             throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest {
 
         if (
                 productRepository.findById(
                         updateProductDetails.getId()
                         ).orElseThrow()
-                        .getShopId().equals(shopId)
+                        .getShopId().equals(
+                                updateProductDetails.getShopId()
+                        )
         ) {
             throw new ShopDoesNotOwnProductException();
         }

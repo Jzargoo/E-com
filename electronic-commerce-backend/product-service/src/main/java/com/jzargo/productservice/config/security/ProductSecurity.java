@@ -1,6 +1,7 @@
 package com.jzargo.productservice.config.security;
 
 import com.jzargo.productservice.config.ApplicationPropertyStorage;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -31,9 +32,9 @@ public class ProductSecurity {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) {
 
         http.authorizeHttpRequests(request -> request
-                .requestMatchers(HttpMethod.POST, "/api/products/category").hasRole("ROLE_ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/products/category").authenticated()
 
-                .requestMatchers("/healthcheck/**").hasRole("ROLE_ADMIN")
+                .requestMatchers("/healthcheck/**").hasRole("ADMIN")
 
                 .requestMatchers(HttpMethod.POST, "/api/products/images/*").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/products/images/*").authenticated()

@@ -10,7 +10,7 @@ import com.jzargo.productservice.model.*;
 public interface ProductService {
     ProductDetails getProductById(Long id) throws ProductNotFoundException;
     Long createProduct(CreateAndUpdateProductDetails createProductDetails) throws CategoryNotFoundException;
-    ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails, Integer shopId) throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest;
+    ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails) throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest;
     String deleteProduct(Long productId) throws ProductNotFoundException;
 
 }

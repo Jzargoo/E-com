@@ -1,0 +1,14 @@
+{
+  "sub": "user-12345",
+  "user_id": "user-12345",
+  "username": "shop_manager",
+  "mode": "OWNER",
+  "shop_id": 12,
+  "scope": "ROLE_SHOP_OWNER",
+  "realm_access": {
+    "roles": [
+      "SHOP_OWNER"
+    ]
+  }
+
+}

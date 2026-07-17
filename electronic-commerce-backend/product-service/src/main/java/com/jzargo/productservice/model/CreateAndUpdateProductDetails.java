@@ -28,8 +28,11 @@ public class CreateAndUpdateProductDetails {
 
     private HashMap<String, String> characteristics;
     private String description;
+    @NotNull
+    @NotEmpty
     private String category;
-
+    @NotNull
+    @Min(1)
     private Integer shopId;
 
 }

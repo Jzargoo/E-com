@@ -12,6 +12,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @Validated
+
 public class CreateAndUpdateCategoryDetails {
     @NotNull(message = "The name must contain at least 3 characters")
     private String name;
