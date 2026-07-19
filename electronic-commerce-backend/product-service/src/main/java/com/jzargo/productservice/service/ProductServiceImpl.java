@@ -88,20 +88,17 @@ public class ProductServiceImpl implements ProductService{
     public ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails)
             throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest {
 
+        Product product = productRepository.findById(
+                updateProductDetails.getId()
+        ).orElseThrow(ProductNotFoundException::new);
+
         if (
-                productRepository.findById(
-                        updateProductDetails.getId()
-                        ).orElseThrow()
-                        .getShopId().equals(
-                                updateProductDetails.getShopId()
-                        )
+                !product.getShopId().equals(
+                        updateProductDetails.getShopId()
+                )
         ) {
             throw new ShopDoesNotOwnProductException();
         }
-
-        Product product = productRepository
-                .findById(updateProductDetails.getId())
-                .orElseThrow(ProductNotFoundException::new);
 
         productCreateAndUpdateMapper.updateMap(updateProductDetails, product);
 

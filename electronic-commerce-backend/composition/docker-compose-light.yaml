@@ -14,8 +14,6 @@ volumes:
 
 services:
 
-
-
   vault:
     image: hashicorp/vault:latest
     container_name: vault
@@ -82,6 +80,28 @@ services:
       - "8890:8080"
     command: start-dev --verbose --features=scripts
     depends_on:
+      - postgres
+
+  debezium-light:
+    image: debezium/connect:latest
+    container_name: debezium-light
+    environment:
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+      KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_REST_ADVERTISED_HOST_NAME: debezium-light
+    ports:
+      - "8083:8083"
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
       - postgres
 
 

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -23,16 +24,29 @@ public class MediaController {
     private final MediaService mediaService;
 
     @PutMapping("/{productId}")
+    @PreAuthorize(
+            "( hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER') ) and " +
+                    "authentication.principal.claims['mode'] == 'OWNER'"
+    )
     public ResponseEntity<String> addMediaContent(
             @RequestBody @NotNull List<MultipartFile> multipartFiles,
             @PathVariable Long productId,
-            @AuthenticationPrincipal Jwt jwt) throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException {
+            @AuthenticationPrincipal Jwt jwt
+    ) throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException {
 
         log.debug("Adding media content to product {}",productId);
 
-        Integer shopId = jwt.getClaim("shop_id");
+        Number shopId = jwt.getClaim("shop_id");
 
-        mediaService.addMediaContent(multipartFiles, productId, shopId);
+        if (shopId == null || shopId.intValue() <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        mediaService.addMediaContent(
+                multipartFiles,
+                productId,
+                shopId.intValue()
+        );
 
         return ResponseEntity.ok(
                 "new image of the product was added successfully"
@@ -64,6 +78,10 @@ public class MediaController {
     }
 
     @PostMapping("/{productId}")
+    @PreAuthorize(
+            "( hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER') ) and " +
+                    "authentication.principal.claims['mode'] == 'OWNER'"
+    )
     public ResponseEntity<String> addAvatar (
             @RequestBody @NotNull MultipartFile multipartFile,
             @PathVariable Long productId,

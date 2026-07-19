@@ -26,7 +26,7 @@ public class CategoryController {
 
     @PostMapping
     @PreAuthorize(
-            "hasAuthority('ROLE_ADMIN') or hasAuthority('SCOPE_ROLE_ADMIN') and " +
+            "( hasAuthority('ROLE_ADMIN') or hasAuthority('SCOPE_ROLE_ADMIN') ) and " +
                     "authentication.principal.claims['mode'] == 'ADMIN'")
     public ResponseEntity<CategoryDetails> createCategory(
             @RequestBody @Validated CreateAndUpdateCategoryDetails createCategoryDetails
@@ -71,8 +71,8 @@ public class CategoryController {
 
     @DeleteMapping("/{categoryName}")
     @PreAuthorize(
-            "hasAuthority('ROLE_ADMIN') or hasAuthority('SCOPE_ROLE_ADMIN') and " +
-                    "authentication.principal.claims['mode'] == ADMIN")
+            "(hasAuthority('ROLE_ADMIN') or hasAuthority('SCOPE_ROLE_ADMIN')) and " +
+                    "authentication.principal.claims['mode'] == 'ADMIN'")
     public ResponseEntity<String> deleteCategory(String categoryName) {
         log.debug("Delete category started to execute");
 

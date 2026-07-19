@@ -15,6 +15,9 @@ public class ReadProductDetailsMapper implements Mapper<Product, ProductDetails>
                 .name(from.getName())
                 .shopId(from.getShopId())
                 .description(from.getDescription())
+                .price(
+                        from.getStockPrice()
+                )
                 .characteristics(from.getCharacteristics())
                 .build();
     }
