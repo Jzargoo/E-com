@@ -9,6 +9,7 @@ import com.jzargo.productservice.saga.SagaProductCreation;
 import com.jzargo.productservice.saga.SagaProductCreationManager;
 import com.jzargo.productservice.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/products")
@@ -38,21 +40,27 @@ public class ProductController {
     }
 
     @PreAuthorize(
-            "hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER') and " +
+            "(hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER')) and " +
                     "authentication.principal.claims['mode'] == 'OWNER' and " +
                     "authentication.principal.claims['shop_id'] == #createProductDetails.shopId"
     )
     @PostMapping
     ResponseEntity<String> createProduct (
-            @Validated @RequestBody CreateAndUpdateProductDetails createProductDetails) {
+            @Validated @RequestBody CreateAndUpdateProductDetails createProductDetails
+    ) {
 
         try {
 
+            log.info("Caught a request to create a product");
+
             sagaProductCreationManager.startSaga(createProductDetails);
+
+            log.debug("A request was successfully processed");
 
             return ResponseEntity.ok("Product created successfully");
 
         } catch (Exception e) {
+            log.error("Product creation failed", e);
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
 
@@ -60,25 +68,24 @@ public class ProductController {
 
     @PutMapping("/{id}")
     @PreAuthorize(
-            "hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER') and " +
+            "(hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER')) and " +
                     "authentication.principal.claims['mode'] == 'OWNER' and " +
                     "authentication.principal.claims['shop_id'] == #createAndUpdateProductDetails.shopId"
-    )
-    ResponseEntity<ProductDetails> updateProduct(
+    )    ResponseEntity<ProductDetails> updateProduct(
             @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt,
-            @Validated @RequestBody CreateAndUpdateProductDetails createAndUpdateProductDetails
+            @RequestBody CreateAndUpdateProductDetails createAndUpdateProductDetails
             ) throws ShopDoesNotOwnProductException, InvalidUpdateRequest, ProductNotFoundException {
 
-        Integer shopId = jwt.getClaim("shop_id");
+        if (
+                id == null ||
+                        !id.equals(createAndUpdateProductDetails.getId())
+        ) {
 
-        if (id == null || !id.equals(createAndUpdateProductDetails.getId())) {
            return ResponseEntity.badRequest().build();
+
         }
 
         createAndUpdateProductDetails.setId(id);
-
-        createAndUpdateProductDetails.setShopId(shopId);
 
         ProductDetails productDetails = productService.updateProduct(createAndUpdateProductDetails);
 
@@ -87,7 +94,7 @@ public class ProductController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize(
-            "hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER') and " +
+            "(hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER')) and " +
                     "authentication.principal.claims['mode'] == 'OWNER'"
     )
     ResponseEntity<String> deleteProduct(
