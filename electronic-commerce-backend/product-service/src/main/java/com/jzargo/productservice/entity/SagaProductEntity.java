@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Table(name = "saga_product_entities")
 @Entity
 @Builder
@@ -24,4 +26,7 @@ public class SagaProductEntity {
     @Version
     private Long version;
 
+    private BigDecimal price;
+    @Column(name = "error_message")
+    private String errorMessage;
 }

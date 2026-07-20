@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MediaCompensationCommandResponse {
     private Long productId;
+    private String errorMessage;
 }

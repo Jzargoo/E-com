@@ -1,0 +1,19 @@
+{
+  "name": "product-service-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "jzargo",
+    "database.password": "jzargo123",
+    "database.dbname": "productdb",
+    "table.include.list": "public.products, public.saga_product_entities",
+    "plugin.name": "pgoutput",
+    "slot.name": "product_service_slot",
+    "publication.name": "product_service_publication",
+    "topic.prefix": "productdbserver1",
+    "schema.history.internal.kafka.bootstrap.servers": "kafka1:9092",
+    "schema.history.internal.kafka.topic": "schema-changes.product-service"
+  }
+}

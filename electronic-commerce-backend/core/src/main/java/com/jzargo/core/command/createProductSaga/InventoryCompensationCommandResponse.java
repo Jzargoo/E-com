@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class InventoryCompensationCommandResponse {
     private Long productId;
+    private String errorMessage;
 }

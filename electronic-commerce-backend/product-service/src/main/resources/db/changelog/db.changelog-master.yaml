@@ -28,11 +28,7 @@ databaseChangeLog:
       changes:
         - sqlFile:
             path: db/changelog/sqls/alter_products.sql
-  - changeSet:
-      id: 3
-      author: jzargo
-      comment: "Alters of the tables"
-      changes:
         - sqlFile:
             path: db/changelog/sqls/alter_saga_create_add_version.sql
-
+        - sqlFile:
+            path: db/changelog/sqls/add_aditional_info_saga_product_create.sql

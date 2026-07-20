@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -33,6 +34,9 @@ public class SagaProductCreationImpl implements SagaProductCreation {
         SagaProductEntity sagaEntity= SagaProductEntity.builder()
                 .id(productId)
                 .step(SagaStep.PENDING_INVENTORY)
+                .price(
+                        details.getPrice()
+                )
                 .build();
 
         sagaProductCreationRepository.save(sagaEntity);
@@ -41,25 +45,25 @@ public class SagaProductCreationImpl implements SagaProductCreation {
     @Override
     @Transactional
     public void createdInventoryEntry(Long productId) throws SagaEntityNotFoundException {
-        updateStep(productId, SagaStep.PENDING_PRICE, SagaStep.PENDING_INVENTORY);
+        updateStep(productId, Optional.empty(), SagaStep.PENDING_PRICE, SagaStep.PENDING_INVENTORY);
     }
 
     @Override
     @Transactional
     public void createdPriceEntry(Long productId) throws SagaEntityNotFoundException {
-        updateStep(productId, SagaStep.FINISHED, SagaStep.PENDING_PRICE);
+        updateStep(productId, Optional.empty(),SagaStep.FINISHED, SagaStep.PENDING_PRICE);
     }
 
     @Override
     @Transactional
-    public void compensatedInventoryEntry(Long productId) throws SagaEntityNotFoundException {
-        updateStep(productId, SagaStep.COMPENSATE_PRODUCT, SagaStep.PENDING_INVENTORY, SagaStep.COMPENSATE_INVENTORY);
+    public void compensatedInventoryEntry(Long productId,  Optional<String> errorMessage) throws SagaEntityNotFoundException {
+        updateStep(productId, errorMessage, SagaStep.COMPENSATE_PRODUCT, SagaStep.PENDING_INVENTORY, SagaStep.COMPENSATE_INVENTORY);
     }
 
     @Override
     @Transactional
-    public void compensatedPriceEntry(Long productId) throws SagaEntityNotFoundException {
-        updateStep(productId, SagaStep.COMPENSATE_INVENTORY, SagaStep.PENDING_PRICE);
+    public void compensatedPriceEntry(Long productId,  Optional<String> errorMessage) throws SagaEntityNotFoundException {
+        updateStep(productId, errorMessage, SagaStep.COMPENSATE_INVENTORY, SagaStep.PENDING_PRICE);
     }
 
     @Override
@@ -84,7 +88,7 @@ public class SagaProductCreationImpl implements SagaProductCreation {
     }
 
 
-    private void updateStep(Long productId, SagaStep newSagaStep, SagaStep... expected) throws SagaEntityNotFoundException {
+    private void updateStep(Long productId, Optional<String> errorMessage , SagaStep newSagaStep, SagaStep... expected) throws SagaEntityNotFoundException {
         SagaProductEntity sagaProductEntity = sagaProductCreationRepository
                 .findById(productId)
                 .orElseThrow(SagaEntityNotFoundException::new);
@@ -98,6 +102,9 @@ public class SagaProductCreationImpl implements SagaProductCreation {
 
             throw new SagaEntityNotFoundException();
         }
+
+        errorMessage.ifPresent(sagaProductEntity::setErrorMessage);
+
         sagaProductEntity.setStep(newSagaStep);
 
         sagaProductCreationRepository.save(sagaProductEntity);

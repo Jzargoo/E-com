@@ -103,7 +103,7 @@ public class ProductCreationSagaUnitTest {
     void compensatedInventoryEntry_Success() throws SagaEntityNotFoundException {
         when(repository.findById(PRODUCT_ID)).thenReturn(Optional.ofNullable(product));
 
-        sagaProductCreation.compensatedInventoryEntry(PRODUCT_ID);
+        sagaProductCreation.compensatedInventoryEntry(PRODUCT_ID, Optional.empty());
 
         verifyStepUpdate(SagaStep.COMPENSATE_PRODUCT);
     }

@@ -82,8 +82,9 @@ services:
     depends_on:
       - postgres
 
+
   debezium-light:
-    image: debezium/connect:latest
+    image: quay.io/debezium/connect:latest
     container_name: debezium-light
     environment:
       BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092

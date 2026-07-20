@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Slf4j
 @Transactional
@@ -103,7 +104,9 @@ public class SagaProductCreationListener {
             }
 
             try{
-                sagaProductCreation.compensatedInventoryEntry(command.getProductId());
+                var errorMessage = Optional.ofNullable(command.getErrorMessage());
+
+                sagaProductCreation.compensatedInventoryEntry(command.getProductId(), errorMessage);
 
                 messageRepository.save(
                         new Message(messageId, MessageType.COMMAND, Instant.now())
@@ -131,7 +134,12 @@ public class SagaProductCreationListener {
             }
 
             try{
-                sagaProductCreation.compensatedPriceEntry(command.getProductId());
+                var errorMessage = Optional.ofNullable(command.getErrorMessage());
+
+                sagaProductCreation.compensatedPriceEntry(
+                        command.getProductId(),
+                        errorMessage
+                );
 
                 messageRepository.save(
                         new Message(messageId, MessageType.COMMAND, Instant.now())

@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
 
     private final ProductService productService;
-    private final SagaProductCreationManager sagaProductCreationManager;
+    private final SagaProductCreation sagaProductCreation;
 
     @GetMapping("/{id}")
     ResponseEntity<ProductDetails>  getProductById(@PathVariable Long id){
@@ -53,7 +53,7 @@ public class ProductController {
 
             log.info("Caught a request to create a product");
 
-            sagaProductCreationManager.startSaga(createProductDetails);
+            sagaProductCreation.initiateProductCreation(createProductDetails);
 
             log.debug("A request was successfully processed");
 

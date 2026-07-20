@@ -22,6 +22,8 @@ public class KafkaPropertyStorage {
         private TopicSettings productEventsTopic; // UPDATE, STATUS CHANGE
         private TopicSettings productCreateSaga;
 
+        private String sagaEntitiesDebeziumTopicName;
+
         @Data
         public static class TopicSettings{
             @NotNull

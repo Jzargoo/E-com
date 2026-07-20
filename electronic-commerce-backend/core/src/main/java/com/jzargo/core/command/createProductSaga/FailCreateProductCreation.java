@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PricingCompensationCommandResponse {
-    private Long productId;
-    private String errorMessage;
+public class FailCreateProductCreation {
+    Long productId;
+    String errorMessage;
 }
