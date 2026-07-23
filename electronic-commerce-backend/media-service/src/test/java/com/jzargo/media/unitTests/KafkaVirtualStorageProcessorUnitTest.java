@@ -48,11 +48,11 @@ public class KafkaVirtualStorageProcessorUnitTest {
     @Mock
     public KafkaEventPublisher kafkaEventPublisher;
     @Mock
-    public KafkaDlqPublisher kafkaDlqPublisher;
-    @Mock
     public MediaPersistentStorageBackendNative mediaPersistentStorageBackendNative;
     @Mock
     public MediaPersistentStorageBackendRegistry registry;
+    @Mock
+    public  KafkaDlqEventPublisher kafkaDlqEventPublisher;
 
     KafkaVirtualStorageProcessor kafkaVirtualStorageProcessor;
 
@@ -61,9 +61,9 @@ public class KafkaVirtualStorageProcessorUnitTest {
         kafkaVirtualStorageProcessor = new KafkaVirtualStorageProcessor(
                 "test",
                 StorageType.NATIVE_DISK,
+                kafkaDlqEventPublisher,
                 mediaPrimaryStorageService,
                 kafkaEventPublisher,
-                kafkaDlqPublisher,
                 registry
         );
 

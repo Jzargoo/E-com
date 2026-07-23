@@ -17,6 +17,8 @@ import java.io.OutputStream;
 public class DownloadedFile {
     InputStream content;
 
+    Long contentLength;
+
     String fileUri;
 
     ContentType contentType;

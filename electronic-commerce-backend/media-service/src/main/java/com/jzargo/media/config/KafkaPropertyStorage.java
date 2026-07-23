@@ -22,6 +22,9 @@ public class KafkaPropertyStorage {
     private Topic fileSyncTopic;
     // dlq topic to handle when a business logic is failed
     private Topic failedFileOperationTopic;
+    // Topic that notify when a certain service can process requests
+    private Topic storageRecoveryTopic;
+
 
     @Data
     @AllArgsConstructor
