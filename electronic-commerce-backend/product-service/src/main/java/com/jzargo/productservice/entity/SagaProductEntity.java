@@ -26,6 +26,7 @@ public class SagaProductEntity {
     @Version
     private Long version;
 
+    @Column(name = "stock")
     private BigDecimal price;
     @Column(name = "error_message")
     private String errorMessage;

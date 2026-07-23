@@ -1,5 +1,7 @@
 package com.jzargo.productservice.config;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jzargo.productservice.helper.DebeziumMessageParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ import java.util.Map;
 public class KafkaTopologyConfig {
 
     private final KafkaPropertyStorage kafkaPropertyStorage;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     @SuppressWarnings("unchecked")
@@ -44,8 +47,28 @@ public class KafkaTopologyConfig {
                         sagaEntitiesDebeziumTopicName,
                         Consumed.with(
                                 new Serdes.StringSerde(),
-                                new JacksonJsonSerde<>()
+                                new Serdes.StringSerde()
                         )
+                )
+
+                .peek(
+                        (key, value) -> log.info("Kafka streams started processing a message with key {}", key)
+                )
+
+                .mapValues(
+                        value -> {
+                            try {
+                                return objectMapper.readValue(
+                                        value, Map.class
+                                );
+                            } catch (JsonProcessingException e) {
+                                log.error(
+                                        "The saga create product stream " +
+                                        "caught an error related with json processing",e
+                                );
+                                throw new RuntimeException(e);
+                            }
+                        }
                 )
 
                 .filter(
@@ -76,7 +99,10 @@ public class KafkaTopologyConfig {
                                     (Map<String, Object>) value
                             );
 
-                            Long id = (Long) after.get("id");
+                            Number nid = (Number) after.get("id");
+
+                            Long id = nid.longValue();
+
 
                             var command = DebeziumMessageParser.getSagaCreateCommandByAfter(after);
 

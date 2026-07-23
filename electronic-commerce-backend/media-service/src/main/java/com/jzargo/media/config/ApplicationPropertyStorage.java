@@ -20,7 +20,13 @@ public class ApplicationPropertyStorage {
     public static String STORAGES_PROPERTIES = "application.second-storages";
 
     private NativeStorageOptions nativeStorageOptions;
+
+    private Async async;
+
+    private Integer portion;
+
     private Aws aws;
+
     private Set<SecondStorage> storages;
 
     @Data
@@ -28,14 +34,35 @@ public class ApplicationPropertyStorage {
     @AllArgsConstructor
     public static class NativeStorageOptions {
         private String savingPath;
+        private String pathToDlqFilesRelative;
     }
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class Async {
+
+        private AsyncProperties poster;
+
+
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class AsyncProperties {
+            private Integer corePoolSize;
+            private Integer maximumPoolSize;
+            private Integer keepAliveTime;
+            private Integer queueCapacity;
+        }
+    }
+
+        @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Aws{
         private String bucketName;
         private SmartBufferProperties smartStreamProperties;
+        private String objectTtl;
     }
 
     @Data

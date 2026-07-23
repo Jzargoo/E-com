@@ -28,8 +28,9 @@ public class DebeziumMessageParser {
 
         String step = (String) after.get("step");
 
-        Long id = (Long) after.get("id");
+        Number nid = (Number) after.get("id");
 
+        Long id = nid.longValue();
 
         return switch (SagaStep.valueOf(step)) {
 

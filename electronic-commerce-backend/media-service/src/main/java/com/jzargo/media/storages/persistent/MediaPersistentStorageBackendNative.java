@@ -7,6 +7,7 @@ import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.media.model.DownloadedFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
@@ -39,6 +40,8 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
             );
 
             Files.copy(file.getContent(), path, StandardCopyOption.REPLACE_EXISTING);
+
+            file.getContent().close();
 
             return file.getFileUri();
 
@@ -117,10 +120,12 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
 
     @Override
     public DownloadedFile getFile(String fileUri) throws CannotProcessException, WrongContentTypeException {
-        try {
-            InputStream inputStream = Files.newInputStream(
-                    getPathByFileUri(fileUri)
-            );
+        try (
+                InputStream inputStream = Files.newInputStream(
+                        getPathByFileUri(fileUri)
+                )
+        ){
+
 
             String[] split = fileUri.split("\\.");
 
@@ -128,6 +133,7 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
 
             return MediaHelper.createFileRepresentation(
                     inputStream,
+                    Files.size(getPathByFileUri(fileUri)),
                     MediaHelper.parseToMime(content),
                     fileUri
             );

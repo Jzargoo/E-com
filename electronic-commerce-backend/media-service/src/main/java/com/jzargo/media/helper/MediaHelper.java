@@ -5,15 +5,17 @@ import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.protobuf.ContentType;
 import com.jzargo.protobuf.MediaFile;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
-import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.Java2DFrameConverter;
+import org.bytedeco.ffmpeg.global.avcodec;
+import org.bytedeco.ffmpeg.global.avutil;
+import org.bytedeco.javacv.*;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 
+@Slf4j
 public class MediaHelper {
     static final Tika tika = new Tika();
 
@@ -29,22 +31,22 @@ public class MediaHelper {
         }
     }
 
-    private static ContentType parseContentType(String contentType) {
+    private static ContentType parseContentType(String contentType) throws WrongContentTypeException {
         return switch (contentType) {
             case "image/png" -> ContentType.PNG;
             case "image/jpeg" -> ContentType.JPEG;
             case "image/webp" -> ContentType.WEBP;
             case "video/webm" -> ContentType.WEBM;
             case "video/mp4" -> ContentType.MP4;
-            default -> throw new WrongThreadException();
+            default -> throw new WrongContentTypeException();
         };
     }
 
-    private static boolean isVideo(ContentType contentType) {
+    public static boolean isVideo(ContentType contentType) {
         return contentType.equals(ContentType.MP4)  || contentType.equals(ContentType.WEBM);
     }
 
-    public static InputStream getPosterFromVideo(InputStream bytes, ContentType contentType) throws IOException, CannotProcessException, WrongContentTypeException {
+    public static DownloadedFile getPosterFromVideo(InputStream bytes, ContentType contentType) throws IOException, CannotProcessException, WrongContentTypeException {
 
         if (
                 isVideo(contentType)
@@ -69,50 +71,42 @@ public class MediaHelper {
             throw new CannotProcessException();
         }
 
-        try(Java2DFrameConverter converter = new Java2DFrameConverter()){
-            BufferedImage convert = converter.convert(frame);
 
-            PipedInputStream inputStream = new PipedInputStream();
+        try(Java2DFrameConverter converter = new Java2DFrameConverter()) {
 
-            PipedOutputStream outputStream = new PipedOutputStream(inputStream);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-            new Thread(() -> {
-                try (outputStream) {
-                    ImageIO.write(convert, "jpeg", outputStream);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }).start();
+            BufferedImage image = converter.convert(frame);
 
-            return inputStream;
+            ImageIO.write(image, "jpeg", baos);
 
-        } finally {
-            fFmpegFrameGrabber.stop();
+
+            return DownloadedFile.builder()
+                    .contentType(ContentType.JPEG)
+                    .contentLength((long) baos.size())
+                    .content(
+                            new ByteArrayInputStream(
+                                    baos.toByteArray()
+                            )
+                    )
+                    .build();
+
         }
+
     }
 
     public static DownloadedFile createFileRepresentation(
             InputStream stream,
+            Long contentLength,
             String contentType,
             String fileUri ) throws IOException, CannotProcessException, WrongContentTypeException {
 
         ContentType parsedContentType = parseContentType(contentType);
 
-
-        if (isVideo(parsedContentType)) {
-
-            var is = getPosterFromVideo(stream, parsedContentType);
-
-            return DownloadedFile.builder()
-                    .content(is)
-                    .fileUri(fileUri)
-                    .contentType(parsedContentType)
-                    .build();
-        }
-
         return DownloadedFile.builder()
                 .content(stream)
                 .fileUri(fileUri)
+                .contentLength(contentLength)
                 .contentType(parsedContentType)
                 .build();
     }

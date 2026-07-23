@@ -181,6 +181,12 @@ public class SagaProductCreationListener {
 
         }
 
+        @KafkaHandler
+        @Transactional
+        public void handleForeignMessage(Object foreignMessage) {
+            log.trace("Received foreign message from kafka! The message is {}", foreignMessage);
+        }
+
         private void logRepeatedMessage() {
             log.debug("found repeated message");
         }

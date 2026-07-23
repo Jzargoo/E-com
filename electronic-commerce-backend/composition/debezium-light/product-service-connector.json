@@ -14,6 +14,7 @@
     "publication.name": "product_service_publication",
     "topic.prefix": "productdbserver1",
     "schema.history.internal.kafka.bootstrap.servers": "kafka1:9092",
-    "schema.history.internal.kafka.topic": "schema-changes.product-service"
+    "schema.history.internal.kafka.topic": "schema-changes.product-service",
+    "decimal.handling.mode": "double"
   }
 }

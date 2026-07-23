@@ -6,3 +6,6 @@ spring:
   grpc:
     server:
       port: 0
+  kafka:
+    consumer:
+      enable-auto-commit:

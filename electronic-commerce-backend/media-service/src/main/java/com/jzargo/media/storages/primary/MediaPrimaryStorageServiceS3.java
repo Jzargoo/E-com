@@ -16,10 +16,12 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -67,7 +69,12 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
 
             String contentType = object.response().contentType();
 
-            return MediaHelper.createFileRepresentation(object, contentType, fileUri);
+            return MediaHelper.createFileRepresentation(
+                    object,
+                    object.response().contentLength(),
+                    contentType,
+                    fileUri
+            );
 
         } catch (NoSuchBucketException e) {
             log.warn("The bucket was not initialized, it might be deleted. Creating a bucket with name {}", bucketName);
@@ -133,7 +140,7 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
     }
 
     @Override
-    public void finishFileUploading(String key, String uploadId, List<String> tags) throws CannotProcessException {
+    public CompleteMultipartUploadResponse finishFileUploading(String key, String uploadId, List<String> tags) throws CannotProcessException {
         List<CompletedPart> completedParts = new ArrayList<>();
 
         for (int i = 0; i < tags.size(); i++) {
@@ -157,7 +164,9 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
                 .build();
 
         try {
-            s3Client.completeMultipartUpload(request);
+             return s3Client.completeMultipartUpload(request);
+
+
         } catch (SdkClientException e) {
             throw new CannotProcessException();
         }
@@ -173,5 +182,42 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
                 .build();
 
         s3Client.abortMultipartUpload(build);
+    }
+
+    @Override
+    public void uploadFullFile(DownloadedFile file, Optional<String> ttl) {
+
+
+        PutObjectRequest.Builder request = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(file.getFileUri());
+
+
+        ttl.ifPresent((value) -> {
+            Tag tagTtl = Tag.builder()
+                    .key("ttl")
+                    .value(value)
+                    .build();
+
+            request.tagging(
+                    Tagging.builder()
+                            .tagSet(tagTtl)
+                            .build()
+            );
+        });
+
+
+        try (InputStream in = file.getContent()) {
+
+            s3Client.putObject(
+                    request.build(),
+                    RequestBody.fromInputStream(in, file.getContentLength())
+            );
+
+        } catch (IOException e) {
+
+            log.error("Cannot close an input stream", e);
+
+        }
     }
 }

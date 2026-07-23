@@ -1,9 +1,12 @@
 package com.jzargo.media.grpc;
 
+import com.google.protobuf.ByteString;
 import com.jzargo.media.config.ApplicationPropertyStorage;
 import com.jzargo.media.exceptions.CannotProcessException;
+import com.jzargo.media.exceptions.FileNotFoundException;
 import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.helper.MediaHelper;
+import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.media.service.MediaStorageService;
 import com.jzargo.media.service.SmartBuffersService;
 import com.jzargo.protobuf.ChangeMediaFile;
@@ -15,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.grpc.server.service.GrpcService;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -36,9 +40,76 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
         this.applicationPropertyStorage = applicationPropertyStorage;
     }
 
+    // URI ->
     @Override
     public void getMediaContent(MediaContentURI request, StreamObserver<MediaFile> responseObserver) {
-        super.getMediaContent(request, responseObserver);
+
+        log.info("Caught a request with uri {}", request.getMediaURI());
+
+        Integer portion = applicationPropertyStorage.getPortion();
+
+        try {
+            DownloadedFile fileStream = mediaStorageService.getFileStream(request.getMediaURI());
+
+            if (fileStream == null || fileStream.getContentLength() == 0) {
+
+                log.warn("file stream either is null or has 0 length");
+
+                responseObserver.onNext(MediaFile.newBuilder().build());
+            } else {
+
+                try (
+                        InputStream content = fileStream.getContent()
+                        ) {
+
+                    long remSize = fileStream.getContentLength();
+
+                    long totalChunks = Math.ceilDiv(fileStream.getContentLength(), portion);
+
+                    log.debug(
+                            "Starting sending a pieces: {} of the file by {} bytes portions",
+                            totalChunks,
+                            portion
+                    );
+
+                    for (int i = 0; i < totalChunks; i++) {
+
+                        int len = Math.toIntExact(
+                                Math.min(remSize, portion)
+                        );
+
+                        remSize -= len;
+
+                        MediaFile build = MediaFile.newBuilder()
+                                .setContentType(fileStream.getContentType())
+                                .setContentChunk(
+                                        ByteString.copyFrom(
+                                                content
+                                                        .readNBytes(len)
+                                        )
+                                )
+                                .build();
+
+                        log.trace("Sending a chunk {}, rem size {}", i, remSize);
+
+                        responseObserver.onNext(
+                                build
+                        );
+
+                    }
+                }
+
+            }
+
+            responseObserver.onCompleted();
+
+        } catch (CannotProcessException | FileNotFoundException | IOException | WrongContentTypeException e) {
+
+            log.error("MediaServer getMediaContent failed", e);
+
+            responseObserver.onError(e);
+
+        }
     }
 
     @Override
@@ -61,6 +132,8 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
                 new ArrayList<>()
         );
 
+        AtomicBoolean isVideo = new AtomicBoolean(false);
+
         return new StreamObserver<>() {
             @Override
             public void onNext(MediaFile mediaFile) {
@@ -68,7 +141,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                     if  (isFirst.get()) {
 
-                        String keyValue = "%s/%s.%s"
+                        String keyValue = "%s/products/%s.%s"
                                 .formatted(
                                         applicationPropertyStorage
                                                 .getAws()
@@ -76,6 +149,10 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
                                         UUID.randomUUID().toString(),
                                         MediaHelper.getMediaPostfix(mediaFile.getContentType())
                                 );
+
+                        isVideo.set(
+                                MediaHelper.isVideo(mediaFile.getContentType())
+                        );
 
                         String uploadIdValue = mediaStorageService.initiateFile(mediaFile, keyValue);
 
@@ -124,7 +201,8 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                     tags.get().add(tag);
 
-                    mediaStorageService.finishFileUploading(key.get(), uploadId.get(), tags.get());
+                    mediaStorageService.finishFileUploading(key.get(), uploadId.get(), tags.get(), isVideo.get());
+
                 } catch (CannotProcessException e) {
                     log.error("Error while processing request. Cannot send the residual bytes", e);
                     throw new RuntimeException(e);

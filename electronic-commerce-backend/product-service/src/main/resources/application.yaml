@@ -1,5 +1,5 @@
 server:
-  port: 0
+  port: 8080
 spring:
   application:
     name: product-service
@@ -7,3 +7,6 @@ spring:
     import: optional:configserver:http://localhost:8888
   profiles:
     active: devconfig
+  kafka:
+    admin:
+      close-timeout: 10s
