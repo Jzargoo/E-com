@@ -3,9 +3,12 @@ spring:
     name: media-service
   profiles:
     active: devconfig
+  config:
+    import: configserver:http://localhost:8888
   grpc:
     server:
-      port: 0
-  kafka:
-    consumer:
-      enable-auto-commit:
+      port: 8081
+  cloud:
+    aws:
+      region:
+        static: kz-central-1

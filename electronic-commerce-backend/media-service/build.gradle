@@ -3,6 +3,9 @@ plugins {
     id 'org.springframework.boot' version '4.1.0'
     id 'io.spring.dependency-management' version '1.1.7'
 }
+ext {
+    springCloudVersion = "2025.1.2"
+}
 
 group = 'com.jzargo'
 version = '0.0.1-SNAPSHOT'
@@ -20,11 +23,12 @@ repositories {
 }
 
 dependencies {
-    implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.2.1")
+    implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.1.0")
     implementation"io.awspring.cloud:spring-cloud-aws-starter-s3"
 
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-grpc-server'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
@@ -42,6 +46,11 @@ dependencies {
     implementation 'org.bytedeco:openblas:0.3.31-1.5.13:windows-x86_64'
 
     implementation 'org.apache.tika:tika-core:3.2.2'
+}
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
+    }
 }
 
 tasks.named('test') {

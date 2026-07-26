@@ -2,10 +2,12 @@ package com.jzargo.media.event;
 
 import com.jzargo.media.config.KafkaPropertyStorage;
 import com.jzargo.media.storages.persistent.StorageType;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnBooleanProperty("kafka.enabled")
 public class KafkaDlqEventPublisher implements DlqEventPublisher{
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final KafkaPropertyStorage kafkaPropertyStorage;
@@ -23,7 +25,7 @@ public class KafkaDlqEventPublisher implements DlqEventPublisher{
 
         String topicName = kafkaPropertyStorage.getFailedFileOperationTopic()
                 .getName()
-                + "_" +
+                + "." +
                 currentStorageType.toString();
 
         FailedOperationEvent failedOperationEvent =

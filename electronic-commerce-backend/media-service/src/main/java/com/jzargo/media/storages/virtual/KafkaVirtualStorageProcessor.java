@@ -1,10 +1,7 @@
 package com.jzargo.media.storages.virtual;
 
 import com.jzargo.media.config.balancing.MediaPersistentStorageBackendRegistry;
-import com.jzargo.media.event.DlqEventPublisher;
-import com.jzargo.media.event.EventPublisher;
-import com.jzargo.media.event.FileCreatedSyncEvent;
-import com.jzargo.media.event.FileRequestEvent;
+import com.jzargo.media.event.*;
 import com.jzargo.media.exceptions.CannotDownloadFileException;
 import com.jzargo.media.exceptions.CannotProcessException;
 import com.jzargo.media.exceptions.WrongContentTypeException;
@@ -226,6 +223,11 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
         } catch (WrongContentTypeException e) {
             log.error("Tried to download a file from a secondary storage {} but it was corrupted",event.getStorageType(), e);
         }
+    }
+
+    @Override
+    public void processRecoveryEvent(RecoveryEvent event) throws CannotProcessException {
+        log.warn("NOT YET IMPLEMENTED, {}", event);
     }
 
 

@@ -50,11 +50,15 @@ public class KafkaConfig {
         KafkaPropertyStorage.Topic failedFileOperationTopic =
                 kafkaPropertyStorage.getFailedFileOperationTopic();
 
+        if (applicationPropertyStorage.getStorages() == null || failedFileOperationTopic == null) {
+            return new KafkaAdmin.NewTopics();
+        }
+
         applicationPropertyStorage.getStorages().forEach(
                 storage -> topics.add(
                     createTopicByProperties(
                             failedFileOperationTopic,
-                            "_" + storage.getStorageType().toString()
+                            "." + storage.getStorageType().toString()
                     )
                 )
         );

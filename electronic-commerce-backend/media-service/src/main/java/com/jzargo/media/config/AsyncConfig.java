@@ -19,12 +19,12 @@ public class AsyncConfig {
     public Executor asyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
-        var poster = applicationPropertyStorage.getAsync().getPoster();
+        var poster = applicationPropertyStorage.getAsync().getExecutor();
 
         executor.setCorePoolSize(poster.getCorePoolSize());
-        executor.setMaxPoolSize(poster.getMaximumPoolSize());
+        executor.setMaxPoolSize(poster.getMaxPoolSize());
         executor.setQueueCapacity(poster.getQueueCapacity());
-        executor.setKeepAliveSeconds(poster.getKeepAliveTime());
+        executor.setKeepAliveSeconds(poster.getKeepAliveTimeInSeconds());
         executor.setThreadNamePrefix("poster-");
 
         executor.initialize();

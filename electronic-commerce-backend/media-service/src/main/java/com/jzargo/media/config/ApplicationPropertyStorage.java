@@ -34,7 +34,8 @@ public class ApplicationPropertyStorage {
     @AllArgsConstructor
     public static class NativeStorageOptions {
         private String savingPath;
-        private String pathToDlqFilesRelative;
+
+        public String tempDirectory;
     }
 
     @Data
@@ -42,7 +43,7 @@ public class ApplicationPropertyStorage {
     @AllArgsConstructor
     public static class Async {
 
-        private AsyncProperties poster;
+        private AsyncProperties executor;
 
 
         @Data
@@ -50,17 +51,17 @@ public class ApplicationPropertyStorage {
         @AllArgsConstructor
         public static class AsyncProperties {
             private Integer corePoolSize;
-            private Integer maximumPoolSize;
-            private Integer keepAliveTime;
+            private Integer maxPoolSize;
+            private Integer keepAliveTimeInSeconds;
             private Integer queueCapacity;
         }
     }
 
-        @Data
+    @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Aws{
-        private String bucketName;
+        private String bucket;
         private SmartBufferProperties smartStreamProperties;
         private String objectTtl;
     }
@@ -69,8 +70,7 @@ public class ApplicationPropertyStorage {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SmartBufferProperties {
-        private Integer bufferSize;
-        private Integer threshold;
+        private Long threshold;
     }
 
     @Data

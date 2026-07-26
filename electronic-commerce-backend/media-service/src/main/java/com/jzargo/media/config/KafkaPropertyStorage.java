@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component
-@Profile("kafka")
 @NoArgsConstructor
 @AllArgsConstructor
 @ConditionalOnBooleanProperty("kafka.enabled")
