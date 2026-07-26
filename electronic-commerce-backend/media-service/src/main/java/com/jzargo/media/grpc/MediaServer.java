@@ -8,7 +8,8 @@ import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.media.service.MediaStorageService;
-import com.jzargo.media.service.SmartBuffersService;
+import com.jzargo.media.service.TempFileBufferFactory;
+import com.jzargo.media.service.UploadSession;
 import com.jzargo.protobuf.ChangeMediaFile;
 import com.jzargo.protobuf.MediaContentURI;
 import com.jzargo.protobuf.MediaFile;
@@ -19,25 +20,22 @@ import org.springframework.grpc.server.service.GrpcService;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @GrpcService
 public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
     private final MediaStorageService mediaStorageService;
-    private final SmartBuffersService smartBuffersService;
     private final ApplicationPropertyStorage applicationPropertyStorage;
+    private final TempFileBufferFactory tempFileBufferFactory;
 
-    public MediaServer(MediaStorageService mediaStorageService, SmartBuffersService smartBuffersService, ApplicationPropertyStorage applicationPropertyStorage) {
+    public MediaServer(MediaStorageService mediaStorageService, ApplicationPropertyStorage applicationPropertyStorage, TempFileBufferFactory tempFileBufferFactory) {
         super();
         this.mediaStorageService = mediaStorageService;
-        this.smartBuffersService = smartBuffersService;
         this.applicationPropertyStorage = applicationPropertyStorage;
+        this.tempFileBufferFactory = tempFileBufferFactory;
     }
 
     // URI ->
@@ -124,71 +122,65 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
         AtomicBoolean isFirst = new AtomicBoolean(true);
 
-        AtomicReference<String> uploadId = new AtomicReference<>();
-
-        AtomicReference<String> key = new AtomicReference<>();
-
-        AtomicReference<List<String>> tags = new AtomicReference<>(
-                new ArrayList<>()
-        );
-
-        AtomicBoolean isVideo = new AtomicBoolean(false);
+        final UploadSession[] uploadSession = new UploadSession[1];
 
         return new StreamObserver<>() {
+
             @Override
             public void onNext(MediaFile mediaFile) {
+
                 try {
 
-                    if  (isFirst.get()) {
+                    if (isFirst.get()) {
+
+                        MediaHelper.checkContentType(mediaFile);
+
+                        log.info("Processing First chunk");
 
                         String keyValue = "%s/products/%s.%s"
                                 .formatted(
                                         applicationPropertyStorage
                                                 .getAws()
-                                                .getBucketName(),
+                                                .getBucket(),
                                         UUID.randomUUID().toString(),
                                         MediaHelper.getMediaPostfix(mediaFile.getContentType())
                                 );
 
-                        isVideo.set(
-                                MediaHelper.isVideo(mediaFile.getContentType())
+
+                        uploadSession[0] = new UploadSession(
+                                tempFileBufferFactory.createBuffer(),
+                                mediaFile.getContentType(),
+                                mediaStorageService,
+                                MediaHelper.isVideo(mediaFile.getContentType()),
+                                keyValue
                         );
-
-                        String uploadIdValue = mediaStorageService.initiateFile(mediaFile, keyValue);
-
-                        key.set(keyValue);
-
-                        uploadId.set(uploadIdValue);
-
-                        smartBuffersService.addBuffer(uploadIdValue);
-
-                        isFirst.set(false);
-
                     }
 
-                    String tag = smartBuffersService.addIntoBuffer(
-                            key.get(),
-                            uploadId.get(),
-                            mediaFile.getContentChunk()
-                                    .toByteArray()
-                    );
+                    log.debug("Processing a chunk!");
 
-                    tags.get().add(tag);
+                    uploadSession[0].process(mediaFile);
 
-                } catch (IOException | WrongContentTypeException | CannotProcessException e) {
-                        throw new RuntimeException(e);
+
+                } catch (Exception e) {
+                    log.error("MediaServer addMediaFile failed", e);
+                    throw new RuntimeException(e);
                 }
             }
 
+
             @Override
             public void onError(Throwable throwable) {
+
                 log.error("Error while processing request", throwable);
 
                 try {
-                    mediaStorageService.abortMultipartFile(key.get(), uploadId.get());
-                    smartBuffersService.finishBuffer(key.get(), uploadId.get());
 
-                } catch (CannotProcessException ignored) {}
+                    uploadSession[0].abort();
+                    responseObserver.onError(throwable);
+
+                } catch (CannotProcessException e) {
+                    log.error("Aborting an upload session finished with error!", e);
+                }
 
             }
 
@@ -197,18 +189,27 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
                 log.info("New MediaFile stream has been created");
 
                 try {
-                    String tag = smartBuffersService.finishBuffer(key.get(), uploadId.get());
 
-                    tags.get().add(tag);
+                    String key = uploadSession[0].complete();
 
-                    mediaStorageService.finishFileUploading(key.get(), uploadId.get(), tags.get(), isVideo.get());
+                    responseObserver.onNext(
+                            MediaContentURI.newBuilder()
+                                    .setMediaURI(key)
+                                    .build()
+                    );
+
+                    responseObserver.onCompleted();
 
                 } catch (CannotProcessException e) {
+
                     log.error("Error while processing request. Cannot send the residual bytes", e);
+
                     throw new RuntimeException(e);
                 }
 
             }
+
         };
+
     }
 }

@@ -18,7 +18,6 @@ import software.amazon.awssdk.services.s3.model.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +32,7 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
 
     public MediaPrimaryStorageServiceS3(S3Client s3Client, ApplicationPropertyStorage aps) {
         this.s3Client = s3Client;
-        this.bucketName = aps.getAws().getBucketName();
+        this.bucketName = aps.getAws().getBucket();
     }
 
 
@@ -104,16 +103,17 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
     }
 
     @Override
-    public String uploadPartOfFile(String uploadId, String key, byte[] bytes) {
+    public String uploadPartOfFile(String uploadId, String key, InputStream is, Integer partNumber, Long length) {
 
         UploadPartRequest build = UploadPartRequest.builder()
                 .bucket(bucketName)
                 .key(key)
+                .partNumber(partNumber)
                 .uploadId(uploadId)
-                .contentLength((long) bytes.length)
+                .contentLength(length)
                 .build();
 
-        RequestBody body = RequestBody.fromBytes(bytes);
+        RequestBody body = RequestBody.fromInputStream(is, length);
 
         UploadPartResponse uploadPartResponse = s3Client.uploadPart(build, body);
 
@@ -141,13 +141,17 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
 
     @Override
     public CompleteMultipartUploadResponse finishFileUploading(String key, String uploadId, List<String> tags) throws CannotProcessException {
+
         List<CompletedPart> completedParts = new ArrayList<>();
 
-        for (int i = 0; i < tags.size(); i++) {
+        for (int i =  0; i < tags.size(); i++) {
+
+            log.info("Constructing a part with tag {} and number {}",  tags.get(i), i);
+
             completedParts.add(
                     CompletedPart.builder()
                             .eTag(tags.get(i))
-                            .partNumber(i)
+                            .partNumber(i + 1)
                             .build()
             );
         }
@@ -166,8 +170,10 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
         try {
              return s3Client.completeMultipartUpload(request);
 
-
         } catch (SdkClientException e) {
+            throw new CannotProcessException();
+        } catch (Exception e) {
+            log.error("Exception occurred in finishFileUploading", e);
             throw new CannotProcessException();
         }
     }

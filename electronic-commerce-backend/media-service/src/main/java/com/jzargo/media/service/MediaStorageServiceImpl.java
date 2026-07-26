@@ -38,14 +38,12 @@ public class MediaStorageServiceImpl implements MediaStorageService {
     }
 
     @Override
-    public String storeChunkFile(String key, String uploadId, byte[] byteArray) {
-        return mediaPrimaryStorageService.uploadPartOfFile(uploadId, key, byteArray);
+    public String storeChunkFile(String key, String uploadId, InputStream is, Integer partNumber, Long length) {
+        return mediaPrimaryStorageService.uploadPartOfFile(uploadId, key, is, partNumber, length);
     }
 
     @Override
-    public String initiateFile(MediaFile mediaFile, String key) throws IOException, WrongContentTypeException {
-        MediaHelper.checkContentType(mediaFile);
-
+    public String initiateFile(MediaFile mediaFile, String key) throws WrongContentTypeException {
         return mediaPrimaryStorageService.startUploadingFile(mediaFile.getContentType(), key);
     }
 
@@ -114,6 +112,15 @@ public class MediaStorageServiceImpl implements MediaStorageService {
             }
 
         }
+    }
+
+    @Override
+    public void storeFullFile(DownloadedFile file) {
+
+        mediaPrimaryStorageService.uploadFullFile(
+                file, Optional.empty()
+        );
+
     }
 
     @Async("poster-executor")

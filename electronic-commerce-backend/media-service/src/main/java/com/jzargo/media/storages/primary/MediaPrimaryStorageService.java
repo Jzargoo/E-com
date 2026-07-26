@@ -7,6 +7,7 @@ import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.protobuf.ContentType;
 import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadResponse;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,7 +16,7 @@ public interface MediaPrimaryStorageService {
 
     DownloadedFile downloadFile(String fileUri) throws CannotDownloadFileException;
 
-    String uploadPartOfFile(String uploadId, String key, byte[] bytes);
+    String uploadPartOfFile(String uploadId, String key, InputStream is, Integer partNumber, Long length);
 
     String startUploadingFile(ContentType contentType, String key) throws WrongContentTypeException;
 
@@ -24,4 +25,5 @@ public interface MediaPrimaryStorageService {
     void abortMultipartFile(String key, String uploadId);
 
     void uploadFullFile(DownloadedFile file, Optional<String> ttl);
+
 }

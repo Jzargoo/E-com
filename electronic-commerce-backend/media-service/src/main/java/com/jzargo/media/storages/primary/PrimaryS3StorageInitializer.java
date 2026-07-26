@@ -3,7 +3,6 @@ package com.jzargo.media.storages.primary;
 import com.jzargo.media.config.ApplicationPropertyStorage;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -12,7 +11,6 @@ import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 
 @Slf4j
 @Component
-@Profile("s3")
 public class PrimaryS3StorageInitializer {
 
     private final ApplicationPropertyStorage applicationPropertyStorage;
@@ -30,7 +28,7 @@ public class PrimaryS3StorageInitializer {
     }
 
     private void initBuckets() {
-        String bucket = applicationPropertyStorage.getAws().getBucketName();
+        String bucket = applicationPropertyStorage.getAws().getBucket();
 
         initBucketIfNotExist(bucket);
     }
