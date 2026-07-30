@@ -2,6 +2,7 @@ package com.jzargo.productservice.api;
 
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
+import com.jzargo.productservice.model.PlainFile;
 import com.jzargo.productservice.service.MediaService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class MediaController {
                     "authentication.principal.claims['mode'] == 'OWNER'"
     )
     public ResponseEntity<String> addMediaContent(
-            @RequestBody @NotNull List<MultipartFile> multipartFiles,
+            @RequestBody @NotNull MultipartFile multipartFile,
             @PathVariable Long productId,
             @AuthenticationPrincipal Jwt jwt
     ) throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException {
@@ -42,8 +43,9 @@ public class MediaController {
             return ResponseEntity.badRequest().build();
         }
 
+
         mediaService.addMediaContent(
-                multipartFiles,
+                multipartFile,
                 productId,
                 shopId.intValue()
         );
@@ -54,7 +56,7 @@ public class MediaController {
     }
 
     @GetMapping("/{productId}")
-    public ResponseEntity<List<MultipartFile>> getAllMediaContents(
+    public ResponseEntity<List<PlainFile>> getAllMediaContents(
             @PathVariable Long productId
     ) throws IOException, ProductNotFoundException {
 
@@ -63,6 +65,7 @@ public class MediaController {
         return ResponseEntity.ok(
                 mediaService.getMediaContent(productId)
         );
+
     }
 
     @GetMapping("/avatar/{productId}")

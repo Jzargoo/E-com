@@ -10,13 +10,13 @@ import java.util.List;
 
 public interface MediaService {
 
-    void addMediaContent(List<MultipartFile> contents, Long productId, Integer shopId)
+    void addMediaContent(MultipartFile content, Long productId, Integer shopId)
             throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException;
 
     void addAvatar(MultipartFile image, Long productId, Integer shopId)
             throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException;
 
-    List<MultipartFile> getMediaContent(Long productId)
+    List<PlainFile> getMediaContent(Long productId)
             throws IOException, ProductNotFoundException;
 
     MultipartFile getAvatar(Long productId)

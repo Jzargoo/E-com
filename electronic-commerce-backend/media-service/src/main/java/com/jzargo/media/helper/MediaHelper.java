@@ -7,8 +7,6 @@ import com.jzargo.protobuf.ContentType;
 import com.jzargo.protobuf.MediaFile;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
-import org.bytedeco.ffmpeg.global.avcodec;
-import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacv.*;
 
 import javax.imageio.ImageIO;
@@ -26,13 +24,29 @@ public class MediaHelper {
 
         String detect = tika.detect(mediaFile.getContentChunk().newInput());
 
-        if (mediaFile.getContentType() != parseContentType(detect)) {
+        ContentType parsedContentType = parseContentType(detect);
+
+        log.trace("Detected content type: {} while parsed is {}", detect, parsedContentType);
+
+        if (mediaFile.getContentType() != parsedContentType) {
             throw new WrongContentTypeException();
         }
     }
 
     private static ContentType parseContentType(String contentType) throws WrongContentTypeException {
-        return switch (contentType) {
+
+        if (contentType == null) {
+            throw new WrongContentTypeException();
+        }
+
+        var cleanedContentType =  contentType
+                .split(";")[0]
+                .trim()
+                .toLowerCase();
+
+        log.trace("Cleaned content type: {}", cleanedContentType);
+
+        return switch (cleanedContentType) {
             case "image/png" -> ContentType.PNG;
             case "image/jpeg" -> ContentType.JPEG;
             case "image/webp" -> ContentType.WEBP;
@@ -100,6 +114,8 @@ public class MediaHelper {
             Long contentLength,
             String contentType,
             String fileUri ) throws IOException, CannotProcessException, WrongContentTypeException {
+
+        log.info("Creating a file representation with content type {} and length {}", contentType, contentLength);
 
         ContentType parsedContentType = parseContentType(contentType);
 

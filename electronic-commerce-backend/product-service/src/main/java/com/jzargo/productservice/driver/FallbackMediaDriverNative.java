@@ -5,12 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.StandardOpenOption;
 import java.util.UUID;
 
 @Slf4j
@@ -24,7 +23,7 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
     }
 
     @Override
-    public String saveFile(byte[] content) throws IOException  {
+    public String saveFile(InputStream content, Long length) throws IOException  {
         String path = applicationPropertyStorage.getMedia().getPath();
 
         Files.createDirectories(Path.of(path));
@@ -34,18 +33,39 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
 
         Files.createFile(pathToFile);
 
-        Files.write(pathToFile, content);
+        Integer portionSize =
+                applicationPropertyStorage.getFallbackMedia().getPortionSize();
+
+        long l = Math.ceilDiv(length, portionSize.longValue()) + 1;
+
+        try (
+                OutputStream  stream = Files.newOutputStream(
+                        pathToFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE
+                )
+
+        ){
+
+            for (long i = 0; i < l; i++) {
+
+                stream.write(
+                        content.readNBytes(portionSize)
+                );
+
+            }
+
+        }
+
 
         return image_name;
     }
 
     @Override
-    public byte[] getFile(String name) throws IOException {
+    public InputStream getFile(String name) throws IOException {
         var path = Path.of(
                 applicationPropertyStorage.getMedia().getPath() + "\\" + name
         );
 
-        return Files.readAllBytes(path);
+        return Files.newInputStream(path);
     }
 
     @Override

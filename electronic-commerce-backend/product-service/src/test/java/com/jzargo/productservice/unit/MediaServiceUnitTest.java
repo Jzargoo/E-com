@@ -7,7 +7,7 @@ import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
 import com.jzargo.productservice.model.PlainFile;
 import com.jzargo.productservice.repository.ProductRepository;
 import com.jzargo.productservice.client.MediaServiceClientImpl;
-import com.jzargo.productservice.service.MediaServiceImpl;
+import com.jzargo.productservice.service.InternalMediaServiceImpl;
 import com.jzargo.protobuf.ContentType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +39,7 @@ public class MediaServiceUnitTest {
     private MediaServiceClientImpl mediaServiceClient;
 
     @InjectMocks
-    private MediaServiceImpl mediaService;
+    private InternalMediaServiceImpl mediaService;
 
     @Mock
     private ProductRepository productRepository;
@@ -56,51 +57,39 @@ public class MediaServiceUnitTest {
     }
 
     @Test
-    public void addImages_test_success(){
+    public void addImage_test_success(){
 
-        byte[][] contents = {
-                {5,4,3,2,1},
-                {1,2,3,4,5}
-        };
+        byte[] content = {5,4,3,2,1};
 
-        List<String> images = List.of("image1.png", "image2.png");
+        String image = "image1.png";
 
-        List<PlainFile> plainFiles = List.of(
-                new PlainFile(contents[0], ContentType.PNG),
-                new PlainFile(contents[1], ContentType.PNG)
-        );
+        PlainFile plainFile =
+                new PlainFile(new ByteArrayInputStream(content), ContentType.PNG, (long) content.length);
 
-        List<MultipartFile> multipartFiles = List.of(
+        MultipartFile multipartFile =
                 new MockMultipartFile(
                         "image1.png",
-                        images.getFirst(),
+                        image,
                         "image/png",
-                        contents[0]
-                ),
-                new MockMultipartFile(
-                        "image2.png",
-                        images.get(1),
-                        "image/png",
-                        contents[1]
-                )
-        );
+                        content
+                );
 
 
         try {
             Mockito.when(
-                    mediaServiceClient.sendFiles(plainFiles)
+                    mediaServiceClient.sendFile(plainFile)
             ).thenReturn(
-                    images
+                    image
             );
 
-            mediaService.addMediaContent(multipartFiles, PRODUCT_ID, SHOP_ID);
+            mediaService.addMediaContent(multipartFile, PRODUCT_ID, SHOP_ID);
 
-            Assertions.assertEquals(product.getMediaContent(), images);
+            Assertions.assertEquals(image, product.getMediaContent());
 
             Mockito.verify(
                     mediaServiceClient,
                     Mockito.times(1)
-            ).sendFiles( any() );
+            ).sendFile( any() );
 
             Mockito.verify(
                     productRepository,
@@ -119,7 +108,7 @@ public class MediaServiceUnitTest {
 
         var image = "image.png";
 
-        var plainFile = new PlainFile(content, ContentType.PNG);
+        var plainFile = new PlainFile(new ByteArrayInputStream(content), ContentType.PNG, (long) content.length);
 
         try {
             Mockito.when(
@@ -211,28 +200,23 @@ public class MediaServiceUnitTest {
 
         List<String> media = List.of("image1.png", "video1.mp4");
 
-        product.addMedia(media);
-        List<MultipartFile> listMockFiles = List.of(
-                new MockMultipartFile(
-                        "video.mp4",
-                        media.get(1),
-                        "video/mp4",
-                        contents.get(1)
-                ),
-                new MockMultipartFile(
-                        "image1.png",
-                        media.getFirst(),
-                        "image/png",
-                        contents.getFirst()
-                )
+        product.addMedia(media.getFirst());
+        product.addMedia(media.get(1));
+
+        List<PlainFile> listMockFiles = List.of(
+                new PlainFile(
+                        new ByteArrayInputStream( contents.getFirst() ), ContentType.PNG, (long) contents.getFirst().length),
+                new PlainFile(
+                        new ByteArrayInputStream( contents.get(1) ), ContentType.MP4, (long) contents.get(1).length)
         );
 
         try {
+
             Mockito.when(
                     mediaServiceClient.receiveFiles(media)
             ).thenReturn(listMockFiles);
 
-            List<MultipartFile> returnedImages = mediaService.getMediaContent(PRODUCT_ID);
+            List<PlainFile> returnedImages = mediaService.getMediaContent(PRODUCT_ID);
 
             Assertions.assertEquals(
                     returnedImages.size(),
@@ -241,7 +225,7 @@ public class MediaServiceUnitTest {
             );
 
             for (int i = 0; i < returnedImages.size(); i++) {
-                Assertions.assertArrayEquals(contents.get(i), returnedImages.get(i).getBytes(), "Content of the images does not match");
+                Assertions.assertArrayEquals(contents.get(i), returnedImages.get(i).getContent().readAllBytes(), "Content of the images does not match");
             }
 
             Mockito.verify(
@@ -260,4 +244,5 @@ public class MediaServiceUnitTest {
             Assertions.fail("Product was not found in the repository");
         }
     }
+
 }

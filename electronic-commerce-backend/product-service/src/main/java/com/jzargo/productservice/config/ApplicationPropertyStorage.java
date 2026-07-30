@@ -24,9 +24,11 @@ public class ApplicationPropertyStorage {
     @NotNull
     private Caching caching;
 
+    private FallbackMedia fallbackMedia;
+
     private Security security;
 
-
+    private Grpc grpc;
 
     @Data
     public static class Media{
@@ -39,10 +41,10 @@ public class ApplicationPropertyStorage {
 
     @Data
     public static class Caching{
-        @NotNull
+        @NotNull(message = "properties for category cache was missing")
         private CacheProperties categoryCacheProperties;
 
-        @NotNull
+        @NotNull(message = "properties for product cache was missing")
         private CacheProperties productCacheProperties;
 
         public List<CacheProperties> getCaches() {
@@ -51,9 +53,13 @@ public class ApplicationPropertyStorage {
 
         @Data
         public static class CacheProperties {
+            @NotNull(message = "name in cache properties was missing in the context")
             private String name;
+            @NotNull(message = "expire after access properties was missing in the context")
             private Long expireAfterAccessInSeconds;
+            @NotNull(message = "expire after write properties was missing in the context")
             private Long expireAfterWriteInSeconds;
+            @NotNull(message = "max size for cache properties was missing in the context")
             private Integer maxSize;
         }
     }
@@ -66,5 +72,20 @@ public class ApplicationPropertyStorage {
         private String jwksUri;
         private String clientId;
         private String issuer;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Grpc {
+        private String channelMediaName;
+        private Integer portionSize;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class FallbackMedia {
+        private Integer portionSize;
     }
 }

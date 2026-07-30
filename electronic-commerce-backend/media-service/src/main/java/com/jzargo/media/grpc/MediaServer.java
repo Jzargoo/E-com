@@ -58,7 +58,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                 try (
                         InputStream content = fileStream.getContent()
-                        ) {
+                ) {
 
                     long remSize = fileStream.getContentLength();
 
@@ -133,9 +133,10 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                     if (isFirst.get()) {
 
+                        log.info("Processing First chunk");
+
                         MediaHelper.checkContentType(mediaFile);
 
-                        log.info("Processing First chunk");
 
                         String keyValue = "%s/products/%s.%s"
                                 .formatted(
@@ -154,6 +155,9 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
                                 MediaHelper.isVideo(mediaFile.getContentType()),
                                 keyValue
                         );
+
+                        isFirst.set(false);
+
                     }
 
                     log.debug("Processing a chunk!");

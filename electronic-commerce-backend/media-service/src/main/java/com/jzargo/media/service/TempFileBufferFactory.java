@@ -72,7 +72,7 @@ public class TempFileBufferFactory {
 
     public TempFileBuffer createBuffer() {
         try {
-            return new TempFileBuffer(tempDirectory.toString(), threshold);
+            return new TempFileBuffer(tempDirectory.getFileName().toString(), threshold);
         } catch (IOException e) {
             log.error("Error creating temp buffer", e);
             throw new RuntimeException(e);

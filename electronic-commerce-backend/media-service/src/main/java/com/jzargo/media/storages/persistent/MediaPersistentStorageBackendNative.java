@@ -102,7 +102,7 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
 
                 }
 
-            };
+            }
 
         } catch (IOException e) {
             throw new CannotProcessException();
@@ -153,6 +153,6 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
     @Override
     @PostConstruct
     public void register() {
-
+        mediaPersistentStorageBackendRegistry.addBackend(this);
     }
 }

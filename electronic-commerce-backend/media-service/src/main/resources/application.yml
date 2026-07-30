@@ -12,3 +12,7 @@ spring:
     aws:
       region:
         static: kz-central-1
+application:
+  native-storage-options:
+    tempDirectory: media-service-temp
+  portion: 65536  # 64 * 1024

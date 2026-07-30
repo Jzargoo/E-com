@@ -12,8 +12,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 
 @Data
@@ -64,8 +62,8 @@ public class Product {
     @Builder.Default
     private List<FallbackMediaContent> fallbackMediaContents = new ArrayList<>();
 
-    public void addMedia(List<String> filesId) {
-        mediaContent.addAll(filesId);
+    public void addMedia(String uri) {
+        mediaContent.add(uri);
     }
 
     public void addFallbackMedia(FallbackMediaContent fallbackMediaContent) {

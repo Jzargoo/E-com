@@ -1,30 +1,15 @@
 package com.jzargo.productservice.driver;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 public interface FallbackMediaDriver {
 
-    String saveFile(byte[] content) throws IOException;
 
-    default List<String> saveFiles(byte[][] content) throws IOException {
-        List<String> output = new ArrayList<>();
-        try{
-            for (byte[] file: content) {
-                output.add(
-                        saveFile(file)
-                );
-            }
-        } catch (IOException e) {
-            deleteFiles(output);
-        }
-
-        return output;
-    }
-
-    default List<byte[]> getContent(List<String> mediaIds) throws IOException {
-        List<byte[]> files = new ArrayList<>();
+    default List<InputStream> getContent(List<String> mediaIds) throws IOException {
+        List<InputStream> files = new ArrayList<>();
 
         for (String mediaId: mediaIds) {
             files.add(
@@ -36,7 +21,9 @@ public interface FallbackMediaDriver {
 
     }
 
-    byte[] getFile  (String mediaId) throws IOException;
+    String saveFile(InputStream content, Long length) throws IOException;
+
+    InputStream getFile  (String mediaId) throws IOException;
 
     default void deleteFiles(List<String> fileNames) throws IOException{
         for (String fileName: fileNames) {

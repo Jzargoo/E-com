@@ -8,6 +8,7 @@ import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
 import com.jzargo.productservice.exception.UnsupportedContentType;
+import com.jzargo.productservice.helper.ContentTypeParser;
 import com.jzargo.productservice.model.PlainFile;
 import com.jzargo.productservice.repository.FallbackMediaContentRepository;
 import com.jzargo.productservice.repository.ProductRepository;
@@ -29,14 +30,14 @@ import static com.jzargo.productservice.helper.ContentTypeParser.parseImage;
 @Slf4j
 @Service
 @Transactional(readOnly = true) // if not provided, data must be in immutable state
-public class MediaServiceImpl implements MediaService {
+public class InternalMediaServiceImpl implements MediaService {
 
     private final MediaServiceClient mediaServiceClient;
     private final ProductRepository productRepository;
     private final FallbackMediaContentRepository fallbackMediaContentRepository;
     private final FallbackMediaDriver fallbackMediaDriver;
 
-    public MediaServiceImpl(MediaServiceClient mediaServiceClient, ProductRepository productRepository, FallbackMediaContentRepository fallbackMediaContentRepository, FallbackMediaDriver fallbackMediaDriver) {
+    public InternalMediaServiceImpl(MediaServiceClient mediaServiceClient, ProductRepository productRepository, FallbackMediaContentRepository fallbackMediaContentRepository, FallbackMediaDriver fallbackMediaDriver) {
         this.mediaServiceClient = mediaServiceClient;
         this.productRepository = productRepository;
         this.fallbackMediaContentRepository = fallbackMediaContentRepository;
@@ -48,7 +49,7 @@ public class MediaServiceImpl implements MediaService {
     @Transactional
     @CircuitBreaker(name = "mediaService", fallbackMethod = "fallbackAddingMediaContent")
     @Bulkhead(name = "mediaService", fallbackMethod = "fallbackAddingMediaContent")
-    public void addMediaContent(List<MultipartFile> mediaContent, Long productId, Integer shopId)
+    public void addMediaContent(MultipartFile mediaContent, Long productId, Integer shopId)
             throws ProductNotFoundException, ShopDoesNotOwnProductException, UnsupportedContentType {
 
         Product product = productRepository
@@ -59,31 +60,36 @@ public class MediaServiceImpl implements MediaService {
             throw new ShopDoesNotOwnProductException();
         }
 
-        List<PlainFile> plainFiles = mediaContent.stream().map(
-                file -> {
-                    try {
-                        return new PlainFile(
-                                file.getBytes(),
-                                parse(Objects.requireNonNull(file.getContentType()))
-                        );
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-        ).toList();
+        try {
 
-        List<String> names = mediaServiceClient.sendFiles(plainFiles);
+            String uri = mediaServiceClient.sendFile(
+                new PlainFile(
+                        mediaContent.getInputStream(),
+                        ContentTypeParser.parse(
+                                Objects.requireNonNull(
+                                        mediaContent.getContentType()
+                                )
+                        ),
+                        mediaContent.getSize()
+                )
+            );
 
-        product.addMedia(names);
+            product.addMedia(uri);
 
-        productRepository.save(product);
+            productRepository.save(product);
+
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     @SuppressWarnings("unused")
-    public void fallbackAddingMediaContent(List<MultipartFile> mediaContent, Long productId, Integer shopId)
+    public void fallbackAddingMediaContent(MultipartFile mediaContent, Long productId, Integer shopId)
             throws ProductNotFoundException, ShopDoesNotOwnProductException, UnsupportedContentType, IOException {
 
-        log.debug("Fallback method for adding multiple media content was invoked");
+        log.debug("Fallback method that adds media content was invoked");
 
         Product product = productRepository.findById(productId).orElseThrow(
                 ProductNotFoundException::new
@@ -93,33 +99,18 @@ public class MediaServiceImpl implements MediaService {
             throw new ShopDoesNotOwnProductException();
         }
 
-        List<FallbackMediaContent> mediaContents = new ArrayList<>();
+        FallbackMediaContent build = FallbackMediaContent.builder()
+                .contentType(
+                        parse(Objects.requireNonNull(mediaContent.getContentType()))
+                )
+                .build();
 
-        for(MultipartFile file: mediaContent) {
+        build.setProduct(product);
 
-            FallbackMediaContent build = FallbackMediaContent.builder()
-                    .contentType(
-                            parse(Objects.requireNonNull(file.getContentType()))
-                    )
-                    .build();
 
-            build.setProduct(product);
+        fallbackMediaDriver.saveFile(mediaContent.getInputStream(), mediaContent.getSize());
 
-            mediaContents.add(build);
-        }
-
-        fallbackMediaDriver.saveFiles(
-                mediaContent.stream()
-                        .map(file -> {
-                            try {
-                                return file.getBytes();
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }).toArray(byte[][]::new)
-        );
-
-        fallbackMediaContentRepository.saveAll(mediaContents);
+        fallbackMediaContentRepository.save(build);
     }
 
     @Override
@@ -139,8 +130,9 @@ public class MediaServiceImpl implements MediaService {
 
         String imageName = mediaServiceClient.sendFile(
                 new PlainFile(
-                        image.getBytes(),
-                        parse(Objects.requireNonNull(image.getContentType()))
+                        image.getInputStream(),
+                        parse(Objects.requireNonNull(image.getContentType())),
+                        image.getSize()
                 )
         );
 
@@ -150,7 +142,7 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @SuppressWarnings("unused")
-    public void fallbackAddingAvatar(MultipartFile image, Long productId, Integer shopId)
+    public void fallbackAddingAvatar(MultipartFile image, Long productId, Integer shopId, Long size)
             throws ShopDoesNotOwnProductException, ProductNotFoundException, IOException {
         log.debug("Fallback method for adding avatar was invoked");
 
@@ -173,7 +165,7 @@ public class MediaServiceImpl implements MediaService {
 
         content.setProduct(product);
 
-        fallbackMediaDriver.saveFile(image.getBytes());
+        fallbackMediaDriver.saveFile(image.getInputStream(), size);
 
         fallbackMediaContentRepository.save(content);
     }
@@ -191,7 +183,7 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public List<MultipartFile> getMediaContent(Long productId)
+    public List<PlainFile> getMediaContent(Long productId)
         throws ProductNotFoundException {
 
         List<String> allImages = productRepository
