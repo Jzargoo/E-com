@@ -10,10 +10,13 @@ import com.jzargo.protobuf.MediaServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Component
@@ -34,6 +37,8 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
         final String[] uri = new String[1];
 
+        CompletableFuture<String> future = new CompletableFuture<>();
+
         var streamObserver = mediaServiceStub.addMediaFile(
                 new StreamObserver<>() {
                     @Override
@@ -45,7 +50,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
                     public void onError(Throwable throwable) {
                         log.error(throwable.getMessage(), throwable);
 
-                        throw new CannotAddMediaFileException();
+                        future.completeExceptionally( new CannotAddMediaFileException(throwable) );
                     }
 
                     @Override
@@ -53,6 +58,8 @@ public class MediaServiceClientImpl implements MediaServiceClient {
                         log.info(
                                 "Sending media a media file was completed successfully for uri {}", uri[0]
                         );
+
+                        future.complete(uri[0]);
                     }
                 }
         );
@@ -67,6 +74,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
 
             try {
+
                 streamObserver.onNext(
                         MediaFile.newBuilder()
                                 .setContentChunk(
@@ -77,10 +85,15 @@ public class MediaServiceClientImpl implements MediaServiceClient {
                                 .setContentType(file.getContentType())
                                 .build()
                 );
+
             } catch (IOException e) {
+
                 streamObserver.onError(e);
+
                 log.error("Failed to read or send file chunks", e);
-               throw new CannotAddMediaFileException();
+
+                throw new CannotAddMediaFileException();
+
             }
 
             remSize -= contentChunkLength;
@@ -88,7 +101,17 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
         streamObserver.onCompleted();
 
-        return uri[0];
+
+        var minSpeedSending = 12 * 1024;
+        long timeout = (file.getLength() / minSpeedSending) + 30;
+
+        try {
+            return future.get(timeout, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+
+            throw new CannotAddMediaFileException(e);
+
+        }
 
     }
 
@@ -98,7 +121,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
     }
 
     @Override
-    public MultipartFile receiveFile(String mediaIds) {
+    public PlainFile receiveFile(String mediaIds) {
         return null;
     }
 

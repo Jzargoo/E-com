@@ -160,17 +160,16 @@ public class MediaServiceUnitTest {
             Mockito.when(
                     mediaServiceClient.receiveFile(avatarName)
             ).thenReturn(
-                    new MockMultipartFile(
-                            "image.png",
-                            avatarName,
-                            "image/png",
-                            content
+                    new PlainFile(
+                            new ByteArrayInputStream(content),
+                            ContentType.PNG,
+                            (long) content.length
                     )
             );
 
-            MultipartFile avatar = mediaService.getAvatar(PRODUCT_ID);
+            PlainFile avatar = mediaService.getAvatar(PRODUCT_ID);
 
-            Assertions.assertArrayEquals(content, avatar.getBytes(), "Content of the avatar does not match");
+            Assertions.assertArrayEquals(content, avatar.getContent().readAllBytes(), "Content of the avatar does not match");
 
             Mockito.verify(
                     mediaServiceClient,

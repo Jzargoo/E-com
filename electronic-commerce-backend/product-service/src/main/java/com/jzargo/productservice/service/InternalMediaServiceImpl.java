@@ -15,6 +15,7 @@ import com.jzargo.productservice.repository.ProductRepository;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +30,7 @@ import static com.jzargo.productservice.helper.ContentTypeParser.parseImage;
 
 @Slf4j
 @Service
+@Qualifier("internalMediaService")
 @Transactional(readOnly = true) // if not provided, data must be in immutable state
 public class InternalMediaServiceImpl implements MediaService {
 
@@ -171,7 +173,7 @@ public class InternalMediaServiceImpl implements MediaService {
     }
 
     @Override
-    public MultipartFile getAvatar(Long productId)
+    public PlainFile getAvatar(Long productId)
         throws ProductNotFoundException, IOException {
 
         String avatar = productRepository
@@ -195,7 +197,5 @@ public class InternalMediaServiceImpl implements MediaService {
 
         return mediaServiceClient.receiveFiles(allImages);
     }
-
-
 
 }

@@ -36,7 +36,6 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
         Integer portionSize =
                 applicationPropertyStorage.getFallbackMedia().getPortionSize();
 
-        long l = Math.ceilDiv(length, portionSize.longValue()) + 1;
 
         try (
                 OutputStream  stream = Files.newOutputStream(
@@ -45,12 +44,15 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
 
         ){
 
-            for (long i = 0; i < l; i++) {
+            var remSize = length;
+
+            while  (remSize > 0) {
 
                 stream.write(
                         content.readNBytes(portionSize)
                 );
 
+                remSize -= Math.min(remSize, portionSize);
             }
 
         }

@@ -7,6 +7,7 @@ import com.jzargo.productservice.service.MediaService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,9 +21,13 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/products/media")
-@RequiredArgsConstructor
 public class MediaController {
+
     private final MediaService mediaService;
+
+    public MediaController(@Qualifier("asyncMediaService") MediaService mediaService) {
+        this.mediaService = mediaService;
+    }
 
     @PutMapping("/{productId}")
     @PreAuthorize(
@@ -43,7 +48,6 @@ public class MediaController {
             return ResponseEntity.badRequest().build();
         }
 
-
         mediaService.addMediaContent(
                 multipartFile,
                 productId,
@@ -53,6 +57,7 @@ public class MediaController {
         return ResponseEntity.ok(
                 "new image of the product was added successfully"
         );
+
     }
 
     @GetMapping("/{productId}")
@@ -69,7 +74,7 @@ public class MediaController {
     }
 
     @GetMapping("/avatar/{productId}")
-    public ResponseEntity<MultipartFile> getAvatar(
+    public ResponseEntity<PlainFile> getAvatar(
             @PathVariable Long productId
     ) throws IOException, ProductNotFoundException {
 

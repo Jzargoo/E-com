@@ -19,7 +19,7 @@ public interface MediaService {
     List<PlainFile> getMediaContent(Long productId)
             throws IOException, ProductNotFoundException;
 
-    MultipartFile getAvatar(Long productId)
+    PlainFile getAvatar(Long productId)
                 throws IOException, ProductNotFoundException;
 
 }

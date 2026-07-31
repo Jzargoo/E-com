@@ -4,4 +4,9 @@ public class CannotAddMediaFileException extends RuntimeException {
     public CannotAddMediaFileException() {
         super();
     }
+
+    public CannotAddMediaFileException(Throwable cause) {
+        super(cause);
+    }
+
 }

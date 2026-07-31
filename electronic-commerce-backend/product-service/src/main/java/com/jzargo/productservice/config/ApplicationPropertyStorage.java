@@ -30,6 +30,8 @@ public class ApplicationPropertyStorage {
 
     private Grpc grpc;
 
+    private Async async;
+
     @Data
     public static class Media{
         @NotNull
@@ -87,5 +89,23 @@ public class ApplicationPropertyStorage {
     @NoArgsConstructor
     public static class FallbackMedia {
         private Integer portionSize;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Async {
+        private AsyncProperties mediaServiceExecutor;
+
+
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class AsyncProperties {
+            private Integer corePoolSize;
+            private Integer maxPoolSize;
+            private Integer keepAliveTimeInSeconds;
+            private Integer queueCapacity;
+        }
     }
 }

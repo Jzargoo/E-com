@@ -12,6 +12,6 @@ public interface MediaServiceClient {
 
     List<PlainFile> receiveFiles(List<String> mediaIds);
 
-    MultipartFile receiveFile(String mediaId);
+    PlainFile receiveFile(String mediaId);
 
 }
