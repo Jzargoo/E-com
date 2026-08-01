@@ -12,6 +12,7 @@ import com.jzargo.productservice.helper.ContentTypeParser;
 import com.jzargo.productservice.model.PlainFile;
 import com.jzargo.productservice.repository.FallbackMediaContentRepository;
 import com.jzargo.productservice.repository.ProductRepository;
+import com.jzargo.protobuf.ContentType;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import static com.jzargo.productservice.helper.ContentTypeParser.parse;
 import static com.jzargo.productservice.helper.ContentTypeParser.parseImage;
@@ -64,15 +66,21 @@ public class InternalMediaServiceImpl implements MediaService {
 
         try {
 
+            ContentType parse = parse(
+                    Objects
+                            .requireNonNull(
+                                    mediaContent.getContentType()
+                            ).trim()
+            );
+
+            String key = getUniqueUriByProductIdAndContentType(productId, parse);
+
             String uri = mediaServiceClient.sendFile(
                 new PlainFile(
                         mediaContent.getInputStream(),
-                        ContentTypeParser.parse(
-                                Objects.requireNonNull(
-                                        mediaContent.getContentType()
-                                )
-                        ),
-                        mediaContent.getSize()
+                        parse,
+                        mediaContent.getSize(),
+                        key
                 )
             );
 
@@ -101,9 +109,23 @@ public class InternalMediaServiceImpl implements MediaService {
             throw new ShopDoesNotOwnProductException();
         }
 
+        ContentType parse = parse(
+                Objects
+                        .requireNonNull(
+                                mediaContent.getContentType()
+                        ).trim()
+        );
+
+
+        String key = getUniqueUriByProductIdAndContentType(productId, parse);
+
         FallbackMediaContent build = FallbackMediaContent.builder()
                 .contentType(
                         parse(Objects.requireNonNull(mediaContent.getContentType()))
+                )
+                .length(mediaContent.getSize())
+                .mediaUri(
+                    key
                 )
                 .build();
 
@@ -130,11 +152,21 @@ public class InternalMediaServiceImpl implements MediaService {
             throw new ShopDoesNotOwnProductException();
         }
 
+        ContentType parse = parse(
+                Objects
+                        .requireNonNull(
+                                image.getContentType()
+                        ).trim()
+        );
+
+        String key = getUniqueUriByProductIdAndContentType(productId, parse);
+
         String imageName = mediaServiceClient.sendFile(
                 new PlainFile(
                         image.getInputStream(),
-                        parse(Objects.requireNonNull(image.getContentType())),
-                        image.getSize()
+                        parse,
+                        image.getSize(),
+                        key
                 )
         );
 
@@ -163,6 +195,7 @@ public class InternalMediaServiceImpl implements MediaService {
                                 Objects.requireNonNull(image.getContentType())
                         )
                 )
+                .length(size)
                 .build();
 
         content.setProduct(product);
@@ -198,4 +231,16 @@ public class InternalMediaServiceImpl implements MediaService {
         return mediaServiceClient.receiveFiles(allImages);
     }
 
+    private String getUniqueUriByProductIdAndContentType(Long productId, ContentType contentType){
+        return "products/%s/%s.%s"
+                .formatted(
+                        productId,
+
+                        UUID.randomUUID().toString()
+                                .replace(".", ""),
+
+                        ContentTypeParser.getMediaPostfix(contentType)
+                );
+
+    }
 }

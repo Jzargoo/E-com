@@ -69,4 +69,10 @@ public class Product {
     public void addFallbackMedia(FallbackMediaContent fallbackMediaContent) {
         fallbackMediaContents.add(fallbackMediaContent);
     }
+
+    public void removeFallback(FallbackMediaContent fallbackMediaContent) {
+        fallbackMediaContents.remove(
+                fallbackMediaContent
+        );
+    }
 }

@@ -1,0 +1,1 @@
+ALTER TABLE fallback_media_content ADD COLUMN length BIGINT;

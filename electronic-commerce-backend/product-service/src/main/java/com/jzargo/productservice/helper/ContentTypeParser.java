@@ -25,4 +25,15 @@ public class ContentTypeParser {
             default -> throw new UnsupportedContentType();
         };
     }
+
+    public static String getMediaPostfix(ContentType contentType) throws UnsupportedContentType {
+        return switch (contentType) {
+            case JPEG -> ".jpg";
+            case PNG -> ".png";
+            case WEBP -> ".webp";
+            case MP4 -> ".mp4";
+            case WEBM -> ".webm";
+            default -> throw new UnsupportedContentType();
+        };
+    }
 }

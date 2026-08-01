@@ -7,3 +7,5 @@ spring:
     import: optional:configserver:http://localhost:8888
   profiles:
     active: devconfig
+kafka:
+  enabled: true

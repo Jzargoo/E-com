@@ -8,7 +8,7 @@
     "database.user": "jzargo",
     "database.password": "jzargo123",
     "database.dbname": "productdb",
-    "table.include.list": "public.products, public.saga_product_entities",
+    "table.include.list": "public.products, public.saga_product_entities, public.fallback_media_content",
     "plugin.name": "pgoutput",
     "slot.name": "product_service_slot",
     "publication.name": "product_service_publication",

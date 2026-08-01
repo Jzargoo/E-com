@@ -13,6 +13,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "kafka")
 @Data
 public class KafkaPropertyStorage {
+
     private Topics topics;
     private String groupId;
 
@@ -20,7 +21,10 @@ public class KafkaPropertyStorage {
     public static class Topics{
 
         private TopicSettings productEventsTopic; // UPDATE, STATUS CHANGE
+
         private TopicSettings productCreateSaga;
+
+        private String fallbackMediaTopic;
 
         private String sagaEntitiesDebeziumTopicName;
 

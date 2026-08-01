@@ -14,4 +14,5 @@ public class PlainFile {
     private InputStream content;
     private ContentType contentType;
     private Long length;
+    private String uri;
 }

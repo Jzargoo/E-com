@@ -23,8 +23,16 @@ public class FallbackMediaContent {
     @Enumerated(EnumType.STRING)
     private ContentType contentType;
 
-    @Builder.Default
-    private String mediaId = UUID.randomUUID().toString();
+    @Column(
+            length = 1024,
+            nullable = false,
+            unique = true,
+            updatable = false,
+            name = "media_id"
+    )
+    private String mediaUri;
+
+    private Long length;
 
     @ManyToOne
     @JoinColumn(name = "product_id")

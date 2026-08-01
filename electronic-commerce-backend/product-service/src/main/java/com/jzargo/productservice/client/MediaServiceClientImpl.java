@@ -82,6 +82,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
                                                 file.getContent().readNBytes( (int) contentChunkLength )
                                         )
                                 )
+                                .setUri(file.getUri())
                                 .setContentType(file.getContentType())
                                 .build()
                 );
@@ -103,6 +104,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
 
         var minSpeedSending = 12 * 1024;
+
         long timeout = (file.getLength() / minSpeedSending) + 30;
 
         try {

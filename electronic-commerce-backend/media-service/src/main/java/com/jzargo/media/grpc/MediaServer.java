@@ -137,23 +137,12 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                         MediaHelper.checkContentType(mediaFile);
 
-
-                        String keyValue = "%s/products/%s.%s"
-                                .formatted(
-                                        applicationPropertyStorage
-                                                .getAws()
-                                                .getBucket(),
-                                        UUID.randomUUID().toString(),
-                                        MediaHelper.getMediaPostfix(mediaFile.getContentType())
-                                );
-
-
                         uploadSession[0] = new UploadSession(
                                 tempFileBufferFactory.createBuffer(),
                                 mediaFile.getContentType(),
                                 mediaStorageService,
                                 MediaHelper.isVideo(mediaFile.getContentType()),
-                                keyValue
+                                mediaFile.getUri()
                         );
 
                         isFirst.set(false);

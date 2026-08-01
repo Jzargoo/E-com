@@ -15,7 +15,8 @@ service MediaService{
 
 message MediaFile{
   ContentType contentType = 1;
-  bytes contentChunk = 2;
+  string uri = 2;
+  bytes contentChunk = 3;
 }
 
 message ChangeMediaFile {
