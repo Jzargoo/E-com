@@ -118,13 +118,13 @@ public class MediaServiceClientImpl implements MediaServiceClient {
     }
 
     @Override
-    public List<PlainFile> receiveFiles(List<String> mediaIds) {
-        return List.of();
+    public PlainFile receiveFile(String mediaIds) {
+        return null;
     }
 
     @Override
-    public PlainFile receiveFile(String mediaIds) {
-        return null;
+    public String changeFile(PlainFile plainFile, Integer version, String prevUri) {
+        return "";
     }
 
 }

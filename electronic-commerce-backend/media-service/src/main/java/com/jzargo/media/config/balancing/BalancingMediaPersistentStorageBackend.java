@@ -7,7 +7,9 @@ import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.media.storages.persistent.MediaPersistentStorageBackend;
 import com.jzargo.media.storages.persistent.StorageType;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class BalancingMediaPersistentStorageBackend implements MediaPersistentStorageBackend {
 
     private final MediaPersistentStorageBackendRegistry registry;
@@ -34,6 +36,10 @@ public class BalancingMediaPersistentStorageBackend implements MediaPersistentSt
                 registry.removeBackend(next);
 
                 //TODO: implement a watcher ....
+            } catch (Exception e) {
+
+                log.error("An exception was caught from a backend! ", e);
+
             }
 
         }

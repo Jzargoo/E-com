@@ -38,11 +38,10 @@ public class MediaServiceFallbackTaskAndManager {
     }
 
     @Transactional
-    @CircuitBreaker(name = "mediaService")
     public void task() throws TaskCompletedException {
         FallbackMediaContent fallbackMediaContent =
                 fallbackMediaContentRepository
-                        .findFirstByMediaIdIsNotEmpty()
+                        .findFirstByMediaUriIsNotNull()
                         .orElseThrow(TaskCompletedException::new);
 
         // TODO: implement a gRPC existsByUri and implement this branch
@@ -51,14 +50,24 @@ public class MediaServiceFallbackTaskAndManager {
                 InputStream file = fallbackMediaDriver.getFile(fallbackMediaContent.getMediaUri())
         ) {
 
-            String uri = mediaServiceClient.sendFile(
-                    new PlainFile(
-                            file,
-                            fallbackMediaContent.getContentType(),
-                            fallbackMediaContent.getLength(),
-                            fallbackMediaContent.getMediaUri()
-                    )
+            String uri;
+
+            PlainFile plainFile = new PlainFile(
+                    file,
+                    fallbackMediaContent.getContentType(),
+                    fallbackMediaContent.getLength(),
+                    fallbackMediaContent.getMediaUri()
             );
+
+            if (fallbackMediaContent.getIsAvatar()) {
+
+                uri = mediaServiceClient.sendFile(plainFile);
+
+            } else {
+
+                uri = mediaServiceClient.changeFile(plainFile);
+
+            }
 
             fallbackMediaDriver.deleteFile(
                     fallbackMediaContent.getMediaUri()

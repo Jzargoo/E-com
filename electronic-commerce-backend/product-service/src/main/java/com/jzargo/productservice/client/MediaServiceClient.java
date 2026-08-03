@@ -10,8 +10,8 @@ public interface MediaServiceClient {
 
     String sendFile(PlainFile file) throws CannotAddMediaFileException;
 
-    List<PlainFile> receiveFiles(List<String> mediaIds);
 
-    PlainFile receiveFile(String mediaId);
+    PlainFile receiveFile(String mediaUri);
 
+    String changeFile(PlainFile plainFile, Integer version, String prevUri);
 }

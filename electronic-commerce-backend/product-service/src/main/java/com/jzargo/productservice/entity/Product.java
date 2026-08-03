@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
 @Data
@@ -24,9 +25,6 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false,name = "avatar")
-    private String avatar;
 
     @ManyToOne
     private Category category;
@@ -47,26 +45,29 @@ public class Product {
     @Builder.Default
     private Status status = Status.WAITING;
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(
-            name = "media_content",
-            joinColumns = {
-                    @JoinColumn(name = "product_id", referencedColumnName = "id")
-            }
-    )
-    @Column(name = "media_content")
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "id.product")
     @Builder.Default
-    private List<String> mediaContent = new ArrayList<>();
+    private List<MediaContent> mediaContent = new ArrayList<>();
 
     @OneToMany(targetEntity = FallbackMediaContent.class, mappedBy = "product", fetch = FetchType.LAZY)
     @Builder.Default
     private List<FallbackMediaContent> fallbackMediaContents = new ArrayList<>();
 
     public void addMedia(String uri) {
-        mediaContent.add(uri);
+        MediaContent newMediaContent = MediaContent.builder()
+                .id(
+                        new MediaContent.MediaContentId(
+                                uri, this
+                        )
+                )
+                .build();
+
+        mediaContent.add(newMediaContent);
     }
 
     public void addFallbackMedia(FallbackMediaContent fallbackMediaContent) {
+        fallbackMediaContent.setProduct(this);
         fallbackMediaContents.add(fallbackMediaContent);
     }
 
@@ -74,5 +75,45 @@ public class Product {
         fallbackMediaContents.remove(
                 fallbackMediaContent
         );
+
+        fallbackMediaContent.setProduct(null);
+    }
+
+    public void setAvatar(String imageName) {
+
+        this.mediaContent
+                .stream()
+
+                .filter(MediaContent::isAvatar)
+
+                .findFirst()
+
+                .map(media -> {
+
+                    media.setMediaVersion(
+                            media.getMediaVersion() + 1
+                    );
+
+                    media.getId().setMediaContentUri(imageName);
+
+                    return media;
+                })
+
+                .orElseGet(
+                        () -> {
+                            MediaContent build = MediaContent.builder()
+                                    .isAvatar(true)
+                                    .id(
+                                            new MediaContent.MediaContentId(
+                                                    imageName, this
+                                            )
+                                    )
+                                    .build();
+
+                            this.mediaContent.add(build);
+
+                            return build;
+                        }
+                );
     }
 }

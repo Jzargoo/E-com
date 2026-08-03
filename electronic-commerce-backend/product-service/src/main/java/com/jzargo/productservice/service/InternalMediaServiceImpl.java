@@ -4,6 +4,7 @@ package com.jzargo.productservice.service;
 import com.jzargo.productservice.client.MediaServiceClient;
 import com.jzargo.productservice.driver.FallbackMediaDriver;
 import com.jzargo.productservice.entity.FallbackMediaContent;
+import com.jzargo.productservice.entity.MediaContent;
 import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
@@ -159,15 +160,25 @@ public class InternalMediaServiceImpl implements MediaService {
                         ).trim()
         );
 
-        String key = getUniqueUriByProductIdAndContentType(productId, parse);
 
-        String imageName = mediaServiceClient.sendFile(
+        MediaContent avatar = productRepository
+                .findById(productId)
+                .map(Product::getMediaContent)
+                .orElseThrow(ProductNotFoundException::new)
+                .stream()
+                .filter(m -> !m.isAvatar())
+                .findAny()
+                .orElseThrow(ProductNotFoundException::new);
+
+        String imageName = mediaServiceClient.changeFile(
                 new PlainFile(
                         image.getInputStream(),
                         parse,
                         image.getSize(),
-                        key
-                )
+                        getUniqueUriByProductIdAndContentType(productId, parse)
+                ),
+                (avatar.getMediaVersion()),
+                avatar.getId().getMediaContentUri()
         );
 
         product.setAvatar(imageName);
@@ -209,26 +220,44 @@ public class InternalMediaServiceImpl implements MediaService {
     public PlainFile getAvatar(Long productId)
         throws ProductNotFoundException, IOException {
 
-        String avatar = productRepository
+        MediaContent avatar = productRepository
                 .findById(productId)
-                .map(Product::getAvatar)
+                .map(Product::getMediaContent)
+                .orElseThrow(ProductNotFoundException::new)
+                .stream()
+                .filter(m -> !m.isAvatar())
+                .findAny()
                 .orElseThrow(ProductNotFoundException::new);
 
-        return mediaServiceClient.receiveFile(avatar);
+
+
+        return mediaServiceClient.receiveFile(avatar.getId().getMediaContentUri());
     }
 
     @Override
     public List<PlainFile> getMediaContent(Long productId)
         throws ProductNotFoundException {
 
-        List<String> allImages = productRepository
+        List<MediaContent> allImages = productRepository
                 .findById(productId)
                 .map(Product::getMediaContent)
                 .orElseThrow(
                         ProductNotFoundException::new
                 );
 
-        return mediaServiceClient.receiveFiles(allImages);
+        List<PlainFile> mediaContents = new ArrayList<>();
+
+        for (MediaContent mediaContent : allImages) {
+
+            PlainFile plainFile = mediaServiceClient.receiveFile(
+                    mediaContent.getId()
+                            .getMediaContentUri()
+            );
+
+            mediaContents.add(plainFile);
+        }
+
+        return mediaContents;
     }
 
     private String getUniqueUriByProductIdAndContentType(Long productId, ContentType contentType){

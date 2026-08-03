@@ -25,16 +25,19 @@ public class CircuitBreakerListener {
 
                 CircuitBreaker addedEntry = entryAddedEvent.getAddedEntry();
 
+
                 addedEntry.getEventPublisher()
                         .onStateTransition(
                                 event -> {
+                                    log.trace("CircuitBreaker added transition event: {}", event);
+
 
                                     if (
                                             event.getStateTransition().getFromState() == CircuitBreaker.State.CLOSED &&
                                                     event.getStateTransition().getToState() == CircuitBreaker.State.OPEN
 
                                     ) {
-
+                                        log.warn("Circuit breaker had been opened. Turning off media scheduling");
                                         service.turnOffFallbackMediaScheduling();
 
                                     } else if (
@@ -44,6 +47,7 @@ public class CircuitBreakerListener {
 
                                     ){
 
+                                        log.info("Circuit breaker had been closed. Turning on media scheduling");
                                         service.turnOnFallbackMediaScheduling();
 
                                     }

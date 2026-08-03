@@ -38,6 +38,7 @@ public class SchedulingServiceImpl implements SchedulingService {
 
     @PostConstruct
     public void init() {
+        log.debug("Turning on fallback media scheduling tasks...");
         turnOnFallbackMediaScheduling();
     }
 }

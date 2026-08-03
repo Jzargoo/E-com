@@ -41,6 +41,9 @@ public class FallbackMediaContent {
     @Builder.Default
     private Boolean isAvatar = false;
 
+    @Builder.Default
+    private Integer mediaVersion = 1;
+
     public void setProduct(Product product) {
         this.product = product;
 

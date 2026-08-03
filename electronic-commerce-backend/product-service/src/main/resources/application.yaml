@@ -9,3 +9,8 @@ spring:
     active: devconfig
 kafka:
   enabled: true
+
+application:
+  media:
+    path: /media
+    default-avatar-uri: /products/default-avatar.png
