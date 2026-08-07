@@ -1,4 +1,4 @@
-package com.jzargo.productservice.service;
+package com.jzargo.productAssetsService.service;
 
 public interface SchedulingService {
     void turnOnFallbackMediaScheduling();

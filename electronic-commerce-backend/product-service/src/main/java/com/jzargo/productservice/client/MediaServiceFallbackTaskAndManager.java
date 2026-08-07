@@ -1,12 +1,10 @@
 package com.jzargo.productservice.client;
 
 import com.jzargo.productservice.driver.FallbackMediaDriver;
-import com.jzargo.productservice.entity.FallbackMediaContent;
 import com.jzargo.productservice.exception.TaskCompletedException;
 import com.jzargo.productservice.model.PlainFile;
 import com.jzargo.productservice.repository.FallbackMediaContentRepository;
 import com.jzargo.productservice.repository.ProductRepository;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

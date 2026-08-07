@@ -1,4 +1,4 @@
-package com.jzargo.productservice.service;
+package com.jzargo.productAssetsService.service;
 
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;

@@ -1,10 +1,8 @@
-package com.jzargo.productservice.service;
+package com.jzargo.productAssetsService.service;
 
 
 import com.jzargo.productservice.client.MediaServiceClient;
 import com.jzargo.productservice.driver.FallbackMediaDriver;
-import com.jzargo.productservice.entity.FallbackMediaContent;
-import com.jzargo.productservice.entity.MediaContent;
 import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
@@ -67,7 +65,7 @@ public class InternalMediaServiceImpl implements MediaService {
 
         try {
 
-            ContentType parse = parse(
+            ContentType parse = ContentTypeParser.parse(
                     Objects
                             .requireNonNull(
                                     mediaContent.getContentType()
@@ -110,7 +108,7 @@ public class InternalMediaServiceImpl implements MediaService {
             throw new ShopDoesNotOwnProductException();
         }
 
-        ContentType parse = parse(
+        ContentType parse = ContentTypeParser.parse(
                 Objects
                         .requireNonNull(
                                 mediaContent.getContentType()
@@ -122,7 +120,7 @@ public class InternalMediaServiceImpl implements MediaService {
 
         FallbackMediaContent build = FallbackMediaContent.builder()
                 .contentType(
-                        parse(Objects.requireNonNull(mediaContent.getContentType()))
+                        ContentTypeParser.parse(Objects.requireNonNull(mediaContent.getContentType()))
                 )
                 .length(mediaContent.getSize())
                 .mediaUri(
@@ -153,7 +151,7 @@ public class InternalMediaServiceImpl implements MediaService {
             throw new ShopDoesNotOwnProductException();
         }
 
-        ContentType parse = parse(
+        ContentType parse = ContentTypeParser.parse(
                 Objects
                         .requireNonNull(
                                 image.getContentType()
@@ -202,7 +200,7 @@ public class InternalMediaServiceImpl implements MediaService {
         FallbackMediaContent content = FallbackMediaContent.builder()
                 .isAvatar(true)
                 .contentType(
-                        parseImage(
+                        ContentTypeParser.parseImage(
                                 Objects.requireNonNull(image.getContentType())
                         )
                 )

@@ -14,14 +14,15 @@ import com.jzargo.protobuf.ChangeMediaFile;
 import com.jzargo.protobuf.MediaContentURI;
 import com.jzargo.protobuf.MediaFile;
 import com.jzargo.protobuf.MediaServiceGrpc;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.grpc.server.service.GrpcService;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @GrpcService
@@ -42,25 +43,40 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
     @Override
     public void getMediaContent(MediaContentURI request, StreamObserver<MediaFile> responseObserver) {
 
+        ServerCallStreamObserver<MediaFile> observer = (ServerCallStreamObserver<MediaFile>) responseObserver;
+
+        observer.disableAutoInboundFlowControl();
+
+
         log.info("Caught a request with uri {}", request.getMediaURI());
 
         Integer portion = applicationPropertyStorage.getPortion();
 
+
+
         try {
+
             DownloadedFile fileStream = mediaStorageService.getFileStream(request.getMediaURI());
 
             if (fileStream == null || fileStream.getContentLength() == 0) {
 
                 log.warn("file stream either is null or has 0 length");
 
-                responseObserver.onNext(MediaFile.newBuilder().build());
+                observer.setOnReadyHandler(() -> {
+                    observer.onNext(
+                            MediaFile.newBuilder().build()
+                    );
+
+                    observer.onCompleted();
+                });
+
             } else {
 
                 try (
                         InputStream content = fileStream.getContent()
                 ) {
 
-                    long remSize = fileStream.getContentLength();
+                    AtomicLong remSize = new AtomicLong(fileStream.getContentLength());
 
                     long totalChunks = Math.ceilDiv(fileStream.getContentLength(), portion);
 
@@ -70,44 +86,68 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
                             portion
                     );
 
-                    for (int i = 0; i < totalChunks; i++) {
+                    observer.setOnReadyHandler(() -> {
 
-                        int len = Math.toIntExact(
-                                Math.min(remSize, portion)
-                        );
+                        while (observer.isReady()) {
 
-                        remSize -= len;
+                            for (int i = 0; i < totalChunks; i++) {
 
-                        MediaFile build = MediaFile.newBuilder()
-                                .setContentType(fileStream.getContentType())
-                                .setContentChunk(
-                                        ByteString.copyFrom(
-                                                content
-                                                        .readNBytes(len)
-                                        )
-                                )
-                                .build();
+                                long min = Math.min(remSize.get(), portion);
 
-                        log.trace("Sending a chunk {}, rem size {}", i, remSize);
+                                remSize.addAndGet(-min);
 
-                        responseObserver.onNext(
-                                build
-                        );
+                                try {
+                                    byte[] bytes = content.readNBytes((int) min);
 
-                    }
+                                    observer.onNext(
+                                            MediaFile.newBuilder()
+                                                    .setUri(request.getMediaURI())
+                                                    .setContentChunk(ByteString.copyFrom(bytes))
+                                                    .setContentType(fileStream.getContentType())
+                                                    .build()
+                                    );
+
+                                    log.debug("sending a file chunk for uri {} ({}/{})",
+                                            request.getMediaURI(),
+                                            i, totalChunks
+                                    );
+
+                                } catch (IOException e) {
+
+                                    log.error("Exception in SENDING a file {}",
+                                            request.getMediaURI(), e
+                                    );
+
+                                    observer.onError(e);
+
+                                }
+
+                            }
+
+                        }
+
+                    });
+
+                    responseObserver.onCompleted();
+
+                } catch (IOException e) {
+
+                    log.error("MediaServer getMediaContent failed", e);
+
+                    responseObserver.onError(e);
+
                 }
 
             }
 
-            responseObserver.onCompleted();
+        } catch (Exception e) {
 
-        } catch (CannotProcessException | FileNotFoundException | IOException | WrongContentTypeException e) {
+            log.error("Occurred an exception while processing a file with uri {}", request.getMediaURI(), e);
 
-            log.error("MediaServer getMediaContent failed", e);
-
-            responseObserver.onError(e);
+            observer.onError(e);
 
         }
+
     }
 
     @Override

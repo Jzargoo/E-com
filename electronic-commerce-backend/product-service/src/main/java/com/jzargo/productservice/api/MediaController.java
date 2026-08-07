@@ -2,6 +2,7 @@ package com.jzargo.productservice.api;
 
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
+import com.jzargo.productservice.helper.ContentTypeParser;
 import com.jzargo.productservice.model.PlainFile;
 import com.jzargo.productservice.service.MediaService;
 import jakarta.validation.constraints.NotNull;
@@ -14,8 +15,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Slf4j
@@ -58,16 +61,30 @@ public class MediaController {
 
     }
 
-    @GetMapping("/{productId}")
-    public ResponseEntity<List<PlainFile>> getAllMediaContents(
+    @GetMapping(path = "/{}",produces = "multipart/x-mixed-replace; boundary=--end-of-the-file")
+    public StreamingResponseBody getAllMediaContents(
             @PathVariable Long productId
     ) throws IOException, ProductNotFoundException {
 
         log.debug("Getting all media content from product {}",productId);
 
-        return ResponseEntity.ok(
-                mediaService.getMediaContent(productId)
-        );
+        List<PlainFile> mediaContent = mediaService.getMediaContent(productId);
+
+        return outputStream -> {
+            for (PlainFile media : mediaContent) {
+                String headers =
+                        "Content-Type: %s \r\n" +
+                                "Content-Disposition: attachment; filename=\""
+                                        .formatted(
+                                                ContentTypeParser.parseIntoMime(media.getContentType())
+                                        );
+
+                outputStream.write(headers.getBytes(StandardCharsets.UTF_8));
+
+                media.getContent().
+
+            }
+        }
 
     }
 

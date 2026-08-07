@@ -1,20 +1,8 @@
-package com.jzargo.productservice.entity;
+package com.jzargo.productAssetsService.entity;
 
-import com.jzargo.protobuf.ContentType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
-@Table
-@Entity
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
 public class FallbackMediaContent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,4 +1,4 @@
-package com.jzargo.productservice.service;
+package com.jzargo.productAssetsService.service;
 
 import com.jzargo.productservice.client.MediaServiceFallbackTaskAndManager;
 import com.jzargo.productservice.config.scheduling.DynamicTaskExecutionRegistry;

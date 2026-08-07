@@ -118,8 +118,28 @@ public class MediaServiceClientImpl implements MediaServiceClient {
     }
 
     @Override
-    public PlainFile receiveFile(String mediaIds) {
-        return null;
+    public PlainFile receiveFile(String mediaId) {
+        new InputStream
+        mediaServiceStub.getMediaContent(
+                mediaId, new StreamObserver<>() {
+
+                    @Override
+                    public void onNext(MediaFile mediaFile) {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+
+                    }
+
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                }
+        );
     }
 
     @Override

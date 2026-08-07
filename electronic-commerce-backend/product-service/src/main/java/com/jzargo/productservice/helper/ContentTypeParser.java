@@ -36,4 +36,15 @@ public class ContentTypeParser {
             default -> throw new UnsupportedContentType();
         };
     }
+
+    public static String parseIntoMime(ContentType contentType) {
+        return switch (contentType) {
+            case JPEG -> "application/jpeg";
+            case PNG -> "application/png";
+            case WEBP -> "application/webp";
+            case MP4 -> "application/mp4";
+            case WEBM -> "application/webm";
+            default -> throw new UnsupportedContentType();
+        };
+    }
 }
