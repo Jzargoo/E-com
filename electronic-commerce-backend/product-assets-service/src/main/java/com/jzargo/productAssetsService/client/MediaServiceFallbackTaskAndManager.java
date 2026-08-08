@@ -1,10 +1,13 @@
-package com.jzargo.productservice.client;
+package com.jzargo.productAssetsService.client;
 
-import com.jzargo.productservice.driver.FallbackMediaDriver;
-import com.jzargo.productservice.exception.TaskCompletedException;
-import com.jzargo.productservice.model.PlainFile;
-import com.jzargo.productservice.repository.FallbackMediaContentRepository;
-import com.jzargo.productservice.repository.ProductRepository;
+import com.jzargo.productAssetsService.driver.FallbackMediaDriver;
+import com.jzargo.productAssetsService.entity.FallbackMediaContent;
+import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
+import com.jzargo.productAssetsService.exception.TaskCompletedException;
+import com.jzargo.productAssetsService.mapper.MediaContentCreateMapper;
+import com.jzargo.productAssetsService.model.PlainFile;
+import com.jzargo.productAssetsService.repository.FallbackMediaContentRepository;
+import com.jzargo.productAssetsService.repository.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,27 +23,29 @@ public class MediaServiceFallbackTaskAndManager {
     private final MediaServiceClient mediaServiceClient;
     private final FallbackMediaDriver fallbackMediaDriver;
     private final ProductRepository productRepository;
+    private final MediaContentCreateMapper mediaContentCreateMapper;
 
     public MediaServiceFallbackTaskAndManager(
             FallbackMediaContentRepository fallbackMediaContentRepository,
             MediaServiceClient mediaServiceClient,
             FallbackMediaDriver fallbackMediaDriver,
-            ProductRepository productRepository
-    ) {
+            ProductRepository productRepository,
+            MediaContentCreateMapper mediaContentCreateMapper) {
 
         this.fallbackMediaContentRepository = fallbackMediaContentRepository;
         this.mediaServiceClient = mediaServiceClient;
         this.fallbackMediaDriver = fallbackMediaDriver;
         this.productRepository = productRepository;
-
+        this.mediaContentCreateMapper = mediaContentCreateMapper;
     }
 
     @Transactional
-    public void task() throws TaskCompletedException {
+    public void task() throws TaskCompletedException, CannotAddMediaFileException {
         FallbackMediaContent fallbackMediaContent =
                 fallbackMediaContentRepository
                         .findFirstByMediaUriIsNotNull()
                         .orElseThrow(TaskCompletedException::new);
+
 
         // TODO: implement a gRPC existsByUri and implement this branch
 
@@ -53,7 +58,6 @@ public class MediaServiceFallbackTaskAndManager {
             PlainFile plainFile = new PlainFile(
                     file,
                     fallbackMediaContent.getContentType(),
-                    fallbackMediaContent.getLength(),
                     fallbackMediaContent.getMediaUri()
             );
 
@@ -63,7 +67,11 @@ public class MediaServiceFallbackTaskAndManager {
 
             } else {
 
-                uri = mediaServiceClient.changeFile(plainFile);
+                uri = mediaServiceClient.changeFile(
+                        plainFile,
+                        fallbackMediaContent.getMediaVersion(),
+                        fallbackMediaContent.getProduct().getAvatar().getUri()
+                );
 
             }
 
@@ -71,7 +79,9 @@ public class MediaServiceFallbackTaskAndManager {
                     fallbackMediaContent.getMediaUri()
             );
 
-            fallbackMediaContent.getProduct().addMedia(uri);
+            fallbackMediaContent.getProduct().addMediaContent(
+                    mediaContentCreateMapper.map(uri)
+            );
 
             fallbackMediaContent.getProduct().removeFallback(
                     fallbackMediaContent

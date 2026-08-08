@@ -23,4 +23,7 @@ public class MediaContent {
     @Builder.Default
     private Integer mediaVersion = 1;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    private ProductAssets product;
+
 }

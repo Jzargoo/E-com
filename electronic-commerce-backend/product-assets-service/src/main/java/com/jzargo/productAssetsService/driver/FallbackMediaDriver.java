@@ -1,4 +1,4 @@
-package com.jzargo.productservice.driver;
+package com.jzargo.productAssetsService.driver;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface FallbackMediaDriver {
-
-
     default List<InputStream> getContent(List<String> mediaIds) throws IOException {
         List<InputStream> files = new ArrayList<>();
 
@@ -21,7 +19,7 @@ public interface FallbackMediaDriver {
 
     }
 
-    String saveFile(InputStream content, Long length) throws IOException;
+    String saveFile(InputStream content) throws IOException;
 
     InputStream getFile  (String mediaId) throws IOException;
 

@@ -1,9 +1,9 @@
-package com.jzargo.productservice.client;
+package com.jzargo.productAssetsService.client;
 
 import com.google.protobuf.ByteString;
-import com.jzargo.productservice.config.ApplicationPropertyStorage;
-import com.jzargo.productservice.exception.CannotAddMediaFileException;
-import com.jzargo.productservice.model.PlainFile;
+import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
+import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
+import com.jzargo.productAssetsService.model.PlainFile;
 import com.jzargo.protobuf.MediaContentURI;
 import com.jzargo.protobuf.MediaFile;
 import com.jzargo.protobuf.MediaServiceGrpc;
@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.List;
+import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -66,49 +66,51 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
         Integer portionSize = applicationPropertyStorage.getGrpc().getPortionSize();
 
-        Long remSize = file.getLength();
+        int size = 0;
 
-        while (remSize != 0){
+        try {
 
-            var contentChunkLength = Math.min(remSize,portionSize);
+            byte[] read = file.getIs().readNBytes(portionSize);
 
-
-            try {
+            while (read.length != 0) {
 
                 streamObserver.onNext(
                         MediaFile.newBuilder()
-                                .setContentChunk(
-                                        ByteString.copyFrom(
-                                                file.getContent().readNBytes( (int) contentChunkLength )
-                                        )
-                                )
-                                .setUri(file.getUri())
                                 .setContentType(file.getContentType())
+                                .setUri(file.getUri())
+                                .setContentChunk(
+                                        ByteString.copyFrom(read)
+                                )
                                 .build()
                 );
 
-            } catch (IOException e) {
+                size += read.length;
 
-                streamObserver.onError(e);
-
-                log.error("Failed to read or send file chunks", e);
-
-                throw new CannotAddMediaFileException();
-
+                read = file.getIs().readNBytes(portionSize);
             }
 
-            remSize -= contentChunkLength;
+        } catch (IOException e) {
+
+            log.error(
+                    "Occurred an exception during sending a file chunk. Sent {} bytes successfully",
+                    size,e
+            );
+
+            throw new CannotAddMediaFileException(e);
         }
+
 
         streamObserver.onCompleted();
 
 
         var minSpeedSending = 12 * 1024;
 
-        long timeout = (file.getLength() / minSpeedSending) + 30;
+        long timeout = (size / minSpeedSending) + 30;
 
         try {
+
             return future.get(timeout, TimeUnit.SECONDS);
+
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
 
             throw new CannotAddMediaFileException(e);
@@ -119,9 +121,18 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
     @Override
     public PlainFile receiveFile(String mediaId) {
-        new InputStream
+
+        var plainFile = new PlainFile();
+
+        var bom = FileBufferedOutputStream
+
         mediaServiceStub.getMediaContent(
-                mediaId, new StreamObserver<>() {
+
+                MediaContentURI.newBuilder()
+                        .setMediaURI(mediaId)
+                        .build(),
+
+                new StreamObserver<>() {
 
                     @Override
                     public void onNext(MediaFile mediaFile) {

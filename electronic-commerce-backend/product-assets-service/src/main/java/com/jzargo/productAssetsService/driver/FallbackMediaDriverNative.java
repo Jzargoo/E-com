@@ -1,6 +1,6 @@
-package com.jzargo.productservice.driver;
+package com.jzargo.productAssetsService.driver;
 
-import com.jzargo.productservice.config.ApplicationPropertyStorage;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +23,7 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
     }
 
     @Override
-    public String saveFile(InputStream content, Long length) throws IOException  {
+    public String saveFile(InputStream content, Long length) throws IOException {
         String path = applicationPropertyStorage.getMedia().getPath();
 
         Files.createDirectories(Path.of(path));
@@ -38,7 +38,7 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
 
 
         try (
-                OutputStream  stream = Files.newOutputStream(
+                OutputStream stream = Files.newOutputStream(
                         pathToFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE
                 )
 

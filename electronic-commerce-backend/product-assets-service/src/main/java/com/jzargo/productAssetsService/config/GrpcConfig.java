@@ -1,4 +1,4 @@
-package com.jzargo.productservice.config;
+package com.jzargo.productAssetsService.config;
 
 import com.jzargo.protobuf.MediaServiceGrpc;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;

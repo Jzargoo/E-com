@@ -4,7 +4,6 @@ package com.jzargo.productservice.unit;
 import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
-import com.jzargo.productservice.model.PlainFile;
 import com.jzargo.productservice.repository.ProductRepository;
 import com.jzargo.productservice.client.MediaServiceClientImpl;
 import com.jzargo.productservice.service.InternalMediaServiceImpl;

@@ -1,8 +1,18 @@
 package com.jzargo.productAssetsService.entity;
 
+import com.jzargo.protobuf.ContentType;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
+@Table
+@Entity
 public class FallbackMediaContent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,21 +30,14 @@ public class FallbackMediaContent {
     )
     private String mediaUri;
 
-    private Long length;
 
     @ManyToOne
     @JoinColumn(name = "product_id")
-    private Product product;
+    private ProductAssets product;
 
     @Builder.Default
     private Boolean isAvatar = false;
 
     @Builder.Default
     private Integer mediaVersion = 1;
-
-    public void setProduct(Product product) {
-        this.product = product;
-
-        product.addFallbackMedia(this);
-    }
 }

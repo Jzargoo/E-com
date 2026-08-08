@@ -1,4 +1,4 @@
-package com.jzargo.productservice.config.scheduling;
+package com.jzargo.productAssetsService.config.scheduling;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

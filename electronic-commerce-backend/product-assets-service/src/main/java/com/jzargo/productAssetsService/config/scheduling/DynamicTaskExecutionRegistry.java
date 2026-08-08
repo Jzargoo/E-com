@@ -1,4 +1,4 @@
-package com.jzargo.productservice.config.scheduling;
+package com.jzargo.productAssetsService.config.scheduling;
 
 import com.jzargo.productservice.exception.TaskCompletedException;
 import lombok.extern.slf4j.Slf4j;
