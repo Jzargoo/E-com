@@ -40,8 +40,6 @@ dependencies {
     implementation 'org.apache.kafka:kafka-streams'
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
-    implementation 'org.springframework.grpc:spring-grpc-client-spring-boot-starter'
     annotationProcessor 'org.projectlombok:lombok'
     implementation 'org.projectlombok:lombok'
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -50,7 +48,6 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine'
 
     implementation 'com.jzargo:core:0.0.1-SNAPSHOT'
-    implementation 'com.jzargo:protobuf-common:1.0-SNAPSHOT'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
     testImplementation 'com.c4-soft.springaddons:spring-addons-oauth2-test:9.1.4'
 

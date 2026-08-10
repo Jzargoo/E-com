@@ -1,6 +1,6 @@
 package com.jzargo.productAssetsService.config.scheduling;
 
-import com.jzargo.productservice.service.SchedulingService;
+import com.jzargo.productAssetsService.service.SchedulingService;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.core.registry.EntryAddedEvent;
 import io.github.resilience4j.core.registry.EntryRemovedEvent;

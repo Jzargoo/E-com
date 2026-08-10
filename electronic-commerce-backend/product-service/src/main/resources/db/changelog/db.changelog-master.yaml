@@ -34,3 +34,9 @@ databaseChangeLog:
             path: db/changelog/sqls/media_versioning.sql
         - sqlFile:
             path: db/changelog/sqls/alter_fallback_add_is_avatar_versioning.sql
+  - changeSet:
+      id: 3
+      author: Jzargo
+      changes:
+        - sqlFile:
+            path: db/changelog/sqls/alter_saga_add_shopId.sql

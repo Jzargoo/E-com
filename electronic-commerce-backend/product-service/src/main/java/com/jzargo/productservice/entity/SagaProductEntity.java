@@ -28,6 +28,10 @@ public class SagaProductEntity {
 
     @Column(name = "stock")
     private BigDecimal price;
+
     @Column(name = "error_message")
     private String errorMessage;
+
+    @Column(name = "shop_id")
+    private Integer shopId;
 }

@@ -49,9 +49,20 @@ public class DebeziumMessageParser {
             }
 
 
+            case PENDING_ASSETS -> {
+                Number shop_nid= (Number) after.get("shop_id");
+
+                Integer shop_id = shop_nid.intValue();
+
+                yield new AssetsInitializationCommand(id, shop_id);
+            }
+
             case COMPENSATE_INVENTORY ->
                     new CompensateInventoryCommand(id);
 
+
+            case COMPENSATE_ASSETS ->
+                    new AssetsCompensationCommand(id);
 
             case COMPENSATE_PRODUCT ->
                     new CompensateProductCommand(id);

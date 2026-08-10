@@ -5,7 +5,6 @@ import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.SagaEntityNotFoundException;
 import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
 
-import java.util.Optional;
 
 // Saga will be consistent otherwise compensation will be really expensive
 /*
@@ -43,10 +42,13 @@ public interface SagaProductCreation {
 
     void createdPriceEntry(Long productId) throws SagaEntityNotFoundException; // 3 STEP
 
+    void createdAssetsEntry(Long productId) throws SagaEntityNotFoundException; // 4 STEP
 
-    void compensatedInventoryEntry(Long productId, Optional<String> errorMessage) throws SagaEntityNotFoundException;
+    void compensatedInventoryEntry(Long productId, String errorMessage) throws SagaEntityNotFoundException;
 
-    void compensatedPriceEntry(Long productId, Optional<String> errorMessage) throws SagaEntityNotFoundException;
+    void compensatedPriceEntry(Long productId, String errorMessage) throws SagaEntityNotFoundException;
+
+    void compensatedAssetsEntry(Long productId, String errorMessage) throws SagaEntityNotFoundException;
 
     void compensateProductEntry(Long productId) throws SagaEntityNotFoundException, ProductNotFoundException;
 }

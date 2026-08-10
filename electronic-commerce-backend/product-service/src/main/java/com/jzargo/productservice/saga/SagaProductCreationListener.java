@@ -4,6 +4,7 @@ import com.jzargo.core.KafkaCustomHeaders;
 import com.jzargo.core.command.createProductSaga.*;
 import com.jzargo.productservice.entity.Message;
 import com.jzargo.productservice.entity.MessageType;
+import com.jzargo.productservice.exception.SagaEntityNotFoundException;
 import com.jzargo.productservice.repository.MessageRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaHandler;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Optional;
 
 @Slf4j
 @Transactional
@@ -90,104 +90,168 @@ public class SagaProductCreationListener {
             }
         }
 
-        @KafkaHandler
-        @Transactional
-        public void handleCompensationInventoryCommand(
-                @Payload InventoryCompensationCommandResponse command,
-                @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId
-        ){
-            log.trace("Received compensation inventory command message from kafka");
+    @KafkaHandler
+    @Transactional
+    public void handleAssetsCommandResponse(
+            @Payload AssetsInitializationCommandResponse assetsInitializationCommandResponse,
+            @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId
+    ) {
+        log.trace("Received assets command message from kafka");
 
-            if (messageRepository.findById(messageId).isPresent()) {
-                logRepeatedMessage();
-                return;
-            }
+        if (messageRepository.findById(messageId).isPresent()) {
 
-            try{
-                var errorMessage = Optional.ofNullable(command.getErrorMessage());
-
-                sagaProductCreation.compensatedInventoryEntry(command.getProductId(), errorMessage);
-
-                messageRepository.save(
-                        new Message(messageId, MessageType.COMMAND, Instant.now())
-                );
-
-                log.info("Successfully handled compensation inventory message with product id {}", command.getProductId());
-
-            } catch (Exception e) {
-                log.error("Unexpected exception occurred!", e);
-                messageRepository.deleteById(messageId);
-            }
-        }
-
-        @KafkaHandler
-        @Transactional
-        public void handleCompensationPriceCommand(
-                @Payload PricingCompensationCommandResponse command,
-                @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId
-        ){
-            log.trace("Received compensation price command message from kafka");
-
-            if (messageRepository.findById(messageId).isPresent()) {
-                logRepeatedMessage();
-                return;
-            }
-
-            try{
-                var errorMessage = Optional.ofNullable(command.getErrorMessage());
-
-                sagaProductCreation.compensatedPriceEntry(
-                        command.getProductId(),
-                        errorMessage
-                );
-
-                messageRepository.save(
-                        new Message(messageId, MessageType.COMMAND, Instant.now())
-                );
-
-                log.info("Successfully handled compensation price message with product id {}", command.getProductId());
-
-            } catch (Exception e) {
-                log.error("Unexpected exception occurred!", e);
-                messageRepository.deleteById(messageId);
-            }
-        }
-
-        @KafkaHandler
-        @Transactional
-        public void handleCompensatedProductCommand(
-                @Payload MediaCompensationCommandResponse command,
-                @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId
-        ){
-            log.trace("Received media compensation command message from kafka");
-
-            if (messageRepository.findById(messageId).isPresent()) {
-                logRepeatedMessage();
-                return;
-            }
-
-            try{
-                sagaProductCreation.compensateProductEntry(command.getProductId());
-
-                messageRepository.save(
-                        new Message(messageId, MessageType.COMMAND, Instant.now())
-                );
-                log.info("Successfully handled compensation media command message with product id {}", command.getProductId());
-
-            } catch (Exception e) {
-                log.error("Unexpected exception occurred!", e);
-                messageRepository.deleteById(messageId);
-            }
+            logRepeatedMessage();
+            return;
 
         }
 
-        @KafkaHandler
-        @Transactional
-        public void handleForeignMessage(Object foreignMessage) {
-            log.trace("Received foreign message from kafka! The message is {}", foreignMessage);
+        try {
+
+            sagaProductCreation.createdAssetsEntry(
+                    assetsInitializationCommandResponse.getProductId()
+            );
+
+            messageRepository.save(
+                    new Message(messageId, MessageType.COMMAND, Instant.now())
+            );
+
+            log.info("Successfully handled assets message with product id {}", assetsInitializationCommandResponse.getProductId());
+
+
+        } catch (SagaEntityNotFoundException e) {
+
+            log.error("Failed to handle assets command message with product id {}", messageId, e);
+
+        }
+    }
+
+
+    @KafkaHandler
+    @Transactional
+    public void handleCompensationInventoryCommand(
+            @Payload InventoryCompensationCommandResponse command,
+            @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId
+    ) {
+        log.trace("Received compensation inventory command message from kafka");
+
+        if (messageRepository.findById(messageId).isPresent()) {
+            logRepeatedMessage();
+            return;
         }
 
-        private void logRepeatedMessage() {
-            log.debug("found repeated message");
+        try {
+
+            sagaProductCreation.compensatedInventoryEntry(command.getProductId(), command.getErrorMessage());
+
+            messageRepository.save(
+                    new Message(messageId, MessageType.COMMAND, Instant.now())
+            );
+
+            log.info("Successfully handled compensation inventory message with product id {}", command.getProductId());
+
+        } catch (Exception e) {
+            log.error("Unexpected exception occurred!", e);
+            messageRepository.deleteById(messageId);
         }
+    }
+
+    @KafkaHandler
+    @Transactional
+    public void handleCompensationPriceCommand(
+            @Payload PricingCompensationCommandResponse command,
+            @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId
+    ) {
+        log.trace("Received compensation price command message from kafka");
+
+        if (messageRepository.findById(messageId).isPresent()) {
+            logRepeatedMessage();
+            return;
+        }
+
+        try {
+
+            sagaProductCreation.compensatedPriceEntry(
+                    command.getProductId(),
+                    command.getErrorMessage()
+            );
+
+            messageRepository.save(
+                    new Message(messageId, MessageType.COMMAND, Instant.now())
+            );
+
+            log.info("Successfully handled compensation price message with product id {}", command.getProductId());
+
+        } catch (Exception e) {
+            log.error("Unexpected exception occurred!", e);
+
+            messageRepository.deleteById(messageId);
+        }
+
+    }
+
+    @KafkaHandler
+    @Transactional
+    public void handleCompensationAssetsCommand(
+            @Payload AssetsCompensationResponse assetsCompensationResponse,
+            @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId
+    ) {
+
+        log.trace("Received compensation assets command message from kafka");
+
+        if (messageRepository.findById(messageId).isPresent()) {
+            logRepeatedMessage();
+            return;
+        }
+
+        try{
+
+            sagaProductCreation.compensatedAssetsEntry(
+                    assetsCompensationResponse.getProductId(),
+                    assetsCompensationResponse.getErrorMessage()
+            );
+
+        } catch (SagaEntityNotFoundException e) {
+
+            log.error("Failed to handle assets command message with product id {}", messageId, e);
+
+        }
+    }
+
+    @KafkaHandler
+    @Transactional
+    public void handleCompensatedProductCommand(
+            @Payload MediaCompensationCommandResponse command,
+            @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId
+    ) {
+        log.trace("Received media compensation command message from kafka");
+
+        if (messageRepository.findById(messageId).isPresent()) {
+            logRepeatedMessage();
+            return;
+        }
+
+        try {
+            sagaProductCreation.compensateProductEntry(command.getProductId());
+
+            messageRepository.save(
+                    new Message(messageId, MessageType.COMMAND, Instant.now())
+            );
+            log.info("Successfully handled compensation product command message with product id {}", command.getProductId());
+
+        } catch (Exception e) {
+            log.error("Unexpected exception occurred!", e);
+        }
+
+    }
+
+
+    @KafkaHandler
+    @Transactional
+    public void handleForeignMessage(Object foreignMessage) {
+        log.trace("Received foreign message from kafka! The message is {}", foreignMessage);
+    }
+
+    private void logRepeatedMessage() {
+        log.debug("found repeated message");
+    }
 }

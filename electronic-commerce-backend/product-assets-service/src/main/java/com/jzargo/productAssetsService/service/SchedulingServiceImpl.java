@@ -1,7 +1,8 @@
 package com.jzargo.productAssetsService.service;
 
-import com.jzargo.productservice.client.MediaServiceFallbackTaskAndManager;
-import com.jzargo.productservice.config.scheduling.DynamicTaskExecutionRegistry;
+
+import com.jzargo.productAssetsService.client.MediaServiceFallbackTaskAndManager;
+import com.jzargo.productAssetsService.config.scheduling.DynamicTaskExecutionRegistry;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,4 +42,5 @@ public class SchedulingServiceImpl implements SchedulingService {
         log.debug("Turning on fallback media scheduling tasks...");
         turnOnFallbackMediaScheduling();
     }
+
 }

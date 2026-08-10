@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -124,8 +123,6 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
         var plainFile = new PlainFile();
 
-        var bom = FileBufferedOutputStream
-
         mediaServiceStub.getMediaContent(
 
                 MediaContentURI.newBuilder()
@@ -151,6 +148,8 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
                 }
         );
+
+        return null;
     }
 
     @Override

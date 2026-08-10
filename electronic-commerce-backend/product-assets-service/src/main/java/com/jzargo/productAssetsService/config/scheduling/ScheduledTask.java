@@ -1,8 +1,10 @@
 package com.jzargo.productAssetsService.config.scheduling;
 
-import com.jzargo.productservice.exception.TaskCompletedException;
+
+import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
+import com.jzargo.productAssetsService.exception.TaskCompletedException;
 
 @FunctionalInterface
 public interface ScheduledTask {
-    void execute() throws TaskCompletedException;
+    void execute() throws TaskCompletedException, CannotAddMediaFileException;
 }

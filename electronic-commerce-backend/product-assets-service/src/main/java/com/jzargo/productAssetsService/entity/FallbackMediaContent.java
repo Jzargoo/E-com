@@ -22,7 +22,7 @@ public class FallbackMediaContent {
     private ContentType contentType;
 
     @Column(
-            length = 1024,
+            length = 128,
             nullable = false,
             unique = true,
             updatable = false,

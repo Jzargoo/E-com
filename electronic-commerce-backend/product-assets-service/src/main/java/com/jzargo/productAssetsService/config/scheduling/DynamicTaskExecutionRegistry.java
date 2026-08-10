@@ -1,6 +1,6 @@
 package com.jzargo.productAssetsService.config.scheduling;
 
-import com.jzargo.productservice.exception.TaskCompletedException;
+import com.jzargo.productAssetsService.exception.TaskCompletedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;

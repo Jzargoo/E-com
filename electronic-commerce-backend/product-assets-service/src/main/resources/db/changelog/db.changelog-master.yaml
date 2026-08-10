@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+        id: 1
+        author: Jzargoo
+        changes:
+          - sqlFile:
+              path: db/changelog/create_products.sql
+          - sqlFile:
+              path: db/changelog/create_mc.sql
+          - sqlFile:
+              path: db/changelog/create_fmc.sql
+          - sqlFile:
+              path: db/changelog/create_avatar_mapping.sql
+          - sqlFile:
+              path: db/changelog/create_message.sql
