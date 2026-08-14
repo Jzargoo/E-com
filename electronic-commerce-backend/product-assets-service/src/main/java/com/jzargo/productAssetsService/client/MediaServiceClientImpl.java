@@ -10,6 +10,7 @@ import com.jzargo.protobuf.MediaServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -119,10 +120,10 @@ public class MediaServiceClientImpl implements MediaServiceClient {
     }
 
     @Override
-    public PlainFile receiveFile(String mediaId) {
+    public Flux<MediaFile> receiveFile(String mediaId) {
 
-        var plainFile = new PlainFile();
-
+        Flux<MediaFile> mediaFileFlux = Flux.empty();
+        mediaFileFlux.
         mediaServiceStub.getMediaContent(
 
                 MediaContentURI.newBuilder()

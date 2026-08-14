@@ -10,6 +10,15 @@
 2. **Catalog Service** (service with 2 reading models: Elasticsearch (Id + name) for string full-search + MongoDB (id + category + rate))
     - `GET /catalog/daily?count=*` – Endpoint for recommended products, e.g., select a random category every day like “The Day of Electronics” and return products from this category.
     - `GET /catalog?q={query}&filters={filterDto}`
+3. **Product assets service**
+   - `GET /product-assets/{productId}` – get product assets (images, posters to videos)
+   - `POST /product-assets/{productId}` – upload product assets (image, video)
+   - `DELETE /product-assets/{productId}/{assetId}` – delete product asset
+   - `GET /product-assets/{productId/ids` - get product assets 
+4. **Media Service**
+    - `POST /media` – upload media file
+    - `GET /media/{id}` – get media file
+    - `DELETE /media/{id}` – delete media file
 3. **Cart Service**
     - `POST /cart`
     - `PUT /add/product/{cartId}`

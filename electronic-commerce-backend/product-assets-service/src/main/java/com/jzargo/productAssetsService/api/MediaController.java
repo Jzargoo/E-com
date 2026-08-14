@@ -1,11 +1,32 @@
 package com.jzargo.productAssetsService.api;
 
+import com.jzargo.productAssetsService.exception.AssetNotFoundException;
+import com.jzargo.productAssetsService.exception.ProductNotFoundException;
+import com.jzargo.productAssetsService.model.PlainFile;
+import com.jzargo.productAssetsService.service.MediaService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
 
+import java.io.IOException;
+import java.util.List;
+
+@Slf4j
 @RestController
 @RequestMapping("/api/products/media")
 public class MediaController {
+
+    private final MediaService mediaService;
+
+    public MediaController(MediaService mediaService) {
+        this.mediaService = mediaService;
+    }
 
     /**
      * @Slf4j
@@ -106,8 +127,36 @@ public class MediaController {
      *         return ResponseEntity.ok(
      *                 "new avatar was added successfully"
      *         );
-     *
-     *     }
-     * }
      */
+
+    @GetMapping("/{productId}")
+    public ResponseEntity<List<Long>> getIdsByProductId(@PathVariable Long productId) {
+        log.info("Caught request to get product with id {}", productId);
+
+        return ResponseEntity.ofNullable(
+                mediaService.findIdsByProductId(productId)
+        );
+    }
+
+
+    @GetMapping(
+            path = "assets/{assetId}",
+            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE
+    )
+    public ResponseEntity<Flux<DataBuffer>> getAssetsByAssetId(@PathVariable Long assetId) {
+        log.info("Caught request to get asset with id {}", assetId);
+
+        try {
+
+           return ResponseEntity.ofNullable(
+                   mediaService.getMediaContent(assetId)
+           );
+
+        } catch (IOException | AssetNotFoundException e) {
+            log.error("Error getting asset with id {}", assetId, e);
+
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
 }

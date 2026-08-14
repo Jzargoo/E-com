@@ -6,15 +6,13 @@ import com.jzargo.productAssetsService.driver.FallbackMediaDriver;
 import com.jzargo.productAssetsService.entity.FallbackMediaContent;
 import com.jzargo.productAssetsService.entity.MediaContent;
 import com.jzargo.productAssetsService.entity.ProductAssets;
-import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
-import com.jzargo.productAssetsService.exception.ProductNotFoundException;
-import com.jzargo.productAssetsService.exception.ShopDoesNotOwnProductException;
-import com.jzargo.productAssetsService.exception.UnsupportedContentType;
+import com.jzargo.productAssetsService.exception.*;
 import com.jzargo.productAssetsService.helper.ContentTypeParser;
 import com.jzargo.productAssetsService.mapper.MediaContentCreateMapper;
 import com.jzargo.productAssetsService.model.PlainFile;
 import com.jzargo.productAssetsService.repository.FallbackMediaContentRepository;
-import com.jzargo.productAssetsService.repository.ProductRepository;
+import com.jzargo.productAssetsService.repository.MediaContentRepository;
+import com.jzargo.productAssetsService.repository.ProductAssetsRepository;
 import com.jzargo.protobuf.ContentType;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -25,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -38,23 +35,26 @@ import java.util.UUID;
 public class MediaServiceImpl implements MediaService {
 
     private final MediaServiceClient mediaServiceClient;
-    private final ProductRepository productRepository;
     private final FallbackMediaContentRepository fallbackMediaContentRepository;
     private final FallbackMediaDriver fallbackMediaDriver;
     private final MediaContentCreateMapper mediaContentCreateMapper;
+    private final ProductAssetsRepository productAssetsRepository;
+    private final MediaService mediaService;
+    private final MediaContentRepository mediaContentRepository;
 
     public MediaServiceImpl(
             MediaServiceClient mediaServiceClient,
-            ProductRepository productRepository,
             FallbackMediaContentRepository fallbackMediaContentRepository,
             FallbackMediaDriver fallbackMediaDriver,
-            MediaContentCreateMapper mediaContentCreateMapper) {
+            MediaContentCreateMapper mediaContentCreateMapper, ProductAssetsRepository productAssetsRepository, MediaService mediaService, MediaContentRepository mediaContentRepository) {
 
         this.mediaServiceClient = mediaServiceClient;
-        this.productRepository = productRepository;
         this.fallbackMediaContentRepository = fallbackMediaContentRepository;
         this.fallbackMediaDriver = fallbackMediaDriver;
         this.mediaContentCreateMapper = mediaContentCreateMapper;
+        this.productAssetsRepository = productAssetsRepository;
+        this.mediaService = mediaService;
+        this.mediaContentRepository = mediaContentRepository;
     }
 
 
@@ -65,7 +65,7 @@ public class MediaServiceImpl implements MediaService {
     public void addMediaContent(MultipartFile mediaContent, Long productId, Integer shopId)
             throws ProductNotFoundException, ShopDoesNotOwnProductException, CannotAddMediaFileException, UnsupportedContentType {
 
-        ProductAssets product = productRepository
+        ProductAssets product = productAssetsRepository
                 .findById(productId)
                 .orElseThrow(ProductNotFoundException::new);
 
@@ -96,7 +96,7 @@ public class MediaServiceImpl implements MediaService {
                     mediaContentCreateMapper.map(uri)
             );
 
-            productRepository.save(
+            productAssetsRepository.save(
                     product
             );
 
@@ -116,7 +116,7 @@ public class MediaServiceImpl implements MediaService {
 
         log.debug("Fallback method that adds media content was invoked");
 
-        ProductAssets product = productRepository
+        ProductAssets product = productAssetsRepository
                 .findById(productId)
                 .orElseThrow(ProductNotFoundException::new);
 
@@ -161,7 +161,7 @@ public class MediaServiceImpl implements MediaService {
     public void addAvatar(MultipartFile image, Long productId, Integer shopId)
             throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException, UnsupportedContentType {
 
-        ProductAssets product = productRepository
+        ProductAssets product = productAssetsRepository
                 .findById(productId)
                 .orElseThrow(ProductNotFoundException::new);
 
@@ -177,7 +177,7 @@ public class MediaServiceImpl implements MediaService {
         );
 
 
-        MediaContent avatar = productRepository
+        MediaContent avatar = productAssetsRepository
                 .findById(productId)
                 .map(ProductAssets::getAvatar)
                 .orElseThrow(ProductNotFoundException::new);
@@ -199,7 +199,7 @@ public class MediaServiceImpl implements MediaService {
                 mediaContentCreateMapper.map(imageUri)
         );
 
-        productRepository.save(product);
+        productAssetsRepository.save(product);
     }
 
     @SuppressWarnings("unused")
@@ -207,7 +207,7 @@ public class MediaServiceImpl implements MediaService {
             throws ShopDoesNotOwnProductException, ProductNotFoundException, IOException, UnsupportedContentType {
         log.debug("Fallback method for adding avatar was invoked");
 
-        ProductAssets product = productRepository
+        ProductAssets product = productAssetsRepository
                 .findById(productId)
                 .orElseThrow(ProductNotFoundException::new);
 
@@ -235,7 +235,7 @@ public class MediaServiceImpl implements MediaService {
     public PlainFile getAvatar(Long productId)
         throws ProductNotFoundException {
 
-        MediaContent avatar = productRepository
+        MediaContent avatar = productAssetsRepository
                 .findById(productId)
                 .map(ProductAssets::getAvatar)
                 .orElseThrow(ProductNotFoundException::new);
@@ -246,28 +246,16 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public List<PlainFile> getMediaContent(Long productId)
-        throws ProductNotFoundException {
+    public PlainFile getMediaContent(Long assetId)
+        throws AssetNotFoundException {
 
-        List<MediaContent> allImages = productRepository
-                .findById(productId)
-                .map(ProductAssets::getMediaContents)
-                .orElseThrow(
-                        ProductNotFoundException::new
-                );
+        MediaContent mediaContent = mediaContentRepository
+                .findById(assetId)
+                .orElseThrow(AssetNotFoundException::new);
 
-        List<PlainFile> mediaContents = new ArrayList<>();
+        log.trace("Got media content with id {}, sending a request to mediaClient", assetId);
 
-        for (MediaContent mediaContent : allImages) {
-
-            PlainFile plainFile = mediaServiceClient.receiveFile(
-                    mediaContent.getUri()
-            );
-
-            mediaContents.add(plainFile);
-        }
-
-        return mediaContents;
+        return mediaServiceClient.receiveFile(mediaContent.getUri());
     }
 
     private String getUniqueUriByProductIdAndContentType(Long productId, ContentType contentType)
@@ -283,5 +271,16 @@ public class MediaServiceImpl implements MediaService {
                         ContentTypeParser.getMediaPostfix(contentType)
                 );
 
+    }
+
+    public List<Long> findIdsByProductId(Long productId) {
+
+        return productAssetsRepository
+                .findById(productId)
+                .orElseThrow()
+                .getMediaContents()
+                .stream()
+                .map(MediaContent::getId)
+                .toList();
     }
 }

@@ -7,7 +7,6 @@ import com.jzargo.productAssetsService.exception.TaskCompletedException;
 import com.jzargo.productAssetsService.mapper.MediaContentCreateMapper;
 import com.jzargo.productAssetsService.model.PlainFile;
 import com.jzargo.productAssetsService.repository.FallbackMediaContentRepository;
-import com.jzargo.productAssetsService.repository.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
