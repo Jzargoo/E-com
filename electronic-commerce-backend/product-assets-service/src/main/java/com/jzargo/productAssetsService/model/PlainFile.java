@@ -1,19 +1,19 @@
 package com.jzargo.productAssetsService.model;
 
 import com.jzargo.protobuf.ContentType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.core.io.buffer.DataBuffer;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.InputStream;
 
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class PlainFile {
-    private InputStream is;
-    private ContentType contentType;
-    private String uri;
+    private Flux<DataBuffer> upload;
+    private Mono<ContentType> contentType;
 }

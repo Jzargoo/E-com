@@ -10,7 +10,9 @@ import com.jzargo.protobuf.MediaServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -34,7 +36,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
     @Override
     public String sendFile(PlainFile file) throws CannotAddMediaFileException{
-
+        /*
         final String[] uri = new String[1];
 
         CompletableFuture<String> future = new CompletableFuture<>();
@@ -116,41 +118,50 @@ public class MediaServiceClientImpl implements MediaServiceClient {
             throw new CannotAddMediaFileException(e);
 
         }
-
+    */
+        return "";
     }
 
     @Override
-    public Flux<MediaFile> receiveFile(String mediaId) {
+    public Flux<MediaFile> receiveFile(Mono<String> mediaUri) {
 
-        Flux<MediaFile> mediaFileFlux = Flux.empty();
-        mediaFileFlux.
-        mediaServiceStub.getMediaContent(
+        return mediaUri.flatMapMany(
 
-                MediaContentURI.newBuilder()
-                        .setMediaURI(mediaId)
-                        .build(),
+                uri -> Flux.create(
+                        sink -> {
 
-                new StreamObserver<>() {
+                            StreamObserver<MediaFile> fluxObserver = new StreamObserver<>() {
 
-                    @Override
-                    public void onNext(MediaFile mediaFile) {
+                                @Override
+                                public void onNext(MediaFile val) {
+                                    sink.next(val);
+                                }
 
-                    }
+                                @Override
+                                public void onError(Throwable t) {
+                                    log.error("Error occurred in receiving a file!", t);
+                                    sink.error(t);
+                                }
 
-                    @Override
-                    public void onError(Throwable throwable) {
+                                @Override
+                                public void onCompleted() {
+                                    sink.complete();
+                                }
+                            };
 
-                    }
+                            mediaServiceStub.getMediaContent(
+                                    MediaContentURI.newBuilder()
+                                            .setMediaURI(uri)
+                                            .build(),
+                                    fluxObserver
+                            );
 
-                    @Override
-                    public void onCompleted() {
+                        }
 
-                    }
+                )
 
-                }
         );
 
-        return null;
     }
 
     @Override

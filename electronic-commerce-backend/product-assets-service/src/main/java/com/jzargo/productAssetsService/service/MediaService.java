@@ -4,6 +4,7 @@ import com.jzargo.productAssetsService.exception.*;
 import com.jzargo.productAssetsService.model.PlainFile;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -17,10 +18,10 @@ public interface MediaService {
     void addAvatar(MultipartFile image, Long productId, Integer shopId)
             throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException, UnsupportedContentType;
 
-    Flux<DataBuffer> getMediaContent(Long assetId)
+    PlainFile getMediaContent(Long assetId)
             throws IOException, AssetNotFoundException;
 
-    List<Long> findIdsByProductId(Long productId);
+    Flux<Long> findIdsByProductId(Long productId);
 
     PlainFile getAvatar(Long productId)
                 throws IOException, ProductNotFoundException;

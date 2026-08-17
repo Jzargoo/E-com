@@ -17,6 +17,4 @@ public class ProductAssets {
     private Long productId;
 
     private Integer shopId;
-
-    private MediaContent avatar;
 }

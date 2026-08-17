@@ -3,24 +3,33 @@ package com.jzargo.productAssetsService.service;
 
 import com.jzargo.productAssetsService.client.MediaServiceClient;
 import com.jzargo.productAssetsService.driver.FallbackMediaDriver;
+import com.jzargo.productAssetsService.entity.Avatar;
 import com.jzargo.productAssetsService.entity.FallbackMediaContent;
 import com.jzargo.productAssetsService.entity.MediaContent;
 import com.jzargo.productAssetsService.entity.ProductAssets;
 import com.jzargo.productAssetsService.exception.*;
 import com.jzargo.productAssetsService.helper.ContentTypeParser;
+import com.jzargo.productAssetsService.helper.PlainFileConverter;
 import com.jzargo.productAssetsService.mapper.MediaContentCreateMapper;
 import com.jzargo.productAssetsService.model.PlainFile;
+import com.jzargo.productAssetsService.repository.AvatarRepository;
 import com.jzargo.productAssetsService.repository.FallbackMediaContentRepository;
 import com.jzargo.productAssetsService.repository.MediaContentRepository;
 import com.jzargo.productAssetsService.repository.ProductAssetsRepository;
 import com.jzargo.protobuf.ContentType;
+import com.jzargo.protobuf.MediaFile;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DefaultDataBuffer;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,22 +48,27 @@ public class MediaServiceImpl implements MediaService {
     private final FallbackMediaDriver fallbackMediaDriver;
     private final MediaContentCreateMapper mediaContentCreateMapper;
     private final ProductAssetsRepository productAssetsRepository;
-    private final MediaService mediaService;
     private final MediaContentRepository mediaContentRepository;
+    private final PlainFileConverter plainFileConverter;
+    private final AvatarRepository avatarRepository;
 
     public MediaServiceImpl(
             MediaServiceClient mediaServiceClient,
             FallbackMediaContentRepository fallbackMediaContentRepository,
             FallbackMediaDriver fallbackMediaDriver,
-            MediaContentCreateMapper mediaContentCreateMapper, ProductAssetsRepository productAssetsRepository, MediaService mediaService, MediaContentRepository mediaContentRepository) {
+            MediaContentCreateMapper mediaContentCreateMapper,
+            ProductAssetsRepository productAssetsRepository,
+            MediaContentRepository mediaContentRepository, PlainFileConverter plainFileConverter,
+            AvatarRepository avatarRepository) {
 
         this.mediaServiceClient = mediaServiceClient;
         this.fallbackMediaContentRepository = fallbackMediaContentRepository;
         this.fallbackMediaDriver = fallbackMediaDriver;
         this.mediaContentCreateMapper = mediaContentCreateMapper;
         this.productAssetsRepository = productAssetsRepository;
-        this.mediaService = mediaService;
         this.mediaContentRepository = mediaContentRepository;
+        this.plainFileConverter = plainFileConverter;
+        this.avatarRepository = avatarRepository;
     }
 
 
@@ -235,27 +249,33 @@ public class MediaServiceImpl implements MediaService {
     public PlainFile getAvatar(Long productId)
         throws ProductNotFoundException {
 
-        MediaContent avatar = productAssetsRepository
-                .findById(productId)
-                .map(ProductAssets::getAvatar)
-                .orElseThrow(ProductNotFoundException::new);
+        Mono<String> mediaUri =
+                avatarRepository.findById(productId)
+                        .map(Avatar::getContentId)
+                        .flatMap(mediaContentRepository::findById)
+                        .map(MediaContent::getUri);
 
 
-
-        return mediaServiceClient.receiveFile(avatar.getUri());
+        return plainFileConverter.convertFromFlux(
+                mediaServiceClient.receiveFile(mediaUri)
+        );
     }
 
     @Override
     public PlainFile getMediaContent(Long assetId)
         throws AssetNotFoundException {
 
-        MediaContent mediaContent = mediaContentRepository
+        log.info("Getting media content for {}", assetId);
+
+        Mono<String> mediaUri = mediaContentRepository
                 .findById(assetId)
-                .orElseThrow(AssetNotFoundException::new);
+                .map(MediaContent::getUri);
 
         log.trace("Got media content with id {}, sending a request to mediaClient", assetId);
 
-        return mediaServiceClient.receiveFile(mediaContent.getUri());
+        return plainFileConverter.convertFromFlux(
+                mediaServiceClient.receiveFile(mediaUri)
+        );
     }
 
     private String getUniqueUriByProductIdAndContentType(Long productId, ContentType contentType)
@@ -273,14 +293,33 @@ public class MediaServiceImpl implements MediaService {
 
     }
 
-    public List<Long> findIdsByProductId(Long productId) {
+    public Flux<Long> findIdsByProductId(Long productId) {
 
-        return productAssetsRepository
-                .findById(productId)
-                .orElseThrow()
-                .getMediaContents()
-                .stream()
-                .map(MediaContent::getId)
-                .toList();
+        return mediaContentRepository
+                .findAllByProductId(productId)
+                .map(MediaContent::getId);
+    }
+
+    private PlainFile splitAndCollectPlainFile(Flux<MediaFile> mediaFileFlux) {
+
+        Mono<ContentType> map = share.next().map(
+                MediaFile::getContentType
+        );
+
+
+
+        Flux<DataBuffer> buffer = share.map(
+                file -> {
+                    byte[] byteArray = file.getContentChunk().toByteArray();
+
+                    return DefaultDataBufferFactory.sharedInstance.wrap(byteArray);
+                }
+        );
+
+        return PlainFile.builder()
+                .upload(buffer)
+                .contentType(map)
+                .build();
+
     }
 }
