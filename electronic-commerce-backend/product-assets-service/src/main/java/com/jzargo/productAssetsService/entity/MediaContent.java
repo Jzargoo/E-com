@@ -5,25 +5,25 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
 @Table
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
 @Data
 public class MediaContent {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 128, nullable = false, unique = true)
     private String uri;
+
+    private Long productId;
 
     @Builder.Default
     private Integer mediaVersion = 1;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    private ProductAssets product;
 
 }

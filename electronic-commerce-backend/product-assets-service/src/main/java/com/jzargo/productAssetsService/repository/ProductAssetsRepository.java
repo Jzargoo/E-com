@@ -1,7 +1,9 @@
 package com.jzargo.productAssetsService.repository;
 
 import com.jzargo.productAssetsService.entity.ProductAssets;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
 
-public interface ProductAssetsRepository extends JpaRepository<ProductAssets, Long> {
+@Repository
+public interface ProductAssetsRepository extends R2dbcRepository<ProductAssets, Long> {
 }

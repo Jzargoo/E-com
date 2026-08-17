@@ -13,3 +13,5 @@ databaseChangeLog:
               path: db/changelog/create_avatar_mapping.sql
           - sqlFile:
               path: db/changelog/create_message.sql
+          - sqlFile:
+              path: db/changelog/create_saga_product_assets.sql

@@ -1,10 +1,10 @@
 package com.jzargo.productAssetsService.repository;
 
 import com.jzargo.productAssetsService.entity.FallbackMediaContent;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 
-public interface FallbackMediaContentRepository extends JpaRepository <FallbackMediaContent, Integer> {
-    Optional<FallbackMediaContent> findFirstByMediaUriIsNotNull();
+public interface FallbackMediaContentRepository extends R2dbcRepository<FallbackMediaContent, Integer> {
+    Mono<FallbackMediaContent> findFirstByMediaUriNotNull();
 }

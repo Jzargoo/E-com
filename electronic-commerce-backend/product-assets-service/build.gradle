@@ -24,7 +24,6 @@ ext {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-grpc-client'
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.apache.kafka:kafka-streams'
@@ -33,15 +32,19 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.projectlombok:lombok'
     implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
-    testImplementation 'io.projectreactor:reactor-test'
-    runtimeOnly 'org.postgresql:postgresql'
-    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-    testImplementation 'org.springframework.boot:spring-boot-starter-grpc-client-test'
-    testImplementation 'org.springframework.boot:spring-boot-starter-kafka-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation 'org.springframework.boot:spring-boot-starter-liquibase'
 
     implementation 'com.jzargo:core:0.0.1-SNAPSHOT'
     implementation 'com.jzargo:protobuf-common:1.0-SNAPSHOT'
+
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.springframework.boot:spring-boot-starter-grpc-client-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-kafka-test'
+    runtimeOnly 'org.postgresql:r2dbc-postgresql'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
 }
 
 dependencyManagement {
