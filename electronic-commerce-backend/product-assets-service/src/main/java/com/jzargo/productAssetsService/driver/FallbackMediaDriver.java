@@ -1,5 +1,9 @@
 package com.jzargo.productAssetsService.driver;
 
+import org.springframework.core.io.buffer.DataBuffer;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -19,7 +23,7 @@ public interface FallbackMediaDriver {
 
     }
 
-    String saveFile(InputStream content) throws IOException;
+    Mono<String> saveFile(Flux<DataBuffer> content, String key);
 
     InputStream getFile  (String mediaId) throws IOException;
 

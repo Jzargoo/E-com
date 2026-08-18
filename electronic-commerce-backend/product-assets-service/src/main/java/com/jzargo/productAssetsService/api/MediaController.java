@@ -6,13 +6,11 @@ import com.jzargo.productAssetsService.model.PlainFile;
 import com.jzargo.productAssetsService.service.MediaService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -47,29 +45,7 @@ public class MediaController {
      *             "( hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER') ) and " +
      *                     "authentication.principal.claims['mode'] == 'OWNER'"
      *     )
-     *     public ResponseEntity<String> addMediaContent(
-     *             @RequestBody @NotNull MultipartFile multipartFile,
-     *             @PathVariable Long productId,
-     *             @AuthenticationPrincipal Jwt jwt
-     *     ) throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException {
      *
-     *         log.debug("Adding media content to product {}",productId);
-     *
-     *         Number shopId = jwt.getClaim("shop_id");
-     *
-     *         if (shopId == null || shopId.intValue() <= 0) {
-     *             return ResponseEntity.badRequest().build();
-     *         }
-     *
-     *         mediaService.addMediaContent(
-     *                 multipartFile,
-     *                 productId,
-     *                 shopId.intValue()
-     *         );
-     *
-     *         return ResponseEntity.status(HttpStatus.ACCEPTED).body("Started saving a file");
-     *
-     *     }
      *
      *     @GetMapping(path = "/{}",produces = "multipart/x-mixed-replace; boundary=--end-of-the-file")
      *     public StreamingResponseBody getAllMediaContents(
@@ -171,6 +147,17 @@ public class MediaController {
 
             return null;
         }
+    }
+
+    @PutMapping("/{productId}")
+    public Mono<Long> addMediaContent(
+            @RequestBody Flux<DataBuffer> content,
+            @PathVariable Long productId,
+            Integer shopId,
+            @RequestHeader(HttpHeaders.CONTENT_TYPE) String contentType
+    ) {
+
+        return mediaService.addMediaContent(content, productId, shopId, contentType);
     }
 
 }

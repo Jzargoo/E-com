@@ -38,6 +38,7 @@ dependencies {
 
     implementation 'com.jzargo:core:0.0.1-SNAPSHOT'
     implementation 'com.jzargo:protobuf-common:1.0-SNAPSHOT'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'org.springframework.boot:spring-boot-starter-grpc-client-test'
