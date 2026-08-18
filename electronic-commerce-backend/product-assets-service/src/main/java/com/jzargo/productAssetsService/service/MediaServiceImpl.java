@@ -17,23 +17,16 @@ import com.jzargo.productAssetsService.repository.FallbackMediaContentRepository
 import com.jzargo.productAssetsService.repository.MediaContentRepository;
 import com.jzargo.productAssetsService.repository.ProductAssetsRepository;
 import com.jzargo.protobuf.ContentType;
-import com.jzargo.protobuf.MediaFile;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DefaultDataBuffer;
-import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 
@@ -76,182 +69,236 @@ public class MediaServiceImpl implements MediaService {
     @Transactional
     @CircuitBreaker(name = "mediaService", fallbackMethod = "fallbackAddingMediaContent")
     @Bulkhead(name = "mediaService", fallbackMethod = "fallbackAddingMediaContent")
-    public void addMediaContent(MultipartFile mediaContent, Long productId, Integer shopId)
-            throws ProductNotFoundException, ShopDoesNotOwnProductException, CannotAddMediaFileException, UnsupportedContentType {
+    public Mono<Long> addMediaContent(Flux<DataBuffer> content, Long productId, Integer shopId, String contentType)
+            throws UnsupportedContentType {
 
-        ProductAssets product = productAssetsRepository
-                .findById(productId)
-                .orElseThrow(ProductNotFoundException::new);
+        Mono<ProductAssets> productAssets =
+                productAssetsRepository.findByProductIdAndShopId(productId, shopId);
 
-        if (!product.getShopId().equals(shopId)) {
-            throw new ShopDoesNotOwnProductException();
-        }
+        return productAssets.flatMap(
+                asset -> {
+                    try {
 
-        try {
+                        String key = getUniqueUriByProductIdAndContentType(
+                                asset.getProductId(),
+                                ContentTypeParser.parse(contentType)
+                        );
 
-            ContentType parse = ContentTypeParser.parse(
-                    Objects
-                            .requireNonNull(
-                                    mediaContent.getContentType()
-                            ).trim()
-            );
+                        Mono<MediaContent> save = mediaContentRepository.save(
+                                MediaContent.builder()
+                                        .productId(asset.getProductId())
+                                        .uri(key)
+                                        .build()
+                        );
 
-            String key = getUniqueUriByProductIdAndContentType(productId, parse);
+                        mediaServiceClient.sendFile(key, content);
 
-            String uri = mediaServiceClient.sendFile(
-                new PlainFile (
-                        mediaContent.getInputStream(),
-                        parse,
-                        key
-                )
-            );
+                        return save
+                                .map(MediaContent::getId);
 
-            product.addMediaContent(
-                    mediaContentCreateMapper.map(uri)
-            );
+                    } catch (CannotAddMediaFileException e) {
+                        log.error("Occurred exception while adding media content", e);
 
-            productAssetsRepository.save(
-                    product
-            );
+                        return Mono.error(e);
+                    }
 
-
-        } catch (IOException e) {
-            log.error(
-                    "addMediaContent error: {}",
-                    e.getMessage(), e
-            );
-        }
-
+                })
+                .switchIfEmpty(
+                        Mono.error(
+                                ProductNotFoundException::new
+                        )
+                );
     }
 
     @SuppressWarnings("unused")
-    public void fallbackAddingMediaContent(MultipartFile mediaContent, Long productId, Integer shopId)
-            throws ProductNotFoundException, ShopDoesNotOwnProductException, UnsupportedContentType, IOException {
+    public Mono<Long> fallbackAddingMediaContent(
+            Flux<DataBuffer> content, Long productId, Integer shopId, String contentType)
+            throws UnsupportedContentType {
 
         log.debug("Fallback method that adds media content was invoked");
 
-        ProductAssets product = productAssetsRepository
-                .findById(productId)
-                .orElseThrow(ProductNotFoundException::new);
-
-        if (product.getShopId().equals(shopId)) {
-            throw new ShopDoesNotOwnProductException();
-        }
-
-        ContentType parse = ContentTypeParser.parse(
-                Objects
-                        .requireNonNull(
-                                mediaContent.getContentType()
-                        ).trim()
+        Mono<ProductAssets> product = productAssetsRepository.findById(
+                productId
         );
 
+        return product
 
-        String key = getUniqueUriByProductIdAndContentType(productId, parse);
+                .flatMap(
+                        asset -> {
+                            if (!asset.getShopId().equals(shopId)) {
+                                return Mono.error(ShopDoesNotOwnProductException::new);
+                            } else {
+                                return Mono.just(asset);
+                            }
+                        })
 
-
-        FallbackMediaContent build = FallbackMediaContent.builder()
-
-                .contentType(
-                        ContentTypeParser.parse(Objects.requireNonNull(mediaContent.getContentType()))
+                .switchIfEmpty(
+                        Mono.error(ProductNotFoundException::new)
                 )
 
+                .flatMap(
+                        asset -> {
 
-                .mediaUri(key)
+                            ContentType parse = ContentTypeParser.parse(contentType);
 
-                .build();
+                            String key =  getUniqueUriByProductIdAndContentType(productId, parse);
 
-        build.setProduct(product);
+                            FallbackMediaContent build = FallbackMediaContent.builder()
+                                    .contentType(parse)
+                                    .mediaUri(key)
+                                    .mediaVersion(1)
+                                    .productId(productId)
+                                    .build();
 
+                            fallbackMediaContentRepository.save(build);
 
-        fallbackMediaDriver.saveFile(mediaContent.getInputStream());
+                            return fallbackMediaDriver.saveFile(content, key)
+                                    .flatMap(
+                                            file -> Mono.error(CreatedInFallbackException::new)
+                                    );
 
-        fallbackMediaContentRepository.save(build);
+                        });
     }
 
     @Override
     @Transactional
     @CircuitBreaker(name = "mediaService", fallbackMethod = "fallbackAddingAvatar")
     @Bulkhead(name = "mediaService", fallbackMethod = "fallbackAddingAvatar")
-    public void addAvatar(MultipartFile image, Long productId, Integer shopId)
-            throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException, UnsupportedContentType {
+    public Mono<Long> addAvatar(Flux<DataBuffer> content, Long productId, Integer shopId, String contentType)
+            throws UnsupportedContentType {
 
-        ProductAssets product = productAssetsRepository
-                .findById(productId)
-                .orElseThrow(ProductNotFoundException::new);
+        Mono<ProductAssets> product = productAssetsRepository
+                .findById(productId);
 
-        if (!product.getShopId().equals(shopId)) {
-            throw new ShopDoesNotOwnProductException();
-        }
+        return product
 
-        ContentType parse = ContentTypeParser.parse(
-                Objects
-                        .requireNonNull(
-                                image.getContentType()
-                        ).trim()
-        );
+                .flatMap(asset -> {
+                    if (!asset.getShopId().equals(shopId)) {
+                        return Mono.error(ShopDoesNotOwnProductException::new);
+                    }
+                    return Mono.just(asset);
+                })
 
+                .switchIfEmpty(Mono.error(ProductNotFoundException::new))
 
-        MediaContent avatar = productAssetsRepository
-                .findById(productId)
-                .map(ProductAssets::getAvatar)
-                .orElseThrow(ProductNotFoundException::new);
+                .flatMap(asset -> {
+                    ContentType parsed = ContentTypeParser.parseImage(contentType);
+                    String key = getUniqueUriByProductIdAndContentType(productId, parsed);
 
-        String imageUri = mediaServiceClient.changeFile(
+                    return avatarRepository.findById(asset.getProductId())
+                            .map(Avatar::getContentId)
+                            .flatMap(mediaContentRepository::findById)
 
-                new PlainFile(
-                        image.getInputStream(),
-                        parse,
-                        getUniqueUriByProductIdAndContentType(productId, parse)
-                ),
+                            // A: MediaContent is found
+                            .flatMap(mc -> {
+                                var newVersion = mc.getMediaVersion() + 1;
 
-                (avatar.getMediaVersion()),
+                                var updatedMedia = MediaContent.builder()
+                                        .uri(key)
+                                        .id(mc.getId())
+                                        .mediaVersion(newVersion)
+                                        .productId(asset.getProductId())
+                                        .build();
 
-                avatar.getUri()
-        );
+                                return mediaContentRepository.save(updatedMedia)
 
-        product.setAvatar(
-                mediaContentCreateMapper.map(imageUri)
-        );
+                                        .mapNotNull(MediaContent::getId)
 
-        productAssetsRepository.save(product);
+                                        .flatMap(id ->
+                                                mediaServiceClient.changeFile(
+                                                        content, key, parsed,
+                                                        mc.getMediaVersion(), mc.getUri()
+                                                ).thenReturn(id)
+                                        );
+                            })
+
+                            // B: mediaContent is not found => create a representation of a file
+                            .switchIfEmpty(
+
+                                    Mono.defer(
+                                            () -> {
+
+                                                MediaContent build = MediaContent.builder()
+                                                        .uri(key)
+                                                        .productId(asset.getProductId())
+                                                        .build();
+
+                                                return mediaContentRepository.save(build)
+                                                        .flatMap(mc -> addMediaContent(content, productId, shopId, contentType));
+                                            }
+                                    )
+                            );
+                });
     }
 
     @SuppressWarnings("unused")
-    public void fallbackAddingAvatar(MultipartFile image, Long productId, Integer shopId)
-            throws ShopDoesNotOwnProductException, ProductNotFoundException, IOException, UnsupportedContentType {
+    public void fallbackAddingAvatar(Flux<DataBuffer> content, Long productId, Integer shopId, String contentType)
+            throws UnsupportedContentType {
+
         log.debug("Fallback method for adding avatar was invoked");
 
-        ProductAssets product = productAssetsRepository
+        productAssetsRepository
                 .findById(productId)
-                .orElseThrow(ProductNotFoundException::new);
+                .switchIfEmpty(Mono.error(ProductNotFoundException::new))
+                .flatMap(
+                        productAssets -> {
+                            if (!productAssets.getShopId().equals(shopId)) {
+                                Mono.error(ShopDoesNotOwnProductException::new);
+                            }
 
-        if (!product.getShopId().equals(shopId)) {
-            throw new ShopDoesNotOwnProductException();
-        }
-
-        FallbackMediaContent content = FallbackMediaContent.builder()
-                .isAvatar(true)
-                .contentType(
-                        ContentTypeParser.parseImage(
-                                Objects.requireNonNull(image.getContentType())
-                        )
+                            return Mono.just(productAssets);
+                        }
                 )
-                .build();
+                .flatMap(
+                        asset -> {
 
-        content.setProduct(product);
+                            ContentType parsed = ContentTypeParser.parseImage(contentType);
 
-        fallbackMediaDriver.saveFile(image.getInputStream());
+                            String key =  getUniqueUriByProductIdAndContentType(asset.getProductId(), parsed);
 
-        fallbackMediaContentRepository.save(content);
+                            return avatarRepository.findById(asset.getProductId())
+                                    .mapNotNull(Avatar::getContentId)
+                                    .flatMap(mediaContentRepository::findById)
+                                    .flatMap(
+                                            mediaContent -> {
+
+                                                Integer mediaVersion = mediaContent.getMediaVersion() + 1;
+
+                                                FallbackMediaContent build = FallbackMediaContent.builder()
+                                                        .isAvatar(true)
+                                                        .productId(asset.getProductId())
+                                                        .mediaVersion(mediaVersion)
+                                                        .mediaUri(key)
+                                                        .build();
+
+                                                return
+                                                        fallbackMediaContentRepository.save(build)
+                                                                .flatMap(fmc ->
+                                                                        fallbackMediaDriver.saveFile(content, key)
+                                                                                .flatMap(
+                                                                                        ignored -> Mono.error(CreatedInFallbackException::new)
+                                                                                )
+                                                                );
+                                            }
+                                    )
+
+                                    // B: MediaContentNotFound
+                                    .switchIfEmpty(
+                                            fallbackAddingMediaContent(content, productId, shopId, contentType)
+                                    );
+                        }
+                );
+
+
     }
 
     @Override
-    public PlainFile getAvatar(Long productId)
-        throws ProductNotFoundException {
+    public PlainFile getAvatar(Long productId) {
 
         Mono<String> mediaUri =
                 avatarRepository.findById(productId)
                         .map(Avatar::getContentId)
+                        .switchIfEmpty(Mono.error(AssetNotFoundException::new))
                         .flatMap(mediaContentRepository::findById)
                         .map(MediaContent::getUri);
 
@@ -300,26 +347,4 @@ public class MediaServiceImpl implements MediaService {
                 .map(MediaContent::getId);
     }
 
-    private PlainFile splitAndCollectPlainFile(Flux<MediaFile> mediaFileFlux) {
-
-        Mono<ContentType> map = share.next().map(
-                MediaFile::getContentType
-        );
-
-
-
-        Flux<DataBuffer> buffer = share.map(
-                file -> {
-                    byte[] byteArray = file.getContentChunk().toByteArray();
-
-                    return DefaultDataBufferFactory.sharedInstance.wrap(byteArray);
-                }
-        );
-
-        return PlainFile.builder()
-                .upload(buffer)
-                .contentType(map)
-                .build();
-
-    }
 }
