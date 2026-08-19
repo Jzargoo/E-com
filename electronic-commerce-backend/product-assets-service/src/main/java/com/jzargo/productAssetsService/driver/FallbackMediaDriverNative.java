@@ -1,8 +1,14 @@
 package com.jzargo.productAssetsService.driver;
 
 
+import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,7 +29,7 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
     }
 
     @Override
-    public String saveFile(InputStream content, Long length) throws IOException {
+    public Mono<String> saveFile(Flux<DataBuffer> content, String key) throws IOException {
         String path = applicationPropertyStorage.getMedia().getPath();
 
         Files.createDirectories(Path.of(path));
@@ -44,13 +50,13 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
 
         ){
 
-            var remSize = length;
+            var remSize = 0;
 
             while  (remSize > 0) {
 
-                stream.write(
-                        content.readNBytes(portionSize)
-                );
+//                stream.write(
+//                        content(portionSize)
+//                );
 
                 remSize -= Math.min(remSize, portionSize);
             }
@@ -58,24 +64,42 @@ public class FallbackMediaDriverNative implements FallbackMediaDriver{
         }
 
 
-        return image_name;
+        return Mono.just(image_name);
     }
 
     @Override
-    public InputStream getFile(String name) throws IOException {
+    public Flux<DataBuffer> getFile(String name) {
+
         var path = Path.of(
                 applicationPropertyStorage.getMedia().getPath() + "\\" + name
         );
 
-        return Files.newInputStream(path);
+        Integer portionSize =
+                applicationPropertyStorage.getFallbackMedia().getPortionSize();
+
+        return DataBufferUtils.readInputStream(
+                () -> {
+                    try(InputStream is = Files.newInputStream(path)) {
+                        return is;
+                    }
+                },
+                DefaultDataBufferFactory.sharedInstance,
+                portionSize
+        );
+
     }
 
     @Override
-    public void deleteFile(String fileName) throws IOException {
+    public void deleteFile(String fileName) {
         var path = Path.of(
                 applicationPropertyStorage.getMedia().getPath() + "\\" + fileName
         );
 
-        Files.deleteIfExists(path);
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
+
 }

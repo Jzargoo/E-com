@@ -32,4 +32,5 @@ public class NettyServerConfigurer {
                                 new FixedRecvByteBufAllocator(server.getBufferSize())
                         );
     }
+
 }

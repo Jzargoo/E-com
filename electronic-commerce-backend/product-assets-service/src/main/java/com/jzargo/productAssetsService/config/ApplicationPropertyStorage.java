@@ -63,6 +63,10 @@ public class ApplicationPropertyStorage {
         @Min(value = 0, message = "max header size has to be a positive number!")
         private Integer maxHeaderSize;
 
+        @NotNull(message = "max content byte count is expected to exist")
+        @Min(value = 0, message = "max content byte count has to be a positive number!")
+        private Integer maxContentByteCount;
+
         @NotNull(message = "max initial length is expected to exist")
         @Min(value = 0, message = "max initial length has to be a positive number!")
         private Integer maxInitialLineLength;

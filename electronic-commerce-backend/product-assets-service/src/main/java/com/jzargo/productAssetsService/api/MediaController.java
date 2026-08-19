@@ -1,11 +1,13 @@
 package com.jzargo.productAssetsService.api;
 
+import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
 import com.jzargo.productAssetsService.exception.AssetNotFoundException;
 import com.jzargo.productAssetsService.helper.ContentTypeParser;
 import com.jzargo.productAssetsService.model.PlainFile;
 import com.jzargo.productAssetsService.service.MediaService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,7 +17,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -23,89 +24,14 @@ import java.util.List;
 public class MediaController {
 
     private final MediaService mediaService;
+    private final ApplicationPropertyStorage applicationPropertyStorage;
 
-    public MediaController(MediaService mediaService) {
+    public MediaController(MediaService mediaService,
+                           ApplicationPropertyStorage applicationPropertyStorage) {
         this.mediaService = mediaService;
+        this.applicationPropertyStorage = applicationPropertyStorage;
     }
 
-    /**
-     * @Slf4j
-     * @RestController
-     * @RequestMapping("/api/products/media")
-     * public class MediaController {
-     *
-     *     private final MediaService mediaService;
-     *
-     *     public MediaController(@Qualifier("asyncMediaService") MediaService mediaService) {
-     *         this.mediaService = mediaService;
-     *     }
-     *
-     *     @PutMapping("/{productId}")
-     *     @PreAuthorize(
-     *             "( hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER') ) and " +
-     *                     "authentication.principal.claims['mode'] == 'OWNER'"
-     *     )
-     *
-     *
-     *     @GetMapping(path = "/{}",produces = "multipart/x-mixed-replace; boundary=--end-of-the-file")
-     *     public StreamingResponseBody getAllMediaContents(
-     *             @PathVariable Long productId
-     *     ) throws IOException, ProductNotFoundException {
-     *
-     *         log.debug("Getting all media content from product {}",productId);
-     *
-     *         List<PlainFile> mediaContent = mediaService.getMediaContent(productId);
-     *
-     *         return outputStream -> {
-     *             for (PlainFile media : mediaContent) {
-     *                 String headers =
-     *                         "Content-Type: %s \r\n" +
-     *                                 "Content-Disposition: attachment; filename=\""
-     *                                         .formatted(
-     *                                                 ContentTypeParser.parseIntoMime(media.getContentType())
-     *                                         );
-     *
-     *                 outputStream.write(headers.getBytes(StandardCharsets.UTF_8));
-     *
-     *                 media.getContent().
-     *
-     *             }
-     *         }
-     *
-     *     }
-     *
-     *     @GetMapping("/avatar/{productId}")
-     *     public ResponseEntity<PlainFile> getAvatar(
-     *             @PathVariable Long productId
-     *     ) throws IOException, ProductNotFoundException {
-     *
-     *         log.debug("Getting avatar from product {}",productId);
-     *
-     *         return ResponseEntity.ok(
-     *                 mediaService.getAvatar(productId)
-     *         );
-     *     }
-     *
-     *     @PostMapping("/{productId}")
-     *     @PreAuthorize(
-     *             "( hasAuthority('ROLE_SHOP_OWNER') or hasAuthority('SCOPE_ROLE_SHOP_OWNER') ) and " +
-     *                     "authentication.principal.claims['mode'] == 'OWNER'"
-     *     )
-     *     public ResponseEntity<String> addAvatar (
-     *             @RequestBody @NotNull MultipartFile multipartFile,
-     *             @PathVariable Long productId,
-     *             @AuthenticationPrincipal Jwt jwt) throws IOException, ProductNotFoundException, ShopDoesNotOwnProductException {
-     *
-     *         log.debug("Adding avatar to product {}",productId);
-     *
-     *         Integer shopId = jwt.getClaim("shop_id");
-     *
-     *         mediaService.addAvatar(multipartFile, productId, shopId);
-     *
-     *         return ResponseEntity.ok(
-     *                 "new avatar was added successfully"
-     *         );
-     */
 
     @GetMapping("/{productId}")
     public Flux<Long> getIdsByProductId(@PathVariable Long productId) {
@@ -115,9 +41,7 @@ public class MediaController {
     }
 
 
-    @GetMapping(
-            path = "assets/{assetId}"
-    )
+    @GetMapping(path = "assets/{assetId}")
     public Mono<ResponseEntity<Flux<DataBuffer>>> getAssetsByAssetId(@PathVariable Long assetId) {
         log.info("Caught request to get asset with id {}", assetId);
 
@@ -145,7 +69,7 @@ public class MediaController {
         } catch (IOException | AssetNotFoundException e) {
             log.error("Error getting asset with id {}", assetId, e);
 
-            return null;
+            return Mono.empty();
         }
     }
 
@@ -157,7 +81,13 @@ public class MediaController {
             @RequestHeader(HttpHeaders.CONTENT_TYPE) String contentType
     ) {
 
-        return mediaService.addMediaContent(content, productId, shopId, contentType);
+        Integer maxContentByteCount =
+                applicationPropertyStorage.getServer().getMaxContentByteCount();
+
+        Flux<DataBuffer> dataBufferFlux =
+                DataBufferUtils.takeUntilByteCount(content, maxContentByteCount);
+
+        return mediaService.addMediaContent(dataBufferFlux, productId, shopId, contentType);
     }
 
 }

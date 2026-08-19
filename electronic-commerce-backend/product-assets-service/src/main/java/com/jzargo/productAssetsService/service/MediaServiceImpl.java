@@ -10,7 +10,6 @@ import com.jzargo.productAssetsService.entity.ProductAssets;
 import com.jzargo.productAssetsService.exception.*;
 import com.jzargo.productAssetsService.helper.ContentTypeParser;
 import com.jzargo.productAssetsService.helper.PlainFileConverter;
-import com.jzargo.productAssetsService.mapper.MediaContentCreateMapper;
 import com.jzargo.productAssetsService.model.PlainFile;
 import com.jzargo.productAssetsService.repository.AvatarRepository;
 import com.jzargo.productAssetsService.repository.FallbackMediaContentRepository;
@@ -19,7 +18,6 @@ import com.jzargo.productAssetsService.repository.ProductAssetsRepository;
 import com.jzargo.protobuf.ContentType;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
@@ -27,10 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.UUID;
 
 
-@Slf4j
 @Service
 @Qualifier("internalMediaService")
 @Transactional(readOnly = true) // if not provided, data must be in immutable state
@@ -39,7 +37,6 @@ public class MediaServiceImpl implements MediaService {
     private final MediaServiceClient mediaServiceClient;
     private final FallbackMediaContentRepository fallbackMediaContentRepository;
     private final FallbackMediaDriver fallbackMediaDriver;
-    private final MediaContentCreateMapper mediaContentCreateMapper;
     private final ProductAssetsRepository productAssetsRepository;
     private final MediaContentRepository mediaContentRepository;
     private final PlainFileConverter plainFileConverter;
@@ -49,7 +46,6 @@ public class MediaServiceImpl implements MediaService {
             MediaServiceClient mediaServiceClient,
             FallbackMediaContentRepository fallbackMediaContentRepository,
             FallbackMediaDriver fallbackMediaDriver,
-            MediaContentCreateMapper mediaContentCreateMapper,
             ProductAssetsRepository productAssetsRepository,
             MediaContentRepository mediaContentRepository, PlainFileConverter plainFileConverter,
             AvatarRepository avatarRepository) {
@@ -57,7 +53,6 @@ public class MediaServiceImpl implements MediaService {
         this.mediaServiceClient = mediaServiceClient;
         this.fallbackMediaContentRepository = fallbackMediaContentRepository;
         this.fallbackMediaDriver = fallbackMediaDriver;
-        this.mediaContentCreateMapper = mediaContentCreateMapper;
         this.productAssetsRepository = productAssetsRepository;
         this.mediaContentRepository = mediaContentRepository;
         this.plainFileConverter = plainFileConverter;
@@ -73,7 +68,21 @@ public class MediaServiceImpl implements MediaService {
             throws UnsupportedContentType {
 
         Mono<ProductAssets> productAssets =
-                productAssetsRepository.findByProductIdAndShopId(productId, shopId);
+                productAssetsRepository
+                        .findByProductIdAndShopId(productId, shopId)
+                        .flatMap(
+                                asset -> {
+                                    if (!asset.getShopId().equals(shopId)) {
+
+                                        MediaServiceLogger.logShopDoesNotOwn(shopId, productId);
+
+                                        return Mono.error(ShopDoesNotOwnProductException::new);
+                                    }
+
+                                    return Mono.just(asset);
+                                }
+                        )
+                        .doOnNext(MediaServiceLogger::logFoundAsset);
 
         return productAssets.flatMap(
                 asset -> {
@@ -93,16 +102,17 @@ public class MediaServiceImpl implements MediaService {
 
                         mediaServiceClient.sendFile(key, content);
 
-                        return save
-                                .map(MediaContent::getId);
+                        return save.map(MediaContent::getId);
 
                     } catch (CannotAddMediaFileException e) {
-                        log.error("Occurred exception while adding media content", e);
+
+                        MediaServiceLogger.logException(e, "adding media content");
 
                         return Mono.error(e);
                     }
 
                 })
+
                 .switchIfEmpty(
                         Mono.error(
                                 ProductNotFoundException::new
@@ -115,17 +125,18 @@ public class MediaServiceImpl implements MediaService {
             Flux<DataBuffer> content, Long productId, Integer shopId, String contentType)
             throws UnsupportedContentType {
 
-        log.debug("Fallback method that adds media content was invoked");
+        MediaServiceLogger.logStartingExecuting("fallback adding media content");
 
         Mono<ProductAssets> product = productAssetsRepository.findById(
                 productId
-        );
+        ).doOnNext(MediaServiceLogger::logFoundAsset);
 
         return product
 
                 .flatMap(
                         asset -> {
                             if (!asset.getShopId().equals(shopId)) {
+
                                 return Mono.error(ShopDoesNotOwnProductException::new);
                             } else {
                                 return Mono.just(asset);
@@ -152,10 +163,19 @@ public class MediaServiceImpl implements MediaService {
 
                             fallbackMediaContentRepository.save(build);
 
-                            return fallbackMediaDriver.saveFile(content, key)
-                                    .flatMap(
-                                            file -> Mono.error(CreatedInFallbackException::new)
-                                    );
+                            try {
+
+                                return fallbackMediaDriver.saveFile(content, key)
+                                        .flatMap(
+                                                file -> Mono.error(CreatedInFallbackException::new)
+                                        );
+
+                            } catch (IOException e) {
+
+                                MediaServiceLogger.logException(e, "saving media content in fallback");
+
+                                return Mono.error(e);
+                            }
 
                         });
     }
@@ -168,15 +188,22 @@ public class MediaServiceImpl implements MediaService {
             throws UnsupportedContentType {
 
         Mono<ProductAssets> product = productAssetsRepository
-                .findById(productId);
+                .findById(productId)
+                .doOnNext(MediaServiceLogger::logFoundAsset);
 
         return product
 
                 .flatMap(asset -> {
+
                     if (!asset.getShopId().equals(shopId)) {
+
+                        MediaServiceLogger.logShopDoesNotOwn(shopId, productId);
+
                         return Mono.error(ShopDoesNotOwnProductException::new);
                     }
+
                     return Mono.just(asset);
+
                 })
 
                 .switchIfEmpty(Mono.error(ProductNotFoundException::new))
@@ -206,7 +233,7 @@ public class MediaServiceImpl implements MediaService {
 
                                         .flatMap(id ->
                                                 mediaServiceClient.changeFile(
-                                                        content, key, parsed,
+                                                        content, key,
                                                         mc.getMediaVersion(), mc.getUri()
                                                 ).thenReturn(id)
                                         );
@@ -232,18 +259,22 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @SuppressWarnings("unused")
-    public void fallbackAddingAvatar(Flux<DataBuffer> content, Long productId, Integer shopId, String contentType)
+    public Mono<Long> fallbackAddingAvatar(Flux<DataBuffer> content, Long productId, Integer shopId, String contentType)
             throws UnsupportedContentType {
 
-        log.debug("Fallback method for adding avatar was invoked");
+        MediaServiceLogger.logStartingExecuting("fallback adding or changing avatar");
 
-        productAssetsRepository
+        return productAssetsRepository
                 .findById(productId)
                 .switchIfEmpty(Mono.error(ProductNotFoundException::new))
+                .doOnNext(MediaServiceLogger::logFoundAsset)
                 .flatMap(
                         productAssets -> {
                             if (!productAssets.getShopId().equals(shopId)) {
-                                Mono.error(ShopDoesNotOwnProductException::new);
+
+                                MediaServiceLogger.logShopDoesNotOwn(shopId, productId);
+
+                                return Mono.error(ShopDoesNotOwnProductException::new);
                             }
 
                             return Mono.just(productAssets);
@@ -274,17 +305,33 @@ public class MediaServiceImpl implements MediaService {
                                                 return
                                                         fallbackMediaContentRepository.save(build)
                                                                 .flatMap(fmc ->
-                                                                        fallbackMediaDriver.saveFile(content, key)
-                                                                                .flatMap(
-                                                                                        ignored -> Mono.error(CreatedInFallbackException::new)
-                                                                                )
+                                                                        {
+                                                                            try {
+                                                                                return fallbackMediaDriver.saveFile(content, key)
+                                                                                        .flatMap(
+                                                                                                ignored -> Mono.error(CreatedInFallbackException::new)
+                                                                                        )
+                                                                                        .flatMap(ignored -> Mono.just(fmc));
+                                                                            } catch (IOException e) {
+
+                                                                                MediaServiceLogger.logException(e, "adding an avatar in fallback");
+
+                                                                                return Mono.error(e);
+                                                                            }
+                                                                        }
                                                                 );
                                             }
                                     )
 
-                                    // B: MediaContentNotFound
+                                    // THIS is expected never to be executed. Normal pipeline throws either ioexception or created in fallback exception.
+                                    // Fallback should return such an error to warn a controller that a content is saved, but a client should wait
+                                    .mapNotNull(FallbackMediaContent::getProductId)
+
+
+                                    // B: MediaContentNotFound. Create as a regular media content and save
                                     .switchIfEmpty(
-                                            fallbackAddingMediaContent(content, productId, shopId, contentType)
+                                            saveFallbackNewAvatar(
+                                                    content, productId, shopId, contentType)
                                     );
                         }
                 );
@@ -292,37 +339,61 @@ public class MediaServiceImpl implements MediaService {
 
     }
 
+    private Mono<Long> saveFallbackNewAvatar(Flux<DataBuffer> content, Long productId, Integer shopId, String contentType) {
+        return fallbackAddingMediaContent(content, productId, shopId, contentType)
+                .flatMap(
+                        val -> avatarRepository.save(
+                                new Avatar(productId, val)
+                        )
+                )
+                .mapNotNull(Avatar::getContentId);
+    }
+
     @Override
     public PlainFile getAvatar(Long productId) {
+
+        MediaServiceLogger.logStartingExecuting("get avatar for product id: " + productId);
 
         Mono<String> mediaUri =
                 avatarRepository.findById(productId)
                         .map(Avatar::getContentId)
                         .switchIfEmpty(Mono.error(AssetNotFoundException::new))
                         .flatMap(mediaContentRepository::findById)
+                        .doOnNext(
+                                MediaServiceLogger::logFoundMediaContent
+                        )
                         .map(MediaContent::getUri);
 
 
         return plainFileConverter.convertFromFlux(
                 mediaServiceClient.receiveFile(mediaUri)
         );
+
     }
 
     @Override
-    public PlainFile getMediaContent(Long assetId)
-        throws AssetNotFoundException {
+    public PlainFile getMediaContent(Long assetId) {
 
-        log.info("Getting media content for {}", assetId);
+        MediaServiceLogger.logStartingExecuting("get media content for product id: " + assetId);
 
         Mono<String> mediaUri = mediaContentRepository
                 .findById(assetId)
+                .switchIfEmpty(Mono.error(AssetNotFoundException::new))
+                .doOnNext(
+                        MediaServiceLogger::logFoundMediaContent
+                )
                 .map(MediaContent::getUri);
 
-        log.trace("Got media content with id {}, sending a request to mediaClient", assetId);
 
-        return plainFileConverter.convertFromFlux(
+        PlainFile plainFile = plainFileConverter.convertFromFlux(
                 mediaServiceClient.receiveFile(mediaUri)
         );
+
+        plainFile
+                .getUpload()
+                .doOnError(thr -> MediaServiceLogger.logException(thr, "getting media content "));
+
+        return plainFile;
     }
 
     private String getUniqueUriByProductIdAndContentType(Long productId, ContentType contentType)

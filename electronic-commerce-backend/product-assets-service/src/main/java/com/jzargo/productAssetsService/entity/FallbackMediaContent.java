@@ -21,7 +21,12 @@ public class FallbackMediaContent {
     @Column("media_id")
     private String mediaUri;
 
+    private String previousUri;
+
     private Long productId;
+
+    @Builder.Default
+    private Boolean isFree = true;
 
     @Builder.Default
     private Boolean isAvatar = false;

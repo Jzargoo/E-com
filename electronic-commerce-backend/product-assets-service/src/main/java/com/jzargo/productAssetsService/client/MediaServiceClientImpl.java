@@ -2,7 +2,6 @@ package com.jzargo.productAssetsService.client;
 
 import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
 import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
-import com.jzargo.protobuf.ContentType;
 import com.jzargo.protobuf.MediaContentURI;
 import com.jzargo.protobuf.MediaFile;
 import com.jzargo.protobuf.MediaServiceGrpc;
@@ -29,9 +28,9 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
 
     @Override
-    public String sendFile(String key, Flux<DataBuffer> data) throws CannotAddMediaFileException{
+    public Mono<String> sendFile(String key, Flux<DataBuffer> data) throws CannotAddMediaFileException{
 
-        return "";
+        return Mono.empty();
     }
 
     @Override
@@ -77,7 +76,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
     }
 
     @Override
-    public Mono<String> changeFile(Flux<DataBuffer> content, String key, ContentType contentType, Integer version, String prevUri){
+    public Mono<String> changeFile(Flux<DataBuffer> content, String key, Integer version, String prevUri){
         return Mono.just("");
     }
 
