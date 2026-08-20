@@ -6,6 +6,7 @@ import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.protobuf.ContentType;
 import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.io.InputStream;
 import java.util.List;
@@ -26,4 +27,5 @@ public interface MediaPrimaryStorageService {
 
     void uploadFullFile(DownloadedFile file, Optional<String> ttl);
 
+    Boolean existsByVersion(String uri, String version) throws NoSuchKeyException;
 }

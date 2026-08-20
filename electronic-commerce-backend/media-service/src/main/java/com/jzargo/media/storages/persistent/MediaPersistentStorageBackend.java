@@ -14,9 +14,11 @@ public interface MediaPersistentStorageBackend {
 
     StorageType getStorageType();
 
-    boolean existsByURI(String fileUri) throws CannotProcessException;
+    boolean existsByVersionedURI(String fileUri, String versionId) throws CannotProcessException;
 
     DownloadedFile getFile(String fileUri) throws CannotProcessException, WrongContentTypeException;
 
     void register();
+
+    boolean existsByURI(String uri) throws CannotProcessException ;
 }

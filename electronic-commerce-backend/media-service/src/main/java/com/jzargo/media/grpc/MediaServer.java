@@ -3,17 +3,12 @@ package com.jzargo.media.grpc;
 import com.google.protobuf.ByteString;
 import com.jzargo.media.config.ApplicationPropertyStorage;
 import com.jzargo.media.exceptions.CannotProcessException;
-import com.jzargo.media.exceptions.FileNotFoundException;
-import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.media.service.MediaStorageService;
 import com.jzargo.media.service.TempFileBufferFactory;
 import com.jzargo.media.service.UploadSession;
-import com.jzargo.protobuf.ChangeMediaFile;
-import com.jzargo.protobuf.MediaContentURI;
-import com.jzargo.protobuf.MediaFile;
-import com.jzargo.protobuf.MediaServiceGrpc;
+import com.jzargo.protobuf.*;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +32,20 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
         this.mediaStorageService = mediaStorageService;
         this.applicationPropertyStorage = applicationPropertyStorage;
         this.tempFileBufferFactory = tempFileBufferFactory;
+    }
+
+    @Override
+    public void existsByUri(VersionedURI request, StreamObserver<DoesMediaContentExist> responseObserver) {
+        Boolean isExists = mediaStorageService.existsByVersion(request.getUri(), request.getVersion());
+
+        responseObserver.onNext(
+                DoesMediaContentExist.newBuilder()
+                        .setUri(request.getUri())
+                        .setVersion(request.getVersion())
+                        .setIsExists(isExists)
+                        .build()
+        );
+
     }
 
     // URI ->

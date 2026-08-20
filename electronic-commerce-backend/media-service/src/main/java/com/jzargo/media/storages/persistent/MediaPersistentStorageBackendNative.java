@@ -10,10 +10,10 @@ import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.media.model.DownloadedFile;
 import jakarta.annotation.PostConstruct;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.*;
+
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class MediaPersistentStorageBackendNative implements MediaPersistentStorageBackend {
     private final ApplicationPropertyStorage applicationPropertyStorage;
@@ -27,6 +27,7 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
 
     @Override
     public String storeFile(DownloadedFile file) throws ErrorDuringAddingContent, BackendOutOfSpaceException, CannotProcessException {
+
         String savingPath = applicationPropertyStorage.getNativeStorageOptions().getSavingPath();
 
 
@@ -45,7 +46,9 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
                     )
             );
 
-            Files.copy(file.getContent(), path, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(file.getContent(), path, REPLACE_EXISTING);
+
+            Files.setAttribute(path, "version-id", file.getVersionId());
 
             file.getContent().close();
 
@@ -83,8 +86,9 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
         return StorageType.NATIVE_DISK;
     }
 
+
     @Override
-    public boolean existsByURI(String fileUri) throws CannotProcessException {
+    public boolean existsByVersionedURI(String fileUri, String versionId) throws CannotProcessException {
 
         Path pathByFileUri = getPathByFileUri(fileUri);
 
@@ -95,7 +99,8 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
                 for(var file : stream){
 
                     if (
-                            file.toString().startsWith(fileUri)
+                            file.toString().startsWith(fileUri) &&
+                                    Files.getAttribute(file, "version-id").equals(versionId)
                     ) {
                         return true;
                     }
@@ -154,5 +159,33 @@ public class MediaPersistentStorageBackendNative implements MediaPersistentStora
     @PostConstruct
     public void register() {
         mediaPersistentStorageBackendRegistry.addBackend(this);
+    }
+
+    @Override
+    public boolean existsByURI(String uri) throws CannotProcessException {
+
+        Path pathByFileUri = getPathByFileUri(uri);
+
+        try {
+
+            try(var stream = Files.newDirectoryStream(pathByFileUri.getParent())){
+
+                for(var file : stream){
+
+                    if (
+                            file.toString().startsWith(uri)
+                    ) {
+                        return true;
+                    }
+
+                }
+
+            }
+
+        } catch (IOException e) {
+            throw new CannotProcessException();
+        }
+
+        return false;
     }
 }

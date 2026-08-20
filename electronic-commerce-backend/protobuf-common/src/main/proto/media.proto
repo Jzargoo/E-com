@@ -8,7 +8,7 @@ service MediaService{
   rpc getMediaContent(MediaContentURI) returns (stream MediaFile) {}
 
   // Unary
-  rpc existsByUri(MediaContentURI) returns (DoesMediaContentExist) {}
+  rpc existsByUri(VersionedURI) returns (DoesMediaContentExist) {}
 
   // Client-streaming
   // change avatar is a remote method that replaces current file by the same uri
@@ -25,7 +25,8 @@ message MediaFile{
 message ChangeMediaFile {
   ContentType contentType = 1;
   bytes contentChunk = 2;
-  string  fileUri = 3;
+  string fileUri = 3;
+  int32 version = 4;
 }
 
 
@@ -45,4 +46,10 @@ message MediaContentURI {
 message DoesMediaContentExist{
   bool isExists= 1;
   string uri = 2;
+  string version = 3;
+}
+
+message VersionedURI {
+  string uri = 1;
+  string version = 2;
 }

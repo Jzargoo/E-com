@@ -105,6 +105,30 @@ public class BalancingMediaPersistentStorageBackend implements MediaPersistentSt
     }
 
     @Override
+    public boolean existsByVersionedURI(String fileUri, String versionId) throws CannotProcessException {
+        while(!registry.isEmpty()){
+
+            MediaPersistentStorageBackend next = registry
+                    .next();
+
+            try {
+
+                if (next != null) {
+                    return next.existsByVersionedURI(fileUri, versionId);
+                }
+
+            } catch (ErrorDuringAddingContent | BackendOutOfSpaceException e) {
+                registry.removeBackend(next);
+
+                //TODO: implement a watcher ....
+            }
+
+        }
+
+        throw new CannotProcessException();
+    }
+
+    @Override
     public boolean existsByURI(String fileUri) throws CannotProcessException {
 
         while(!registry.isEmpty()){
@@ -127,7 +151,6 @@ public class BalancingMediaPersistentStorageBackend implements MediaPersistentSt
         }
 
         throw new CannotProcessException();
-
     }
 
     @Override

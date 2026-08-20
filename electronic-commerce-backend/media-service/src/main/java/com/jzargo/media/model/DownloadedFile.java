@@ -21,5 +21,7 @@ public class DownloadedFile {
 
     String fileUri;
 
+    String versionId;
+
     ContentType contentType;
 }

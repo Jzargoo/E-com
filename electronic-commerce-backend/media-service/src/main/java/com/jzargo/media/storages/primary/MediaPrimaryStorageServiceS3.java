@@ -226,4 +226,17 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
 
         }
     }
+
+    @Override
+    public Boolean existsByVersion(String uri, String version) throws NoSuchKeyException{
+        HeadObjectRequest build = HeadObjectRequest.builder()
+                .key(uri)
+                .bucket(bucketName)
+                .build();
+
+
+        HeadObjectResponse headObjectResponse = s3Client.headObject(build);
+
+        return headObjectResponse.versionId().equals(version);
+    }
 }

@@ -12,15 +12,18 @@ import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.media.storages.persistent.MediaPersistentStorageBackend;
 import com.jzargo.media.storages.primary.MediaPrimaryStorageService;
 import com.jzargo.protobuf.MediaFile;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class MediaStorageServiceImpl implements MediaStorageService {
 
@@ -121,6 +124,28 @@ public class MediaStorageServiceImpl implements MediaStorageService {
                 file, Optional.empty()
         );
 
+    }
+
+    @Override
+    public Boolean existsByVersion(String uri, String version) {
+
+        try {
+
+            return mediaPrimaryStorageService.existsByVersion(uri, version);
+
+        } catch (NoSuchKeyException e) {
+
+            log.error("The key is missing in primary storage. Looking in secondary!");
+
+            try {
+
+                return mediaPersistentStorageBackend.existsByVersionedURI(uri, version);
+
+            } catch (CannotProcessException ex) {
+               return false;
+            }
+
+        }
     }
 
     @Async("poster-executor")
