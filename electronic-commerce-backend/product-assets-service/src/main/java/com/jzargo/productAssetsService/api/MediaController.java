@@ -35,6 +35,7 @@ public class MediaController {
 
     @GetMapping("/{productId}")
     public Flux<Long> getIdsByProductId(@PathVariable Long productId) {
+
         log.info("Caught request to get product with id {}", productId);
 
         return mediaService.findIdsByProductId(productId);
@@ -42,35 +43,31 @@ public class MediaController {
 
 
     @GetMapping(path = "assets/{assetId}")
-    public Mono<ResponseEntity<Flux<DataBuffer>>> getAssetsByAssetId(@PathVariable Long assetId) {
+    public Mono<ResponseEntity<Flux<DataBuffer>>> getAssetsByAssetId(@PathVariable Long assetId)
+            throws AssetNotFoundException, IOException {
+
         log.info("Caught request to get asset with id {}", assetId);
 
-        try {
 
-            PlainFile mediaContent = mediaService.getMediaContent(assetId);
+        PlainFile mediaContent = mediaService.getMediaContent(assetId);
 
-            return mediaContent
+        return mediaContent
 
-                    .getContentType()
+                .getContentType()
 
-                    .map(contentType -> ResponseEntity
-                            .status(HttpStatus.OK)
-                            .contentType(
-                                    MediaType.parseMediaType(
-                                            ContentTypeParser.parseIntoMime(
-                                                    contentType
-                                            )
-                                    )
-                            )
-                            .body(mediaContent.getUpload())
+                .map(contentType -> ResponseEntity
+                        .status(HttpStatus.OK)
+                        .contentType(
+                                MediaType.parseMediaType(
+                                        ContentTypeParser.parseIntoMime(
+                                                contentType
+                                        )
+                                )
+                        )
+                        .body(mediaContent.getUpload())
 
-                    );
+                );
 
-        } catch (IOException | AssetNotFoundException e) {
-            log.error("Error getting asset with id {}", assetId, e);
-
-            return Mono.empty();
-        }
     }
 
     @PutMapping("/{productId}")

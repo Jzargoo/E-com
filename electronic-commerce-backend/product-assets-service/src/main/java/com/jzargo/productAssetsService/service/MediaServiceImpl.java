@@ -88,9 +88,11 @@ public class MediaServiceImpl implements MediaService {
                 asset -> {
                     try {
 
+                        ContentType parsed = ContentTypeParser.parse(contentType);
+
                         String key = getUniqueUriByProductIdAndContentType(
-                                asset.getProductId(),
-                                ContentTypeParser.parse(contentType)
+                                asset.getProductId(), parsed
+
                         );
 
                         Mono<MediaContent> save = mediaContentRepository.save(
@@ -100,7 +102,7 @@ public class MediaServiceImpl implements MediaService {
                                         .build()
                         );
 
-                        mediaServiceClient.sendFile(key, content);
+                        mediaServiceClient.sendFile(key, content, parsed);
 
                         return save.map(MediaContent::getId);
 
@@ -357,7 +359,15 @@ public class MediaServiceImpl implements MediaService {
         Mono<String> mediaUri =
                 avatarRepository.findById(productId)
                         .map(Avatar::getContentId)
-                        .switchIfEmpty(Mono.error(AssetNotFoundException::new))
+
+                        .switchIfEmpty(
+                                Mono.error(new AssetNotFoundException(
+                                        "Avatar for product id %s is not found"
+                                                .formatted(productId)
+                                        )
+                                )
+                        )
+
                         .flatMap(mediaContentRepository::findById)
                         .doOnNext(
                                 MediaServiceLogger::logFoundMediaContent
@@ -378,7 +388,13 @@ public class MediaServiceImpl implements MediaService {
 
         Mono<String> mediaUri = mediaContentRepository
                 .findById(assetId)
-                .switchIfEmpty(Mono.error(AssetNotFoundException::new))
+                .switchIfEmpty(
+                        Mono.error(
+                                new AssetNotFoundException(
+                                        "Asset with id %s is not found".formatted(assetId)
+                                )
+                        )
+                )
                 .doOnNext(
                         MediaServiceLogger::logFoundMediaContent
                 )

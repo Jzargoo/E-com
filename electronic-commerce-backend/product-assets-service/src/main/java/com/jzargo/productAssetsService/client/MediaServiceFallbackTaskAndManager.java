@@ -77,8 +77,14 @@ public class MediaServiceFallbackTaskAndManager {
 
         if (lockedContent.getMediaVersion() == 1) {
 
-            uploadMono = mediaServiceClient.sendFile(lockedContent.getMediaUri(), fileStream)
-                    .onErrorMap(CannotAddMediaFileException::new)
+            uploadMono = mediaServiceClient.sendFile(lockedContent.getMediaUri(), fileStream, lockedContent.getContentType())
+                    .onErrorMap(
+                            cause ->
+                                    new CannotAddMediaFileException(
+                                            "Could not add media file for uri %s with message: %s"
+                                                    .formatted(lockedContent.getMediaUri(), cause.getMessage())
+                                    )
+                    )
                     .then();
 
         } else {
