@@ -1,4 +1,4 @@
-package com.jzargo.productAssetsService.service;
+package com.jzargo.productAssetsService.helper;
 
 import com.jzargo.productAssetsService.entity.MediaContent;
 import com.jzargo.productAssetsService.entity.ProductAssets;

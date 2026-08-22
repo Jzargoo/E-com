@@ -3,7 +3,7 @@ package com.jzargo.productAssetsService.client;
 import com.google.protobuf.ByteString;
 import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
 import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
-import com.jzargo.productAssetsService.service.MediaServiceLogger;
+import com.jzargo.productAssetsService.helper.MediaServiceLogger;
 import com.jzargo.protobuf.*;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
@@ -126,8 +126,8 @@ public class MediaServiceClientImpl implements MediaServiceClient {
     }
 
     @Override
-    public Mono<String> changeFile(Flux<DataBuffer> content, String key, Integer version, String prevUri){
-        return Mono.just("");
+    public Mono<VersionedURI> changeFile(Flux<DataBuffer> content, String key, String version, String prevUri){
+        return Mono.empty();
     }
 
 

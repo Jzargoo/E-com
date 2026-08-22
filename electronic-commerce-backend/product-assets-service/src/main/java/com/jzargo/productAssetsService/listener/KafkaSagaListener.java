@@ -15,6 +15,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 
@@ -41,34 +42,37 @@ public class KafkaSagaListener {
             @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId,
             Acknowledgment acknowledgment) {
 
-        if (
-                messageRepository.findById(messageId)
-                        .isPresent()
-        ) {
-            logRepeatedMessage();
-            return;
-        }
+        messageRepository.findById(messageId)
 
-        try {
+                .map(message -> true)
 
-            assetsService.initAssetsProduct(
-                    command.getProductId()
-            );
+                .switchIfEmpty(Mono.just(false))
 
-            messageRepository.save(
-                    new Message(messageId, Instant.now(), MessageType.COMMAND)
-            );
+                .flatMap(
+                        exists -> {
 
-            acknowledgment.acknowledge();
+                            if (exists) {
+                                logRepeatedMessage();
 
-        } catch (Exception e) {
+                                return Mono.empty();
+                            }
 
-            log.error("Occurred exception when processing saga product assets command. " +
-                    "Acknowledgement was not updated", e
-            );
+                            Long productId = command.getProductId();
+                            Integer shopId = command.getShopId();
 
-        }
+                            return assetsService.initAssetsProduct(productId, shopId);
+                        }
+                )
 
+                .flatMap(
+                        productAssets -> messageRepository.save(
+                                new Message(messageId, Instant.now(), MessageType.COMMAND)
+                        )
+                )
+
+                .doOnSuccess(message -> acknowledgment.acknowledge())
+
+                .subscribe();
     }
 
     @KafkaHandler
@@ -78,33 +82,37 @@ public class KafkaSagaListener {
             @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId,
             Acknowledgment acknowledgment) {
 
-        if (
-                messageRepository.findById(messageId)
-                        .isPresent()
-        ) {
-            logRepeatedMessage();
-            return;
-        }
+        messageRepository.findById(messageId)
 
-        try {
+                .map(message -> true)
 
-            assetsService.initAssetsCompensation(
-                    command.getProductId()
-            );
+                .switchIfEmpty(Mono.just(false))
 
-            messageRepository.save(
-                    new Message(messageId, Instant.now(), MessageType.COMMAND)
-            );
+                .flatMap(
+                        exists -> {
 
-            acknowledgment.acknowledge();
+                            if (exists) {
 
-        } catch (Exception e) {
+                                logRepeatedMessage();
 
-            log.error("Occurred exception when processing compensation saga product assets message. " +
-                    "Acknowledgement was not updated", e
-            );
+                                return Mono.empty();
 
-        }
+                            }
+
+                            Long productId = command.getProductId();
+
+                            return assetsService.initAssetsCompensation(productId);
+
+                        }
+                )
+
+                .flatMap(
+                        nothing -> messageRepository.save(
+                                new Message(messageId, Instant.now(), MessageType.COMMAND)
+                        )
+                )
+
+                .doOnSuccess(message -> acknowledgment.acknowledge());
 
 
     }
