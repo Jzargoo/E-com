@@ -9,7 +9,6 @@ import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.protobuf.ContentType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.awscore.AwsResponseMetadata;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;

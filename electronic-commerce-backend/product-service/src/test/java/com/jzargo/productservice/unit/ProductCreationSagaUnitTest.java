@@ -12,10 +12,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.math.BigDecimal;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -103,7 +106,7 @@ public class ProductCreationSagaUnitTest {
     void compensatedInventoryEntry_Success() throws SagaEntityNotFoundException {
         when(repository.findById(PRODUCT_ID)).thenReturn(Optional.ofNullable(product));
 
-        sagaProductCreation.compensatedInventoryEntry(PRODUCT_ID, Optional.empty());
+        sagaProductCreation.compensatedInventoryEntry(PRODUCT_ID, "test message");
 
         verifyStepUpdate(SagaStep.COMPENSATE_PRODUCT);
     }

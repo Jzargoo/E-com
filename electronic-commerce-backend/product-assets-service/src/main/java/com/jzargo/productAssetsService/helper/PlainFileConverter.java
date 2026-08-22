@@ -5,7 +5,6 @@ import com.jzargo.productAssetsService.model.PlainFile;
 import com.jzargo.protobuf.ContentType;
 import com.jzargo.protobuf.MediaFile;
 import io.netty.buffer.ByteBufAllocator;
-import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.NettyDataBufferFactory;

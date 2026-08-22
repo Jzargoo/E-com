@@ -4,10 +4,7 @@ import com.google.protobuf.ByteString;
 import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
 import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
 import com.jzargo.productAssetsService.service.MediaServiceLogger;
-import com.jzargo.protobuf.ContentType;
-import com.jzargo.protobuf.MediaContentURI;
-import com.jzargo.protobuf.MediaFile;
-import com.jzargo.protobuf.MediaServiceGrpc;
+import com.jzargo.protobuf.*;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -18,7 +15,6 @@ import reactor.core.publisher.Sinks;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.atomic.AtomicReference;
 
 
 @Slf4j
@@ -36,15 +32,15 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
 
     @Override
-    public Mono<String> sendFile(String key, Flux<DataBuffer> data, ContentType contentType) throws CannotAddMediaFileException{
+    public Mono<VersionedURI> sendFile(String key, Flux<DataBuffer> data, ContentType contentType) throws CannotAddMediaFileException{
 
-        Sinks.One<String> sink = Sinks.one();
+        Sinks.One<VersionedURI> sink = Sinks.one();
 
-        StreamObserver<MediaContentURI> streamObserver = new StreamObserver<>() {
+        StreamObserver<VersionedURI> streamObserver = new StreamObserver<>() {
 
             @Override
-            public void onNext(MediaContentURI value) {
-                sink.tryEmitValue(value.getMediaURI());
+            public void onNext(VersionedURI value) {
+                sink.tryEmitValue(value);
             }
 
             @Override

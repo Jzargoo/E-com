@@ -1,15 +1,14 @@
 package com.jzargo.productAssetsService.service;
 
-import com.jzargo.productAssetsService.exception.*;
+import com.jzargo.productAssetsService.exception.AssetNotFoundException;
+import com.jzargo.productAssetsService.exception.ProductNotFoundException;
+import com.jzargo.productAssetsService.exception.UnsupportedContentType;
 import com.jzargo.productAssetsService.model.PlainFile;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
 
 public interface MediaService {
 

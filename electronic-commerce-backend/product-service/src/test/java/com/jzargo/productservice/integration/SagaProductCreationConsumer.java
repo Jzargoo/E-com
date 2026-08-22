@@ -1,7 +1,6 @@
 package com.jzargo.productservice.integration;
 
 import com.jzargo.core.command.createProductSaga.InventoryCommand;
-import org.springframework.boot.test.context.TestComponent;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;

@@ -4,7 +4,8 @@ import com.jzargo.productservice.exception.CategoryNotFoundException;
 import com.jzargo.productservice.exception.InvalidUpdateRequest;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
-import com.jzargo.productservice.model.*;
+import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
+import com.jzargo.productservice.model.ProductDetails;
 
 
 public interface ProductService {

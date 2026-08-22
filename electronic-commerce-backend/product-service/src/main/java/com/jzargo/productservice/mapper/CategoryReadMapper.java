@@ -6,7 +6,6 @@ import com.jzargo.productservice.model.CategoryDetails;
 import org.springframework.stereotype.Component;
 
 import java.util.AbstractMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 

@@ -13,7 +13,6 @@ import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
 import com.jzargo.productservice.model.ProductDetails;
 import com.jzargo.productservice.repository.CategoryRepository;
 import com.jzargo.productservice.repository.ProductRepository;
-import com.jzargo.productservice.saga.SagaProductCreationManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;

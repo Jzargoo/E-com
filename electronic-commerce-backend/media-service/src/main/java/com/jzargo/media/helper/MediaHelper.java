@@ -7,11 +7,16 @@ import com.jzargo.protobuf.ContentType;
 import com.jzargo.protobuf.MediaFile;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
-import org.bytedeco.javacv.*;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.Java2DFrameConverter;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 @Slf4j
 public class MediaHelper {

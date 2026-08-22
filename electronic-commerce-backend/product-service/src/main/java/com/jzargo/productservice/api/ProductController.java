@@ -1,21 +1,16 @@
 package com.jzargo.productservice.api;
 
-import com.jzargo.productservice.config.security.ProductSecurity;
 import com.jzargo.productservice.exception.InvalidUpdateRequest;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
-import com.jzargo.productservice.model.*;
+import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
+import com.jzargo.productservice.model.ProductDetails;
 import com.jzargo.productservice.saga.SagaProductCreation;
-import com.jzargo.productservice.saga.SagaProductCreationManager;
 import com.jzargo.productservice.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
