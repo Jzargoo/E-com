@@ -3,5 +3,7 @@ CREATE TABLE fallback_media_content(
     media_uri VARCHAR(128) NOT NULL UNIQUE ,
     product_id BIGINT NOT NULL REFERENCES product_assets(id),
     is_avatar BOOLEAN NOT NULL DEFAULT FALSE,
-    media_version INT NOT NULL,
+    previous_uri VARCHAR(128) NOT NULL ,
+    is_free BOOLEAN NOT NULL DEFAULT TRUE,
+    previous_media_version  NOT NULL,
 )

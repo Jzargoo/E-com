@@ -19,7 +19,6 @@ public class MediaContent {
 
     private Long productId;
 
-    @Builder.Default
-    private Integer mediaVersion = 1;
+    private String mediaVersion;
 
 }

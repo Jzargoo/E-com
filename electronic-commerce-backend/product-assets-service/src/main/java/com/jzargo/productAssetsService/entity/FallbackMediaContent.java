@@ -31,6 +31,5 @@ public class FallbackMediaContent {
     @Builder.Default
     private Boolean isAvatar = false;
 
-    @Builder.Default
-    private Integer mediaVersion = 1;
+    private String previousMediaVersion;
 }

@@ -21,16 +21,17 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.UUID;
+
+import static com.jzargo.productAssetsService.helper.UriCreator.getUniqueUriByProductIdAndContentType;
 
 
 @Service
-@Qualifier("internalMediaService")
 @Transactional(readOnly = true) // if not provided, data must be in immutable state
 public class MediaServiceImpl implements MediaService {
 
@@ -61,7 +62,7 @@ public class MediaServiceImpl implements MediaService {
 
 
     @Override
-    @Transactional
+    @Transactional()
     @CircuitBreaker(name = "mediaService", fallbackMethod = "fallbackAddingMediaContent")
     @Bulkhead(name = "mediaService", fallbackMethod = "fallbackAddingMediaContent")
     public Mono<Long> addMediaContent(Flux<DataBuffer> content, Long productId, Integer shopId, String contentType)
@@ -71,55 +72,41 @@ public class MediaServiceImpl implements MediaService {
                 productAssetsRepository
                         .findByProductIdAndShopId(productId, shopId)
                         .flatMap(
-                                asset -> {
-                                    if (!asset.getShopId().equals(shopId)) {
-
-                                        MediaServiceLogger.logShopDoesNotOwn(shopId, productId);
-
-                                        return Mono.error(ShopDoesNotOwnProductException::new);
-                                    }
-
-                                    return Mono.just(asset);
-                                }
+                                asset -> MediaServiceValidator.validateProductAssets(asset, shopId)
+                        )
+                        .switchIfEmpty(
+                                Mono.error(
+                                        ProductNotFoundException::new
+                                )
                         )
                         .doOnNext(MediaServiceLogger::logFoundAsset);
 
-        return productAssets.flatMap(
+        return productAssets
+
+                .flatMap(
+
                 asset -> {
-                    try {
 
-                        ContentType parsed = ContentTypeParser.parse(contentType);
+                    ContentType parsed = ContentTypeParser.parse(contentType);
 
-                        String key = getUniqueUriByProductIdAndContentType(
-                                asset.getProductId(), parsed
+                    String key = getUniqueUriByProductIdAndContentType(
+                            asset.getProductId(), parsed
+                    );
 
-                        );
+                    MediaContent build = MediaContent.builder()
+                            .productId(asset.getProductId())
+                            .uri(key)
+                            .build();
 
-                        Mono<MediaContent> save = mediaContentRepository.save(
-                                MediaContent.builder()
-                                        .productId(asset.getProductId())
-                                        .uri(key)
-                                        .build()
-                        );
 
-                        mediaServiceClient.sendFile(key, content, parsed);
+                    return saveAndUpload(build, key, content, parsed);
 
-                        return save.map(MediaContent::getId);
+                });
+    }
 
-                    } catch (CannotAddMediaFileException e) {
-
-                        MediaServiceLogger.logException(e, "adding media content");
-
-                        return Mono.error(e);
-                    }
-
-                })
-
-                .switchIfEmpty(
-                        Mono.error(
-                                ProductNotFoundException::new
-                        )
-                );
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected Mono<Integer> updateVersionByUri(String uri, String version) {
+       return mediaContentRepository.updateVersion(uri, version);
     }
 
     @SuppressWarnings("unused")
@@ -129,25 +116,20 @@ public class MediaServiceImpl implements MediaService {
 
         MediaServiceLogger.logStartingExecuting("fallback adding media content");
 
-        Mono<ProductAssets> product = productAssetsRepository.findById(
-                productId
-        ).doOnNext(MediaServiceLogger::logFoundAsset);
+        Mono<ProductAssets> product = productAssetsRepository
+                .findById(productId)
 
-        return product
-
-                .flatMap(
-                        asset -> {
-                            if (!asset.getShopId().equals(shopId)) {
-
-                                return Mono.error(ShopDoesNotOwnProductException::new);
-                            } else {
-                                return Mono.just(asset);
-                            }
-                        })
+                .flatMap(asset -> MediaServiceValidator.validateProductAssets(asset, shopId))
 
                 .switchIfEmpty(
-                        Mono.error(ProductNotFoundException::new)
+                        Mono.error(
+                                ProductNotFoundException::new
+                        )
                 )
+
+                .doOnNext(MediaServiceLogger::logFoundAsset);
+
+        return product
 
                 .flatMap(
                         asset -> {
@@ -156,10 +138,10 @@ public class MediaServiceImpl implements MediaService {
 
                             String key =  getUniqueUriByProductIdAndContentType(productId, parse);
 
+
                             FallbackMediaContent build = FallbackMediaContent.builder()
                                     .contentType(parse)
                                     .mediaUri(key)
-                                    .mediaVersion(1)
                                     .productId(productId)
                                     .build();
 
@@ -193,71 +175,90 @@ public class MediaServiceImpl implements MediaService {
                 .findById(productId)
                 .doOnNext(MediaServiceLogger::logFoundAsset);
 
+        ContentType parsed = ContentTypeParser.parseImage(contentType);
+
+        String key = getUniqueUriByProductIdAndContentType(productId, parsed);
+
         return product
 
-                .flatMap(asset -> {
-
-                    if (!asset.getShopId().equals(shopId)) {
-
-                        MediaServiceLogger.logShopDoesNotOwn(shopId, productId);
-
-                        return Mono.error(ShopDoesNotOwnProductException::new);
-                    }
-
-                    return Mono.just(asset);
-
-                })
+                .flatMap(asset -> MediaServiceValidator.validateProductAssets(asset, shopId))
 
                 .switchIfEmpty(Mono.error(ProductNotFoundException::new))
 
-                .flatMap(asset -> {
-                    ContentType parsed = ContentTypeParser.parseImage(contentType);
-                    String key = getUniqueUriByProductIdAndContentType(productId, parsed);
+                .flatMap(
+                        asset ->
+                                avatarRepository.findByProductId(
+                                        asset.getProductId()
+                                ).flatMap(avatar ->
+                                        mediaContentRepository.findById(
+                                                avatar.getContentId()
+                                        )
+                                )
+                )
 
-                    return avatarRepository.findById(asset.getProductId())
-                            .map(Avatar::getContentId)
-                            .flatMap(mediaContentRepository::findById)
+                // A: mediaContent is found
+                .flatMap(mc -> {
 
-                            // A: MediaContent is found
-                            .flatMap(mc -> {
-                                var newVersion = mc.getMediaVersion() + 1;
+                    String prevUri = mc.getUri();
+                    mc.setUri(key);
 
-                                var updatedMedia = MediaContent.builder()
-                                        .uri(key)
-                                        .id(mc.getId())
-                                        .mediaVersion(newVersion)
-                                        .productId(asset.getProductId())
-                                        .build();
+                    return mediaContentRepository
 
-                                return mediaContentRepository.save(updatedMedia)
+                            .save(mc)
 
-                                        .mapNotNull(MediaContent::getId)
+                            .flatMap(
+                                    saved ->
+                                            mediaServiceClient
+                                                    .changeFile(
+                                                            content, key,
+                                                            saved.getMediaVersion(),
+                                                            prevUri)
+                            )
 
-                                        .flatMap(id ->
-                                                mediaServiceClient.changeFile(
-                                                        content, key,
-                                                        mc.getMediaVersion(), mc.getUri()
-                                                ).thenReturn(id)
-                                        );
-                            })
-
-                            // B: mediaContent is not found => create a representation of a file
-                            .switchIfEmpty(
-
-                                    Mono.defer(
-                                            () -> {
-
-                                                MediaContent build = MediaContent.builder()
-                                                        .uri(key)
-                                                        .productId(asset.getProductId())
-                                                        .build();
-
-                                                return mediaContentRepository.save(build)
-                                                        .flatMap(mc -> addMediaContent(content, productId, shopId, contentType));
-                                            }
-                                    )
+                            .flatMap(
+                            verUri -> updateVersionByUri(verUri.getUri(), verUri.getVersion())
                             );
-                });
+                })
+
+                .flatMap(columns -> mediaContentRepository.findByUri(key))
+
+                .mapNotNull(MediaContent::getId)
+
+                // B: mediaContent is not found => create a representation of a file
+                .switchIfEmpty(
+                        Mono.defer(
+                                () -> {
+
+                                    MediaContent build = MediaContent.builder()
+                                            .uri(key)
+                                            .productId(productId)
+                                            .build();
+
+                                    return saveAndUpload(build, key, content, parsed);
+                                }
+                            )
+                );
+    }
+
+    protected Mono<Long> saveAndUpload(MediaContent mc, String key, Flux<DataBuffer> content, ContentType contentType) {
+        return mediaContentRepository.save(mc)
+                .flatMap(
+                        saved -> {
+                            try {
+
+                                return mediaServiceClient.sendFile(key, content, contentType);
+
+                            } catch (CannotAddMediaFileException e) {
+                               MediaServiceLogger.logException(e, "saving media content in service");
+
+                               return Mono.error(e);
+                            }
+                        }
+                ).flatMap(
+                        versionedURI -> updateVersionByUri(versionedURI.getUri(), versionedURI.getVersion())
+                ).flatMap(
+                        ignored -> mediaContentRepository.findByUri(key)
+                ).mapNotNull(MediaContent::getId);
     }
 
     @SuppressWarnings("unused")
@@ -266,22 +267,18 @@ public class MediaServiceImpl implements MediaService {
 
         MediaServiceLogger.logStartingExecuting("fallback adding or changing avatar");
 
-        return productAssetsRepository
+        Mono<ProductAssets> productAssetsMono = productAssetsRepository
+
                 .findById(productId)
+
+                .flatMap(asset -> MediaServiceValidator.validateProductAssets(asset, shopId))
+
                 .switchIfEmpty(Mono.error(ProductNotFoundException::new))
-                .doOnNext(MediaServiceLogger::logFoundAsset)
-                .flatMap(
-                        productAssets -> {
-                            if (!productAssets.getShopId().equals(shopId)) {
 
-                                MediaServiceLogger.logShopDoesNotOwn(shopId, productId);
+                .doOnNext(MediaServiceLogger::logFoundAsset);
 
-                                return Mono.error(ShopDoesNotOwnProductException::new);
-                            }
+        return productAssetsMono
 
-                            return Mono.just(productAssets);
-                        }
-                )
                 .flatMap(
                         asset -> {
 
@@ -289,39 +286,44 @@ public class MediaServiceImpl implements MediaService {
 
                             String key =  getUniqueUriByProductIdAndContentType(asset.getProductId(), parsed);
 
-                            return avatarRepository.findById(asset.getProductId())
-                                    .mapNotNull(Avatar::getContentId)
-                                    .flatMap(mediaContentRepository::findById)
-                                    .flatMap(
+                            return
+                                    avatarRepository.findById( asset.getProductId() )
+
+                                            .mapNotNull(Avatar::getContentId)
+
+                                            .flatMap(mediaContentRepository::findById)
+
+                                            .flatMap(
                                             mediaContent -> {
 
-                                                Integer mediaVersion = mediaContent.getMediaVersion() + 1;
 
                                                 FallbackMediaContent build = FallbackMediaContent.builder()
                                                         .isAvatar(true)
                                                         .productId(asset.getProductId())
-                                                        .mediaVersion(mediaVersion)
+                                                        .previousMediaVersion(mediaContent.getMediaVersion())
                                                         .mediaUri(key)
                                                         .build();
 
                                                 return
                                                         fallbackMediaContentRepository.save(build)
-                                                                .flatMap(fmc ->
-                                                                        {
+                                                                .flatMap(fmc -> {
+
                                                                             try {
+
                                                                                 return fallbackMediaDriver.saveFile(content, key)
                                                                                         .flatMap(
                                                                                                 ignored -> Mono.error(CreatedInFallbackException::new)
                                                                                         )
                                                                                         .flatMap(ignored -> Mono.just(fmc));
+
                                                                             } catch (IOException e) {
 
                                                                                 MediaServiceLogger.logException(e, "adding an avatar in fallback");
 
                                                                                 return Mono.error(e);
                                                                             }
-                                                                        }
-                                                                );
+                                                                        });
+
                                             }
                                     )
 
@@ -333,7 +335,8 @@ public class MediaServiceImpl implements MediaService {
                                     // B: MediaContentNotFound. Create as a regular media content and save
                                     .switchIfEmpty(
                                             saveFallbackNewAvatar(
-                                                    content, productId, shopId, contentType)
+                                                    content, productId, shopId, contentType
+                                            )
                                     );
                         }
                 );
@@ -357,7 +360,7 @@ public class MediaServiceImpl implements MediaService {
         MediaServiceLogger.logStartingExecuting("get avatar for product id: " + productId);
 
         Mono<String> mediaUri =
-                avatarRepository.findById(productId)
+                avatarRepository.findByProductId(productId)
                         .map(Avatar::getContentId)
 
                         .switchIfEmpty(
@@ -369,9 +372,11 @@ public class MediaServiceImpl implements MediaService {
                         )
 
                         .flatMap(mediaContentRepository::findById)
+
                         .doOnNext(
                                 MediaServiceLogger::logFoundMediaContent
                         )
+
                         .map(MediaContent::getUri);
 
 
@@ -410,28 +415,16 @@ public class MediaServiceImpl implements MediaService {
                 .doOnError(thr -> MediaServiceLogger.logException(thr, "getting media content "));
 
         return plainFile;
-    }
-
-    private String getUniqueUriByProductIdAndContentType(Long productId, ContentType contentType)
-            throws UnsupportedContentType {
-
-        return "products/%s/%s.%s"
-                .formatted(
-                        productId,
-
-                        UUID.randomUUID().toString()
-                                .replace(".", ""),
-
-                        ContentTypeParser.getMediaPostfix(contentType)
-                );
 
     }
+
 
     public Flux<Long> findIdsByProductId(Long productId) {
 
         return mediaContentRepository
                 .findAllByProductId(productId)
                 .map(MediaContent::getId);
+
     }
 
 }
