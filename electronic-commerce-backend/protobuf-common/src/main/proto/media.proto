@@ -12,8 +12,8 @@ service MediaService{
 
   // Client-streaming
   // change avatar is a remote method that replaces current file by the same uri
-  rpc changeMediaFile(stream ChangeMediaFile) returns (MediaContentURI) {}
-  rpc addMediaFile(stream MediaFile) returns (MediaContentURI) {}
+  rpc changeMediaFile(stream ChangeMediaFile) returns (VersionedURI) {}
+  rpc addMediaFile(stream MediaFile) returns (VersionedURI) {}
 }
 
 message MediaFile{

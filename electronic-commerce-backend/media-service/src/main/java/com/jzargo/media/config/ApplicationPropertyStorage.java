@@ -27,6 +27,7 @@ public class ApplicationPropertyStorage {
 
     private Aws aws;
 
+
     private Set<SecondStorage> storages;
 
     @Data
@@ -64,6 +65,9 @@ public class ApplicationPropertyStorage {
         private String bucket;
         private SmartBufferProperties smartStreamProperties;
         private String objectTtl;
+
+        private String versionAttribute;
+
     }
 
     @Data

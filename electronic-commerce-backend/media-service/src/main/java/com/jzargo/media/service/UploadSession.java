@@ -5,16 +5,20 @@ import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.protobuf.ContentType;
 import com.jzargo.protobuf.MediaFile;
+import com.jzargo.protobuf.VersionedURI;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 public class UploadSession {
 
     private boolean isMultipart = false;
+
+    private String version = UUID.randomUUID().toString();
 
     private final TempFileBufferFactory.TempFileBuffer tempFileBuffer;
 
@@ -47,7 +51,7 @@ public class UploadSession {
                 if (!isMultipart) {
 
                     uploadId = mediaStorageService.initiateFile(
-                            mediaFile, key
+                            mediaFile, key, version
                     );
 
                     isMultipart = true;
@@ -76,7 +80,7 @@ public class UploadSession {
         }
     }
 
-    public String complete() throws CannotProcessException {
+    public VersionedURI complete() throws CannotProcessException {
 
         if (isMultipart) {
 
@@ -90,7 +94,11 @@ public class UploadSession {
 
                 mediaStorageService.storeFullFile(
                         new DownloadedFile(
-                                tempFileBuffer.getChunk(), tempFileBuffer.getSize(), key, contentType
+                                tempFileBuffer.getChunk(),
+                                tempFileBuffer.getSize(),
+                                key,
+                                version,
+                                contentType
                         )
                 );
 
@@ -104,7 +112,10 @@ public class UploadSession {
 
         }
 
-        return key;
+        return VersionedURI.newBuilder()
+                .setUri(key)
+                .setVersion(version)
+                .build();
     }
 
     public void abort() throws CannotProcessException {

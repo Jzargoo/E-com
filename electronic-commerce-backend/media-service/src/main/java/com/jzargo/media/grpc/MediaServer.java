@@ -36,6 +36,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
     @Override
     public void existsByUri(VersionedURI request, StreamObserver<DoesMediaContentExist> responseObserver) {
+
         Boolean isExists = mediaStorageService.existsByVersion(request.getUri(), request.getVersion());
 
         responseObserver.onNext(
@@ -160,12 +161,12 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
     }
 
     @Override
-    public StreamObserver<ChangeMediaFile> changeMediaFile(StreamObserver<MediaContentURI> responseObserver) {
+    public StreamObserver<ChangeMediaFile> changeMediaFile(StreamObserver<VersionedURI> responseObserver) {
         return super.changeMediaFile(responseObserver);
     }
 
     @Override
-    public StreamObserver<MediaFile> addMediaFile(StreamObserver<MediaContentURI> responseObserver) {
+    public StreamObserver<MediaFile> addMediaFile(StreamObserver<VersionedURI> responseObserver) {
 
         log.info("Creating new MediaFile stream for a request");
 
@@ -232,13 +233,9 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                 try {
 
-                    String key = uploadSession[0].complete();
+                    VersionedURI uri = uploadSession[0].complete();
 
-                    responseObserver.onNext(
-                            MediaContentURI.newBuilder()
-                                    .setMediaURI(key)
-                                    .build()
-                    );
+                    responseObserver.onNext(uri);
 
                     responseObserver.onCompleted();
 

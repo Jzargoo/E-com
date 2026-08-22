@@ -13,7 +13,7 @@ import java.util.List;
 public interface MediaStorageService {
     String storeChunkFile(String key,String uploadId, InputStream is, Integer partNumber, Long length);
 
-    String initiateFile(MediaFile mediaFile, String key) throws IOException, WrongContentTypeException;
+    String initiateFile(MediaFile mediaFile, String key, String version) throws IOException, WrongContentTypeException;
 
     void finishFileUploading(String key, String uploadId, List<String> tags, boolean isVideo) throws CannotProcessException;
 

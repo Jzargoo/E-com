@@ -9,6 +9,7 @@ import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.protobuf.ContentType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.awscore.AwsResponseMetadata;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -18,9 +19,7 @@ import software.amazon.awssdk.services.s3.model.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -28,11 +27,14 @@ import java.util.concurrent.TimeUnit;
 public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService {
     private final S3Client s3Client;
 
+    private final String versionAttr;
+
     private final String bucketName;
 
     public MediaPrimaryStorageServiceS3(S3Client s3Client, ApplicationPropertyStorage aps) {
         this.s3Client = s3Client;
         this.bucketName = aps.getAws().getBucket();
+        this.versionAttr = aps.getAws().getVersionAttribute();
     }
 
 
@@ -121,13 +123,22 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
     }
 
     @Override
-    public String startUploadingFile(ContentType contentType, String key) throws WrongContentTypeException {
+    public String startUploadingFile(ContentType contentType, String key, String versionId) throws WrongContentTypeException {
+
+        var versionValue = versionId == null?
+                UUID.randomUUID().toString() :
+                versionId;
 
         CreateMultipartUploadRequest request =
                 CreateMultipartUploadRequest.builder()
                         .bucket(bucketName)
                         .expires(
                                 Instant.now().plus(1, TimeUnit.DAYS.toChronoUnit())
+                        )
+                        .metadata(
+                                Map.of(
+                                        versionAttr, versionValue
+                                )
                         )
                         .key(key)
                         .contentType(MediaHelper.parseToMime(contentType))
@@ -191,13 +202,20 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
     }
 
     @Override
-    public void uploadFullFile(DownloadedFile file, Optional<String> ttl) {
+    public String uploadFullFile(DownloadedFile file, Optional<String> ttl) {
 
+        var versionValue = file.getVersionId() == null?
+                UUID.randomUUID().toString() :
+                file.getVersionId();
 
         PutObjectRequest.Builder request = PutObjectRequest.builder()
                 .bucket(bucketName)
+                .metadata(
+                        Map.of(
+                                versionAttr, versionValue
+                        )
+                )
                 .key(file.getFileUri());
-
 
         ttl.ifPresent((value) -> {
             Tag tagTtl = Tag.builder()
@@ -213,7 +231,7 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
         });
 
 
-        try (InputStream in = file.getContent()) {
+        try ( InputStream in = file.getContent() ) {
 
             s3Client.putObject(
                     request.build(),
@@ -225,6 +243,8 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
             log.error("Cannot close an input stream", e);
 
         }
+
+        return versionValue;
     }
 
     @Override

@@ -52,56 +52,78 @@
     - `GET /analytics/product/{productId}` – product statistics (views, purchases, add-to-cart) only for products by shops
     - `GET /analytics/user/{userId}` – user behavior
 12. **Shop Service**
-- `GET /shops/{shopId}` – get shop information
-- `PUT /shops/{shopId}` – update shop information
-- `DELETE /shops/{shopId}` – delete shop and its products
+    - `GET /shops/{shopId}` – get shop information
+    - `PUT /shops/{shopId}` – update shop information
+    - `DELETE /shops/{shopId}` – delete shop and its products
+13. **Product assets Service**
+    - `GET /assets/{productId}` – get ids of product assets
+    - `POST /assets/{productId}` – upload product assets (image, video)
+    - `DELETE /assets/{productId}/{assetId}` – delete product asset
+    - `GET /assets/{assetId}` – get product asset by id
 
 Asynch paths (connections between kafka handlers):
 
-Place order (orchestration):
+Place an order (orchestration):
 
-Cart service → product service (check existing, in-variants) → inventory service (check availability) → payment service → order service → {notification service; statistical analysis}  → delivery service → notification service
+   1. Cart service
+   2. product service (check existing, in-variants) 
+   3. inventory service (check availability) 
+   4. payment service
+   5. order service 
+   6. {notification service; statistical analysis}  
+   7. delivery service
+   8. notification service
 
 Create a product (orchestration):
 
-product service + grpc (media) → media service(approve) → inventory service → shop service → notification service
+   1. product service
+   2. inventory service
+   3. product assets service
+   4. reaction service
+   5. shop service 
+   6. notification service
 
 Update a product (choreography):
 
-product service → {catalog service; pricing service}
+   1. product service 
+   2. {catalog service; pricing service}
 
 availability of a product (event):
 
-inventory service → product service.
-product service → catalog service
+   1. inventory service
+   2. product service.
+   3. catalog service
 
 Add to catalog(event):
 
 reaction service → catalog service.
 
-How media service works:
+# How **media service** works: 
 
+## Description:
 The Media Service utilizes a high-throughput, low-latency local object storage (such as a local MinIO instance)
 as its Primary Ingestion Buffer. When a client uploads a file, the Media Service immediately generates a permanent,
 uri for the file and writes the raw bytes directly to this primary storage. 
 Concurrently, it publishes an initial event to the ingestion Kafka topic: “File X is available in Primary Storage”. 
 
+## Downstream persistent storages
 Downstream persistent storages (local long-term archives or secondary storages) run 
 as virtualProcessors because they consume events from a bus. 
 Each storage type operates within its own independent Kafka Consumer Group, 
 allowing them to track their read-offsets completely isolated from one another.
 
+## Ingestion event processing
 The fastest worker to process the ingestion event downloads the asset from the Primary Storage and 
 persists it to its respective cloud bucket. 
 Immediately following a successful write, this fast worker invokes a deletion command on the 
 Primary Storage to keep the ingestion buffer compact and performant. 
 Finally, it broadcasts a "gossip" event to the P2P Replication topic: “Storage [NATIVE_DISK] now hosts File X”
 
-
 Slower, rate-limited, or recovering workers will eventually process the ingestion event, 
 attempt to fetch the file from the Primary Storage, and encounter an expected 404 Not Found error 
 due to the fast worker's cleanup. This is a non-breaking, standard operational routine.
 
+## Replication event processing
 Instead of throwing a critical exception, the worker emits a warning log and shifts its focus 
 to the Replication topic. By reading the gossip log, it discovers alternative peer sources 
 (e.g., “Storage [NATIVE_DISK] hosts File X”). The worker then executes an Idempotency Check against 
@@ -113,4 +135,37 @@ Some services can throw exceptions that indicate that a service is not working p
 Then it has to delete itself from a registry(Graceful shutdown or graceful cuicide) 
 Above all virtual processors  will check if their related service is active or not.
 
-There is no need to implement idempotency keys because 
+
+
+
+# How the **Product Assets Service** works
+
+The **Product Assets Service** is responsible for managing and serving various media assets associated with products,
+such as images, videos, and other multimedia content. It works in conjunction with the **Media Service** to provide efficient storage,
+retrieval, and management of these assets.
+
+## Uploading assets
+
+The Product Assets Service receives file upload requests through a reactive API. 
+First, it limits the file size to a maximum of a configured number of MB.
+
+The file is then streamed to the Media Service for storage. 
+The Media Service handles the actual file storage, generates a version for the uploaded asset, and 
+returns the generated identifier to the Product Assets Service.
+
+If the upload fails, the Product Assets Service falls back to local disk storage and creates a fallback entry. 
+It then throws an exception indicating that the asset has been stored in the fallback storage.
+
+When the circuit breaker is open, the Product Assets Service does not send requests to the Media Service. 
+Instead, it stores the asset in the fallback storage and creates a fallback entry.
+
+When the circuit breaker closes again, the Product Assets Service resumes sending requests to the Media Service and 
+removes the corresponding fallback entry.
+
+The circuit breaker state is determined by events emitted by the Resilience4j library.
+
+## Retrieving assets
+
+Accessing an asset by its avatar or ID returns a `Flux` of assets.
+
+The Product Assets Service first checks the Media Service for the requested asset.

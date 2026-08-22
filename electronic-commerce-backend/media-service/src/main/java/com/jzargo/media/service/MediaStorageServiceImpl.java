@@ -42,16 +42,25 @@ public class MediaStorageServiceImpl implements MediaStorageService {
 
     @Override
     public String storeChunkFile(String key, String uploadId, InputStream is, Integer partNumber, Long length) {
-        return mediaPrimaryStorageService.uploadPartOfFile(uploadId, key, is, partNumber, length);
+
+        return mediaPrimaryStorageService.uploadPartOfFile(
+                uploadId, key, is, partNumber, length
+        );
+
     }
 
     @Override
-    public String initiateFile(MediaFile mediaFile, String key) throws WrongContentTypeException {
-        return mediaPrimaryStorageService.startUploadingFile(mediaFile.getContentType(), key);
+    public String initiateFile(MediaFile mediaFile, String key, String version) throws WrongContentTypeException {
+
+        return mediaPrimaryStorageService.startUploadingFile(
+                mediaFile.getContentType(), key, version
+        );
+
     }
 
     @Override
     public void finishFileUploading(String key, String uploadId, List<String> tags, boolean isVideo) throws CannotProcessException {
+
         CompleteMultipartUploadResponse completeMultipartUploadResponse =
                 mediaPrimaryStorageService.finishFileUploading(key, uploadId, tags);
 
@@ -108,6 +117,7 @@ public class MediaStorageServiceImpl implements MediaStorageService {
                 DownloadedFile file = mediaPersistentStorageBackend.getFile(uri);
 
                 String ttl = applicationPropertyStorage.getAws().getObjectTtl();
+
 
                 mediaPrimaryStorageService.uploadFullFile(file, Optional.ofNullable(ttl));
 
