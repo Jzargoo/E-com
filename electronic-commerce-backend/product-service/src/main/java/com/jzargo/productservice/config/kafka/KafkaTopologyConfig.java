@@ -2,6 +2,8 @@ package com.jzargo.productservice.config.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jzargo.core.command.createProductSaga.SagaProductCreationFinished;
+import com.jzargo.productservice.entity.SagaStatus;
 import com.jzargo.productservice.helper.DebeziumMessageParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,24 +90,8 @@ public class KafkaTopologyConfig {
                 )
 
                 .map(
-                        (key, value) -> {
-
-
-                            var after = DebeziumMessageParser.getAfterByRoot(
-                                    (Map<String, Object>) value
-                            );
-
-                            Number nid = (Number) after.get("id");
-
-                            Long id = nid.longValue();
-
-
-                            var command = DebeziumMessageParser.getSagaCreateCommandByAfter(after);
-
-
-                            return KeyValue.pair(id.toString(), command);
-
-                        })
+                        (key, value) -> convert(value)
+                )
 
                 .to(sagaProductCreateTopicName,
                         Produced.with(
@@ -113,5 +99,41 @@ public class KafkaTopologyConfig {
                                 new JacksonJsonSerde<>()
                         )
                 );
+    }
+
+    private KeyValue<String, Object> convert (Map<String, Object> root) {
+
+        var after = DebeziumMessageParser.getAfterByRoot(root);
+
+        Number nid = (Number) after.get("id");
+
+        long id = nid.longValue();
+
+        Object command;
+
+        SagaStatus status = SagaStatus.valueOf(
+                (String) after.get("status")
+        );
+
+
+
+        if (
+                        status.equals( SagaStatus.PROCESSING)
+        ) {
+
+            command = DebeziumMessageParser.getSagaCreateCommandByAfter(after);
+
+        } else if ( status.equals(SagaStatus.EXPIRED)) {
+
+            command = DebeziumMessageParser.getCompensationCommand(after);
+
+        } else {
+
+            command = new SagaProductCreationFinished(id);
+
+        }
+
+        return KeyValue.pair(Long.toString(id), command);
+
     }
 }

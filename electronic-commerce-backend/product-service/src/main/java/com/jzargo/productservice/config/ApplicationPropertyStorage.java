@@ -32,6 +32,8 @@ public class ApplicationPropertyStorage {
 
     private Async async;
 
+    private ProductCreateSaga saga;
+
     @Data
     public static class Media{
         @NotNull
@@ -107,5 +109,13 @@ public class ApplicationPropertyStorage {
             private Integer keepAliveTimeInSeconds;
             private Integer queueCapacity;
         }
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ProductCreateSaga {
+        private Long expirationTimeInSeconds;
+        private Long schedulerDelay;
     }
 }

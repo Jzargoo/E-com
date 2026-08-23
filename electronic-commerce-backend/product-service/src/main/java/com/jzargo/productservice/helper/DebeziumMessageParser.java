@@ -30,11 +30,12 @@ public class DebeziumMessageParser extends DebeziumParser {
 
     public static Object getSagaCreateCommandByAfter(Map<String, Object> after) {
 
-        String step = (String) after.get("step");
 
         Number nid = (Number) after.get("id");
 
         Long id = nid.longValue();
+
+        String step = (String) after.get("step");
 
         return switch (SagaStep.valueOf(step)) {
 
@@ -88,5 +89,22 @@ public class DebeziumMessageParser extends DebeziumParser {
 
         };
 
+    }
+
+    public static Object getCompensationCommand(Map<String, Object> after) {
+
+        String step = (String) after.get("step");
+
+        Number nid = (Number) after.get("id");
+
+        Long id = nid.longValue();
+
+        return switch (SagaStep.valueOf(step)) {
+            case PENDING_INVENTORY -> new CompensateInventoryCommand(id);
+            case PENDING_PRICE -> new CompensatePricingCommand(id);
+            case PENDING_ASSETS -> new AssetsCompensationCommand(id);
+            default ->
+                    throw new IllegalStateException("There is not any pending states. There is no need to compensate" + step);
+        };
     }
 }

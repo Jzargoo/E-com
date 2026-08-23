@@ -1,6 +1,8 @@
 package com.jzargo.productservice.saga;
 
+import com.jzargo.productservice.config.ApplicationPropertyStorage;
 import com.jzargo.productservice.entity.SagaProductEntity;
+import com.jzargo.productservice.entity.SagaStatus;
 import com.jzargo.productservice.entity.SagaStep;
 import com.jzargo.productservice.exception.CategoryNotFoundException;
 import com.jzargo.productservice.exception.ProductNotFoundException;
@@ -13,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -24,17 +27,25 @@ public class SagaProductCreationImpl implements SagaProductCreation {
 
     private final ProductService productService;
     private final SagaProductCreationRepository sagaProductCreationRepository;
+    private final ApplicationPropertyStorage applicationPropertyStorage;
 
     @Override
     @Transactional
     public void initiateProductCreation(CreateAndUpdateProductDetails details) throws CategoryNotFoundException {
+
         Long productId = productService.createProduct(details);
+
+        Long expirationTimeInSeconds = applicationPropertyStorage.getSaga().getExpirationTimeInSeconds();
 
         SagaProductEntity sagaEntity= SagaProductEntity.builder()
                 .id(productId)
                 .step(SagaStep.PENDING_INVENTORY)
+                .status(SagaStatus.PROCESSING)
                 .price(
                         details.getPrice()
+                )
+                .expirationDate(
+                        LocalDateTime.now().plusSeconds(expirationTimeInSeconds)
                 )
                 .build();
 
@@ -57,6 +68,17 @@ public class SagaProductCreationImpl implements SagaProductCreation {
     @Transactional
     public void createdAssetsEntry(Long productId) throws SagaEntityNotFoundException {
         updateStep(productId, Optional.empty(),SagaStep.FINISHED, SagaStep.PENDING_ASSETS);
+
+        SagaProductEntity sagaProductEntity = sagaProductCreationRepository
+                .findById(productId)
+                .orElseThrow(SagaEntityNotFoundException::new);
+
+        sagaProductEntity.setStatus(
+                SagaStatus.COMPLETED
+        );
+
+        sagaProductCreationRepository.save(sagaProductEntity);
+
     }
 
     @Override

@@ -40,3 +40,10 @@ databaseChangeLog:
       changes:
         - sqlFile:
             path: db/changelog/sqls/alter_saga_add_shopId.sql
+
+  - changeSet:
+      id: 4
+      author: Jzargo
+      changes:
+        - sqlFile:
+            path: db/changelog/sqls/add_expiration_saga.sql
