@@ -5,7 +5,7 @@ import com.jzargo.productAssetsService.entity.ProductAssets;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class MediaServiceLogger {
+public class GlobalLogger {
     public static void logFoundAsset(ProductAssets asset){
         log.trace("caught an product asset with content: {}", asset);
     }

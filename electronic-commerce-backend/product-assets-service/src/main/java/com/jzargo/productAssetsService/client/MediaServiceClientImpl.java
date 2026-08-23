@@ -3,7 +3,7 @@ package com.jzargo.productAssetsService.client;
 import com.google.protobuf.ByteString;
 import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
 import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
-import com.jzargo.productAssetsService.helper.MediaServiceLogger;
+import com.jzargo.productAssetsService.helper.GlobalLogger;
 import com.jzargo.protobuf.*;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +46,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
             @Override
             public void onError(Throwable t) {
 
-                MediaServiceLogger.logException(t, "sending a file in media service client impl");
+                GlobalLogger.logException(t, "sending a file in media service client impl");
 
                 sink.tryEmitError(t);
             }
@@ -74,7 +74,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
 
                     } catch (IOException e) {
-                        MediaServiceLogger.logException(e, "sending a file in media service client impl");
+                        GlobalLogger.logException(e, "sending a file in media service client impl");
 
                         respObserver.onError(e);
                     }

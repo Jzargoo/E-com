@@ -9,7 +9,7 @@ import com.jzargo.productAssetsService.entity.MediaContent;
 import com.jzargo.productAssetsService.entity.ProductAssets;
 import com.jzargo.productAssetsService.exception.*;
 import com.jzargo.productAssetsService.helper.ContentTypeParser;
-import com.jzargo.productAssetsService.helper.MediaServiceLogger;
+import com.jzargo.productAssetsService.helper.GlobalLogger;
 import com.jzargo.productAssetsService.helper.MediaServiceValidator;
 import com.jzargo.productAssetsService.helper.PlainFileConverter;
 import com.jzargo.productAssetsService.model.PlainFile;
@@ -80,7 +80,7 @@ public class MediaServiceImpl implements MediaService {
                                         ProductNotFoundException::new
                                 )
                         )
-                        .doOnNext(MediaServiceLogger::logFoundAsset);
+                        .doOnNext(GlobalLogger::logFoundAsset);
 
         return productAssets
 
@@ -115,7 +115,7 @@ public class MediaServiceImpl implements MediaService {
             Flux<DataBuffer> content, Long productId, Integer shopId, String contentType)
             throws UnsupportedContentType {
 
-        MediaServiceLogger.logStartingExecuting("fallback adding media content");
+        GlobalLogger.logStartingExecuting("fallback adding media content");
 
         Mono<ProductAssets> product = productAssetsRepository
                 .findById(productId)
@@ -128,7 +128,7 @@ public class MediaServiceImpl implements MediaService {
                         )
                 )
 
-                .doOnNext(MediaServiceLogger::logFoundAsset);
+                .doOnNext(GlobalLogger::logFoundAsset);
 
         return product
 
@@ -157,7 +157,7 @@ public class MediaServiceImpl implements MediaService {
 
                             } catch (IOException e) {
 
-                                MediaServiceLogger.logException(e, "saving media content in fallback");
+                                GlobalLogger.logException(e, "saving media content in fallback");
 
                                 return Mono.error(e);
                             }
@@ -174,7 +174,7 @@ public class MediaServiceImpl implements MediaService {
 
         Mono<ProductAssets> product = productAssetsRepository
                 .findById(productId)
-                .doOnNext(MediaServiceLogger::logFoundAsset);
+                .doOnNext(GlobalLogger::logFoundAsset);
 
         ContentType parsed = ContentTypeParser.parseImage(contentType);
 
@@ -250,7 +250,7 @@ public class MediaServiceImpl implements MediaService {
                                 return mediaServiceClient.sendFile(key, content, contentType);
 
                             } catch (CannotAddMediaFileException e) {
-                               MediaServiceLogger.logException(e, "saving media content in service");
+                               GlobalLogger.logException(e, "saving media content in service");
 
                                return Mono.error(e);
                             }
@@ -266,7 +266,7 @@ public class MediaServiceImpl implements MediaService {
     public Mono<Long> fallbackAddingAvatar(Flux<DataBuffer> content, Long productId, Integer shopId, String contentType)
             throws UnsupportedContentType {
 
-        MediaServiceLogger.logStartingExecuting("fallback adding or changing avatar");
+        GlobalLogger.logStartingExecuting("fallback adding or changing avatar");
 
         Mono<ProductAssets> productAssetsMono = productAssetsRepository
 
@@ -276,7 +276,7 @@ public class MediaServiceImpl implements MediaService {
 
                 .switchIfEmpty(Mono.error(ProductNotFoundException::new))
 
-                .doOnNext(MediaServiceLogger::logFoundAsset);
+                .doOnNext(GlobalLogger::logFoundAsset);
 
         return productAssetsMono
 
@@ -319,7 +319,7 @@ public class MediaServiceImpl implements MediaService {
 
                                                                             } catch (IOException e) {
 
-                                                                                MediaServiceLogger.logException(e, "adding an avatar in fallback");
+                                                                                GlobalLogger.logException(e, "adding an avatar in fallback");
 
                                                                                 return Mono.error(e);
                                                                             }
@@ -358,7 +358,7 @@ public class MediaServiceImpl implements MediaService {
     @Override
     public PlainFile getAvatar(Long productId) {
 
-        MediaServiceLogger.logStartingExecuting("get avatar for product id: " + productId);
+        GlobalLogger.logStartingExecuting("get avatar for product id: " + productId);
 
         Mono<String> mediaUri =
                 avatarRepository.findByProductId(productId)
@@ -375,7 +375,7 @@ public class MediaServiceImpl implements MediaService {
                         .flatMap(mediaContentRepository::findById)
 
                         .doOnNext(
-                                MediaServiceLogger::logFoundMediaContent
+                                GlobalLogger::logFoundMediaContent
                         )
 
                         .map(MediaContent::getUri);
@@ -390,7 +390,7 @@ public class MediaServiceImpl implements MediaService {
     @Override
     public PlainFile getMediaContent(Long assetId) {
 
-        MediaServiceLogger.logStartingExecuting("get media content for product id: " + assetId);
+        GlobalLogger.logStartingExecuting("get media content for product id: " + assetId);
 
         Mono<String> mediaUri = mediaContentRepository
                 .findById(assetId)
@@ -402,7 +402,7 @@ public class MediaServiceImpl implements MediaService {
                         )
                 )
                 .doOnNext(
-                        MediaServiceLogger::logFoundMediaContent
+                        GlobalLogger::logFoundMediaContent
                 )
                 .map(MediaContent::getUri);
 
@@ -413,7 +413,7 @@ public class MediaServiceImpl implements MediaService {
 
         plainFile
                 .getUpload()
-                .doOnError(thr -> MediaServiceLogger.logException(thr, "getting media content "));
+                .doOnError(thr -> GlobalLogger.logException(thr, "getting media content "));
 
         return plainFile;
 

@@ -1,13 +1,17 @@
 package com.jzargo.productservice.helper;
 
 import com.jzargo.core.command.createProductSaga.*;
+import com.jzargo.core.helper.DebeziumParser;
 import com.jzargo.productservice.entity.SagaStep;
 
 import java.math.BigDecimal;
 import java.util.Map;
 
-public class DebeziumMessageParser {
-    private DebeziumMessageParser() {}
+public class DebeziumMessageParser extends DebeziumParser {
+
+    private DebeziumMessageParser() {
+        super();
+    }
 
     @SuppressWarnings("unchecked")
     public static String getOperationByRoot(Map<String, Object> root) {
@@ -83,5 +87,6 @@ public class DebeziumMessageParser {
                     new FinishCreateProductCreation(id);
 
         };
+
     }
 }

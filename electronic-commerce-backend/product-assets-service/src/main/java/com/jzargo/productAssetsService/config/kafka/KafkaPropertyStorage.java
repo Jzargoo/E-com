@@ -1,17 +1,19 @@
-package com.jzargo.productservice.config;
+package com.jzargo.productAssetsService.config.kafka;
+
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
 
-@Component
-@RefreshScope
-@Validated
+
 @ConfigurationProperties(prefix = "kafka")
+@RefreshScope
+@Component
 @Data
+@ConditionalOnBooleanProperty("kafka.enabled")
 public class KafkaPropertyStorage {
 
     private Topics topics;
@@ -20,13 +22,9 @@ public class KafkaPropertyStorage {
     @Data
     public static class Topics{
 
-        private TopicSettings productEventsTopic; // UPDATE, STATUS CHANGE
-
         private TopicSettings productCreateSaga;
 
-        private String fallbackMediaTopic;
-
-        private String sagaEntitiesDebeziumTopicName;
+        private String productAssetsDebeziumTopicName;
 
         @Data
         public static class TopicSettings{

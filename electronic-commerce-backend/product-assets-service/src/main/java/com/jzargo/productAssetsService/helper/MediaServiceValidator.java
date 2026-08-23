@@ -12,7 +12,7 @@ public class MediaServiceValidator {
             return Mono.just(productAssets);
         }
 
-        MediaServiceLogger.logShopDoesNotOwn(shopId, productAssets.getProductId());
+        GlobalLogger.logShopDoesNotOwn(shopId, productAssets.getProductId());
 
         return Mono.error(new ShopDoesNotOwnProductException());
     }
