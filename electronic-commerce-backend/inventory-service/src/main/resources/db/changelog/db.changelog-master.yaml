@@ -1,0 +1,9 @@
+databaseChangeLog:
+    - changeSet:
+        id: 1
+        author: Jzargo
+        changes:
+            - sqlFile:
+                  path: db/changelog/create_inventory.sql
+            - sqlFile:
+                  path: db/changelog/create_reservation.sql

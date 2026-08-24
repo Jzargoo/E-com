@@ -22,7 +22,8 @@ import java.time.Instant;
 @Slf4j
 @KafkaListener(
         topics = "#{kafkaPropertyStorage.topics.productCreateSaga.name}",
-        properties = {"spring.kafka.enable.auto.commit=false"},
+        properties = {"enable.auto.commit=false"},
+        containerFactory = "manualListenerContainerFactory",
         groupId = "#{kafkaPropertyStorage.groupId}"
 )
 @Component
@@ -112,8 +113,9 @@ public class KafkaSagaListener {
                         )
                 )
 
-                .doOnSuccess(message -> acknowledgment.acknowledge());
+                .doOnSuccess(message -> acknowledgment.acknowledge())
 
+                .subscribe();
 
     }
 

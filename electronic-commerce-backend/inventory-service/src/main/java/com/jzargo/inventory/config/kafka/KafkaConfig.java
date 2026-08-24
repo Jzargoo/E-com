@@ -1,7 +1,9 @@
-package com.jzargo.productAssetsService.config.kafka;
+package com.jzargo.inventory.config.kafka;
 
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.config.TopicConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
+import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -9,16 +11,15 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.listener.ContainerProperties;
 
+@Configuration
 @EnableKafka
 @ConditionalOnBooleanProperty("kafka.enabled")
-@Configuration
 public class KafkaConfig {
 
     @Bean
-    public NewTopic newTopic(KafkaPropertyStorage kafkaPropertyStorage) {
+    public NewTopic sagaTopic(KafkaPropertyStorage kafkaPropertyStorage) {
 
-        var productCreateSagaTopic = kafkaPropertyStorage
-                .getTopics()
+        var productCreateSagaTopic = kafkaPropertyStorage.getTopics()
                 .getProductCreateSaga();
 
         return TopicBuilder
@@ -31,7 +32,8 @@ public class KafkaConfig {
                 .partitions(
                         productCreateSagaTopic.getNumPartitions()
                 )
-                .config("min.insync.replicas",
+                .config(
+                        TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG,
                         productCreateSagaTopic.getInSyncReplicas().toString()
                 )
                 .build();

@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS reservation (
+    id BIGSERIAL PRIMARY KEY,
+    order_id BIGINT NOT NULL UNIQUE,
+    quantity INT NOT NULL,
+    inventory_id BIGINT REFERENCES inventory(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    customer_id BIGINT NOT NULL
+);
