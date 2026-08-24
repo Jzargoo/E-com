@@ -18,7 +18,6 @@ public class FallbackMediaContent {
 
     private ContentType contentType;
 
-    @Column("media_id")
     private String mediaUri;
 
     private String previousUri;

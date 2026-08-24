@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 
 public interface MediaServiceClient {
 
-    Mono<VersionedURI> sendFile(String key, Flux<DataBuffer> data, ContentType contentType) throws CannotAddMediaFileException;
+    Mono<VersionedURI> sendFile(String key, Flux<DataBuffer> data, ContentType contentType);
 
     Flux<MediaFile> receiveFile(Mono<String> mediaUri);
 

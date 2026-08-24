@@ -3,7 +3,6 @@ package com.jzargo.core.helper;
 import java.util.Map;
 
 public class DebeziumParser {
-    protected DebeziumParser() {}
 
     @SuppressWarnings("unchecked")
     public static String getOperationByRoot(Map<String, Object> root) {

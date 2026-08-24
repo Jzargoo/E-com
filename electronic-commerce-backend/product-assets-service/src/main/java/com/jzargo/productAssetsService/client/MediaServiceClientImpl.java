@@ -32,7 +32,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
 
     @Override
-    public Mono<VersionedURI> sendFile(String key, Flux<DataBuffer> data, ContentType contentType) throws CannotAddMediaFileException{
+    public Mono<VersionedURI> sendFile(String key, Flux<DataBuffer> data, ContentType contentType) {
 
         Sinks.One<VersionedURI> sink = Sinks.one();
 

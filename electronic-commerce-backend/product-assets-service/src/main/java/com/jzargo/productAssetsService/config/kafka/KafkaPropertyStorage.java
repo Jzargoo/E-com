@@ -1,6 +1,7 @@
 package com.jzargo.productAssetsService.config.kafka;
 
 
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
@@ -22,8 +23,10 @@ public class KafkaPropertyStorage {
     @Data
     public static class Topics{
 
+        @NotNull
         private TopicSettings productCreateSaga;
-
+        @NotNull
+        @NotEmpty(message = "debezium topic name cannot be empty or null")
         private String productAssetsDebeziumTopicName;
 
         @Data

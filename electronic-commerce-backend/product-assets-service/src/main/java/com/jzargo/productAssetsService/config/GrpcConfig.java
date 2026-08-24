@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProp
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.grpc.client.GrpcChannelFactory;
+import org.springframework.grpc.client.ImportGrpcClients;
 
 @Configuration
 @ConditionalOnBooleanProperty("grpc.enabled")

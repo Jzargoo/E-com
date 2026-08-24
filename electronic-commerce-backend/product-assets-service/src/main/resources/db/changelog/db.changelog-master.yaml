@@ -13,5 +13,9 @@ databaseChangeLog:
               path: db/changelog/create_avatar_mapping.sql
           - sqlFile:
               path: db/changelog/create_message.sql
-          - sqlFile:
-              path: db/changelog/create_saga_product_assets.sql
+  - changeSet:
+      id: 2
+      author: Jzargoo
+      changes:
+        - sqlFile:
+            path: db/changelog/alter_fmc_add_missing.sql

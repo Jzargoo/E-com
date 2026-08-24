@@ -1,9 +1,12 @@
 package com.jzargo.productAssetsService.config.scheduling;
 
 import com.jzargo.productAssetsService.exception.TaskCompletedException;
+import com.jzargo.productAssetsService.helper.GlobalLogger;
+import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,7 +24,7 @@ public class DynamicTaskExecutionRegistry {
         this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     }
 
-    public void addTask(String taskId, ScheduledTask task, Long delay){
+    public void addTask(String taskId, ReactiveScheduledTask task, Long delay){
 
         log.debug("Adding task {} to the active tasks queue", taskId);
 
@@ -37,21 +40,34 @@ public class DynamicTaskExecutionRegistry {
 
     }
 
-    private void executeTask(ScheduledTask task, String taskId) {
+    private void executeTask(ReactiveScheduledTask task, String taskId) {
 
-        try {
+        task.execute()
+                .doOnError(
 
-            task.execute();
+                throwable -> {
 
-        } catch (TaskCompletedException e) {
+                    if (
+                            throwable instanceof TaskCompletedException ||
+                                    throwable instanceof StatusRuntimeException
 
-            log.info("A task was completed successfully! Removing from registry ...");
+                    ){
 
-            removeTask(taskId);
+                        log.info("Task {} has been completed or client unavailable", taskId);
 
-        } catch (Exception e) {
-            log.error("Error occurred while processing a task with id {}!", taskId, e);
-        }
+                        removeTask(taskId);
+
+                    } else {
+                        GlobalLogger.logException(throwable, throwable.getMessage());
+                    }
+
+                })
+
+                .onErrorResume(TaskCompletedException.class, e -> Mono.empty())
+
+                .onErrorResume(StatusRuntimeException.class,  e -> Mono.empty())
+
+                .subscribe();
 
     }
 

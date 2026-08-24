@@ -19,28 +19,11 @@ import java.util.List;
 public class ApplicationPropertyStorage {
 
     @NotNull
-    private Media media;
-
-    @NotNull
     private Caching caching;
-
-    private FallbackMedia fallbackMedia;
 
     private Security security;
 
-    private Grpc grpc;
-
-    private Async async;
-
     private ProductCreateSaga saga;
-
-    @Data
-    public static class Media{
-        @NotNull
-        private String path;
-        @NotNull
-        private String defaultAvatarUri;
-    }
 
 
     @Data
@@ -81,41 +64,9 @@ public class ApplicationPropertyStorage {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Grpc {
-        private String channelMediaName;
-        private Integer portionSize;
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class FallbackMedia {
-        private Integer portionSize;
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Async {
-        private AsyncProperties mediaServiceExecutor;
-
-
-        @Data
-        @NoArgsConstructor
-        @AllArgsConstructor
-        public static class AsyncProperties {
-            private Integer corePoolSize;
-            private Integer maxPoolSize;
-            private Integer keepAliveTimeInSeconds;
-            private Integer queueCapacity;
-        }
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
     public static class ProductCreateSaga {
         private Long expirationTimeInSeconds;
         private Long schedulerDelay;
     }
+
 }

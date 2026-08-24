@@ -21,9 +21,9 @@ import java.time.Instant;
 
 @Slf4j
 @KafkaListener(
-        topics = "",
+        topics = "#{kafkaPropertyStorage.topics.productCreateSaga.name}",
         properties = {"spring.kafka.enable.auto.commit=false"},
-        groupId = "#{kafkaPropertyStorage}"
+        groupId = "#{kafkaPropertyStorage.groupId}"
 )
 @Component
 public class KafkaSagaListener {

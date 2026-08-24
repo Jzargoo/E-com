@@ -5,13 +5,16 @@ import com.jzargo.productAssetsService.entity.Avatar;
 import com.jzargo.productAssetsService.entity.FallbackMediaContent;
 import com.jzargo.productAssetsService.entity.MediaContent;
 import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
+import com.jzargo.productAssetsService.exception.TaskCompletedException;
 import com.jzargo.productAssetsService.repository.AvatarRepository;
 import com.jzargo.productAssetsService.repository.FallbackMediaContentRepository;
 import com.jzargo.productAssetsService.repository.MediaContentRepository;
+import com.jzargo.protobuf.VersionedURI;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,130 +43,185 @@ public class MediaServiceFallbackTaskAndManager {
         this.avatarRepository = avatarRepository;
     }
 
-    @Transactional
-    public void task() {
-
-        fallbackMediaContentRepository
-                        .findFirstByIsFreeIsTrue()
-                        .flatMap(
-                                fallbackMediaContent -> fallbackMediaContentRepository.lockProcessing(
-                                            fallbackMediaContent.getQueueId()
-                                    ).flatMap(
-                                            value -> {
-
-                                                if (value == 0) {
-                                                    return Mono.empty();
-                                                }
-
-                                                fallbackMediaContent.setIsFree(false);
-
-                                                return Mono.just(fallbackMediaContent);
-                                            }
-                                    )
-                        )
-                        .mapNotNull(this::uploadAndFinalize);
-
-
-        // TODO: implement a gRPC existsByUri and implement this branch
-
-    }
-
     @SneakyThrows
-    private Mono<Void> uploadAndFinalize(FallbackMediaContent lockedContent) {
-
-        Mono<Void> uploadMono;
-
-        Flux<DataBuffer> fileStream = fallbackMediaDriver.getFile(lockedContent.getMediaUri());
-
-        if (lockedContent.getMediaVersion() == 1) {
-
-            uploadMono = mediaServiceClient.sendFile(lockedContent.getMediaUri(), fileStream, lockedContent.getContentType())
-                    .onErrorMap(
-                            cause ->
-                                    new CannotAddMediaFileException(
-                                            "Could not add media file for uri %s with message: %s"
-                                                    .formatted(lockedContent.getMediaUri(), cause.getMessage())
-                                    )
-                    )
-                    .then();
-
-        } else {
-
-            uploadMono = mediaServiceClient.changeFile(
-                    fileStream,
-                    lockedContent.getMediaUri(),
-                    lockedContent.getMediaVersion(),
-                    lockedContent.getPreviousUri()
-            ).then();
-
-        }
-
-        return uploadMono
-                .then(Mono.defer(() -> {
-                    // Successful case
-
-                    return fallbackMediaContentRepository.deleteById(lockedContent.getQueueId())
-
-                            .then(
-                                    Mono.fromRunnable(
-                                            () -> saveMediaContent(lockedContent)
-                                    )
-                            )
-
-                            .then(
-                                    Mono.fromRunnable(
-                                            () -> fallbackMediaDriver.deleteFile(lockedContent.getMediaUri()
-                                            )
-                                    )
-                            );
-
-                }))
-
-                .doOnError(e -> {
-                    log.error("Error in sending uri {}", lockedContent.getMediaUri(), e);
-
-                    lockedContent.setIsFree(true);
-                }).then();
+    @Transactional
+    public Mono<Void> task() {
+        return takeFreeContent()
+                .flatMap(this::uploadAndFinalize)
+                .then();
     }
 
-    private void saveMediaContent(FallbackMediaContent lockedContent) {
+    private Mono<FallbackMediaContent> takeFreeContent() {
 
-        Mono<MediaContent> mc;
+        return fallbackMediaContentRepository.findFirstByIsFreeIsTrue()
 
-        if (lockedContent.getMediaVersion() != 1) {
+                .switchIfEmpty(Mono.error(TaskCompletedException::new))
 
-            mc = mediaContentRepository
-                    .findByUri(lockedContent.getPreviousUri())
-                    .switchIfEmpty(Mono.error(new IllegalStateException()));
+                .flatMap(this::lockContent);
 
-        } else {
+    }
 
-            mc = Mono.just(
-                    MediaContent.builder()
-                            .uri(lockedContent.getMediaUri())
-                            .productId(lockedContent.getProductId())
-                            .build()
-            );
+    private Mono<FallbackMediaContent> lockContent(FallbackMediaContent content) {
 
-        }
+        return fallbackMediaContentRepository
 
-        mc.flatMap(
-                mediaContentRepository::save
-        ).flatMap(
-                content -> {
+                .lockProcessing(content.getQueueId())
 
-                    if (Boolean.TRUE.equals(lockedContent.getIsAvatar())) {
-                        return avatarRepository.findById(lockedContent.getProductId())
-                                .switchIfEmpty(
-                                        Mono.just(
-                                                new Avatar(content.getProductId(), content.getId())
-                                        )
-                                ).flatMap(avatarRepository::save)
-                                .then(Mono.just(content));
+                .flatMap(updatedRows -> {
+
+                    if (updatedRows == 0) {
+                        return Mono.error(
+                                new IllegalStateException(
+                                        "Could not lock fallback media content: " + content.getQueueId()
+                                )
+                        );
                     }
 
+                    content.setIsFree(false);
+
                     return Mono.just(content);
-                }
-        );
+
+                });
+
     }
+
+    private Mono<FallbackMediaContent> uploadAndFinalize(FallbackMediaContent content)  {
+
+        return upload(content)
+
+                .flatMap(version -> saveMediaContent(content, version))
+
+                .flatMap(savedContent -> finalizeContent(content, savedContent))
+
+                .onErrorResume(error -> {
+
+                    log.error(
+                            "Error processing media {}",
+                            content.getMediaUri(),
+                            error
+                    );
+
+                    content.setIsFree(true);
+
+                    return Mono.error(error);
+
+                })
+
+                .thenReturn(content);
+    }
+
+    private Mono<String> upload(FallbackMediaContent content) {
+
+        Flux<DataBuffer> fileStream =
+                fallbackMediaDriver.getFile(content.getMediaUri());
+
+        if (content.getPreviousMediaVersion() == null) {
+
+            return mediaServiceClient
+                    .sendFile(
+                            content.getMediaUri(),
+                            fileStream,
+                            content.getContentType()
+                    )
+                    .map(VersionedURI::getVersion)
+                    .onErrorMap(
+                            error -> new CannotAddMediaFileException(
+                                    "Could not add media file for uri %s"
+                                            .formatted(content.getMediaUri())
+                            )
+                    );
+
+        }
+
+        return mediaServiceClient
+
+                .changeFile(
+                        fileStream,
+                        content.getMediaUri(),
+                        content.getPreviousMediaVersion(),
+                        content.getPreviousUri()
+                )
+
+                .map(VersionedURI::getVersion);
+
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Mono<MediaContent> saveMediaContent(
+            FallbackMediaContent content,
+            String version
+    ) {
+        return getOrCreateMediaContent(content, version)
+                .flatMap(mediaContentRepository::save)
+                .flatMap(saved -> updateAvatarIfNeeded(content, saved));
+    }
+
+    private Mono<MediaContent> getOrCreateMediaContent(
+            FallbackMediaContent content,
+            String version
+    ) {
+        if (content.getPreviousMediaVersion() == null) {
+            return Mono.just(
+                    MediaContent.builder()
+                            .uri(content.getMediaUri())
+                            .mediaVersion(version)
+                            .productId(content.getProductId())
+                            .build()
+            );
+        }
+
+        return mediaContentRepository
+                .findByUri(content.getPreviousUri())
+                .switchIfEmpty(
+                        Mono.error(
+                                new IllegalStateException(
+                                        "Media content not found: " + content.getPreviousUri()
+                                )
+                        )
+                )
+                .map(existing -> {
+                    existing.setMediaVersion(version);
+                    existing.setUri(content.getMediaUri());
+                    return existing;
+                });
+    }
+
+    private Mono<MediaContent> updateAvatarIfNeeded(
+            FallbackMediaContent content,
+            MediaContent saved
+    ) {
+        if (!Boolean.TRUE.equals(content.getIsAvatar())) {
+            return Mono.just(saved);
+        }
+
+        return avatarRepository
+                .findById(content.getProductId())
+                .switchIfEmpty(
+                        Mono.just(
+                                new Avatar(
+                                        saved.getProductId(),
+                                        saved.getId()
+                                )
+                        )
+                )
+                .flatMap(avatarRepository::save)
+                .thenReturn(saved);
+    }
+
+    private Mono<MediaContent> finalizeContent(
+            FallbackMediaContent queueItem,
+            MediaContent savedContent
+    ) {
+
+        return Mono.fromRunnable(
+                        () -> fallbackMediaDriver.deleteFile(savedContent.getUri())
+                )
+                .then(
+                        fallbackMediaContentRepository
+                                .deleteById(queueItem.getQueueId())
+                )
+                .thenReturn(savedContent);
+
+    }
+
 }

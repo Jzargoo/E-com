@@ -6,9 +6,7 @@ import java.util.Map;
 
 public class DebeziumMessageParser extends DebeziumParser {
 
-    private DebeziumMessageParser() {
-        super();
-    }
+    private DebeziumMessageParser (){}
 
     public static Long productIdByProductAsset(Map<String, Object> source){
 

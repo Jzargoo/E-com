@@ -243,23 +243,21 @@ public class MediaServiceImpl implements MediaService {
 
     protected Mono<Long> saveAndUpload(MediaContent mc, String key, Flux<DataBuffer> content, ContentType contentType) {
         return mediaContentRepository.save(mc)
+
                 .flatMap(
-                        saved -> {
-                            try {
+                        saved ->
+                                mediaServiceClient.sendFile(key, content, contentType)
+                )
 
-                                return mediaServiceClient.sendFile(key, content, contentType);
-
-                            } catch (CannotAddMediaFileException e) {
-                               GlobalLogger.logException(e, "saving media content in service");
-
-                               return Mono.error(e);
-                            }
-                        }
-                ).flatMap(
+                .flatMap(
                         versionedURI -> updateVersionByUri(versionedURI.getUri(), versionedURI.getVersion())
-                ).flatMap(
+                )
+
+                .flatMap(
                         ignored -> mediaContentRepository.findByUri(key)
-                ).mapNotNull(MediaContent::getId);
+                )
+
+                .mapNotNull(MediaContent::getId);
     }
 
     @SuppressWarnings("unused")
@@ -424,6 +422,7 @@ public class MediaServiceImpl implements MediaService {
 
         return mediaContentRepository
                 .findAllByProductId(productId)
+                .switchIfEmpty(Mono.error(new AssetNotFoundException("Cannot find product assets for id: "+ productId)))
                 .map(MediaContent::getId);
 
     }
