@@ -1,6 +1,6 @@
 package com.jzargo.inventory.service;
 
-import com.jzargo.inventory.dto.ChangeStockRequest;
+import com.jzargo.inventory.dto.ChangeStockDto;
 import com.jzargo.inventory.exception.InventoryHasReservationException;
 import com.jzargo.inventory.exception.InventoryNotFoundException;
 import com.jzargo.inventory.repository.InventoryRepository;
@@ -21,10 +21,11 @@ public class InventoryServiceImpl implements InventoryService{
 
     @Override
     @Transactional
-    public void createInventory(Long productId) {
+    public void createInventory(Long productId, Integer shopId) {
 
         Inventory inventory = Inventory.builder()
                 .productId(productId)
+                .shopId(shopId)
                 .build();
 
         inventoryRepository.save(inventory);
@@ -32,16 +33,42 @@ public class InventoryServiceImpl implements InventoryService{
 
     @Override
     @Transactional
-    public void addStock(ChangeStockRequest request) throws InventoryNotFoundException {
+    public ChangeStockDto addStock(ChangeStockDto request) throws InventoryNotFoundException {
 
         Inventory inventory = inventoryRepository.findById(request.getProductId())
                 .orElseThrow(() -> new InventoryNotFoundException("Inventory not found with id: " + request.getProductId()));
 
-        inventory.updateQuantity(
+        inventory.addQuantity(
                 request.getQuantity()
         );
 
+        request.setQuantity(
+                inventory.getQuantity()
+        );
+
         inventoryRepository.save(inventory);
+
+        return request;
+
+    }
+
+    @Override
+    public ChangeStockDto removeStock(ChangeStockDto request) throws InventoryNotFoundException {
+
+        Inventory inventory = inventoryRepository.findById(request.getProductId())
+                .orElseThrow(() -> new InventoryNotFoundException("Inventory not found with id: " + request.getProductId()));
+
+        inventory.removeQuantity(
+                request.getQuantity()
+        );
+
+        request.setQuantity(
+                inventory.getQuantity()
+        );
+
+        inventoryRepository.save(inventory);
+
+        return request;
     }
 
     @Override

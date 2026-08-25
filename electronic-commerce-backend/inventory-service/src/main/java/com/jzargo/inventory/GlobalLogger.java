@@ -16,4 +16,9 @@ public class GlobalLogger {
     public static void logRepeatedMessage(String messageId){
         log.warn("Caught repeated message with message id {}", messageId);
     }
+
+    public static void logProcessedStreamMessage(String key, Object value) {
+
+        log.info("sending a message with key {} with a value {}", key, value);
+    }
 }

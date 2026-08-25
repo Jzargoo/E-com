@@ -1,15 +1,16 @@
 package com.jzargo.inventory.listener;
 
 import com.jzargo.core.KafkaCustomHeaders;
+import com.jzargo.core.command.createProductSaga.CompensateInventoryCommand;
 import com.jzargo.core.command.createProductSaga.InventoryCommand;
 import com.jzargo.inventory.GlobalLogger;
 import com.jzargo.inventory.entity.Message;
 import com.jzargo.inventory.entity.MessageType;
+import com.jzargo.inventory.exception.InventoryHasReservationException;
 import com.jzargo.inventory.repository.MessageRepository;
 import com.jzargo.inventory.service.InventoryService;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -52,7 +53,7 @@ public class KafkaSagaListener {
         }
 
         try {
-            inventoryService.createInventory(inventoryCommand.getProductId());
+            inventoryService.createInventory(inventoryCommand.getProductId(), inventoryCommand.getShopId());
 
             messageRepository.save(
                     new Message(messageId, MessageType.COMMAND, LocalDateTime.now())
@@ -74,4 +75,44 @@ public class KafkaSagaListener {
 
     }
 
+    @KafkaHandler
+    @Transactional
+    public void handleCompensationInventoryCommand(
+            @Payload CompensateInventoryCommand command,
+            @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId,
+            Acknowledgment acknowledgment
+
+    ) throws InventoryHasReservationException {
+
+        if (
+                messageRepository.existsById(messageId)
+        ) {
+            GlobalLogger.logRepeatedMessage(messageId);
+
+            return;
+        }
+
+
+        try {
+            inventoryService.deleteInventory(command.getProductId());
+
+            messageRepository.save(
+                    new Message(messageId, MessageType.COMMAND, LocalDateTime.now())
+            );
+
+            acknowledgment.acknowledge();
+
+
+        } catch (Exception e) {
+            // Do not set ack
+
+            GlobalLogger.logException(
+                    e,
+                    "handling inventory command with product id: " + command.getProductId()
+            );
+
+            throw e;
+        }
+
+    }
 }

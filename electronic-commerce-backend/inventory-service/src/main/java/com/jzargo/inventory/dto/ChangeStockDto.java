@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ChangeStockRequest {
+public class ChangeStockDto {
     @NotNull
     @Min(value = 1, message = "Quantity has to be greater than zero")
     private Integer quantity;

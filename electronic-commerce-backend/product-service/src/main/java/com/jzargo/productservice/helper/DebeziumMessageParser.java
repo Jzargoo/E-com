@@ -40,8 +40,13 @@ public class DebeziumMessageParser extends DebeziumParser {
         return switch (SagaStep.valueOf(step)) {
 
 
-            case PENDING_INVENTORY ->
-                    new InventoryCommand(id);
+            case PENDING_INVENTORY ->{
+                Number shop_nid= (Number) after.get("shop_id");
+
+                Integer shopId = shop_nid.intValue();
+
+                yield new InventoryCommand(id, shopId);
+            }
 
 
             case PENDING_PRICE -> {

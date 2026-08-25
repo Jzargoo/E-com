@@ -7,6 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CompensateInventoryCommand {
+public class CompensateInventoryCommand implements  SagaProductCreationCommand {
     private Long productId;
 }

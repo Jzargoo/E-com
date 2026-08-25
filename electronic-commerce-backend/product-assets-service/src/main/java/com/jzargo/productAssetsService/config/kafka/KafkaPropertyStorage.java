@@ -40,5 +40,7 @@ public class KafkaPropertyStorage {
             @NotNull
             private Integer inSyncReplicas;
         }
+
     }
+
 }

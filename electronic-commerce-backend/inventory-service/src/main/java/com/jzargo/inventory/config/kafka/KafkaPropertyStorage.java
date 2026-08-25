@@ -27,6 +27,8 @@ public class KafkaPropertyStorage {
         @NotNull
         private TopicSettings productCreateSaga;
 
+        private String debeziumInventoryTopic;
+
         @Data
         public static class TopicSettings {
             @NotNull

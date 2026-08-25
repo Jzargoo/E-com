@@ -1,13 +1,16 @@
 package com.jzargo.inventory.service;
 
-import com.jzargo.inventory.dto.ChangeStockRequest;
+import com.jzargo.inventory.dto.ChangeStockDto;
 import com.jzargo.inventory.exception.InventoryHasReservationException;
 import com.jzargo.inventory.exception.InventoryNotFoundException;
 
 public interface InventoryService {
-    void createInventory(Long productId);
+    void createInventory(Long productId, Integer shopId);
 
-    void addStock(ChangeStockRequest request) throws InventoryNotFoundException;
+    ChangeStockDto addStock(ChangeStockDto request) throws InventoryNotFoundException;
+
+    ChangeStockDto removeStock(ChangeStockDto request) throws InventoryNotFoundException;
+
 
     void deleteInventory(Long productId) throws  InventoryHasReservationException;
 }

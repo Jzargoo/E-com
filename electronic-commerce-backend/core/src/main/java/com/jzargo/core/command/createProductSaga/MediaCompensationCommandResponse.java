@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class MediaCompensationCommandResponse {
+public class MediaCompensationCommandResponse implements  SagaProductCreationCommand {
     private Long productId;
     private String errorMessage;
 }
