@@ -1,0 +1,20 @@
+{
+  "name": "inventory-service-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "jzargo",
+    "database.password": "jzargo123",
+    "database.dbname": "inventorydb",
+    "table.include.list": "public.inventory, public.reservation",
+    "plugin.name": "pgoutput",
+    "slot.name": "inventory_service_slot",
+    "publication.name": "inventory_service_publication",
+    "topic.prefix": "inventorydbserver1",
+    "schema.history.internal.kafka.bootstrap.servers": "kafka1:9092",
+    "schema.history.internal.kafka.topic": "schema-changes.inventory-service",
+    "decimal.handling.mode": "double"
+  }
+}

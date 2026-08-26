@@ -7,3 +7,10 @@ databaseChangeLog:
                   path: db/changelog/create_inventory.sql
             - sqlFile:
                   path: db/changelog/create_reservation.sql
+
+    - changeSet:
+        id: 2
+        author: Jzargo
+        changes:
+            - sqlFile:
+                path: db/changelog/create_message.sql

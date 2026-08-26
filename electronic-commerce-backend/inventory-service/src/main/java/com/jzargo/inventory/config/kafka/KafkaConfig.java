@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
 
 @Configuration
@@ -41,11 +42,15 @@ public class KafkaConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, Object> manualListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, Object> manualListenerContainerFactory(
+            ConsumerFactory<String, Object> consumerFactory
+    ) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
 
         factory.getContainerProperties()
                 .setAckMode(ContainerProperties.AckMode.MANUAL);
+
+        factory.setConsumerFactory(consumerFactory);
 
 
         return factory;

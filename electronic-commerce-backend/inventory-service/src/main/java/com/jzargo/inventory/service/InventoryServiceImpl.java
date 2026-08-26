@@ -33,10 +33,14 @@ public class InventoryServiceImpl implements InventoryService{
 
     @Override
     @Transactional
-    public ChangeStockDto addStock(ChangeStockDto request) throws InventoryNotFoundException {
+    public ChangeStockDto addStock(ChangeStockDto request, Integer shopId) throws InventoryNotFoundException {
 
-        Inventory inventory = inventoryRepository.findById(request.getProductId())
-                .orElseThrow(() -> new InventoryNotFoundException("Inventory not found with id: " + request.getProductId()));
+        Inventory inventory = inventoryRepository
+                .findByProductIdAndShopId(request.getProductId(), shopId)
+                .orElseThrow(
+                        () -> new InventoryNotFoundException(
+                                "Inventory not found with id: " + request.getProductId())
+                );
 
         inventory.addQuantity(
                 request.getQuantity()
@@ -53,10 +57,14 @@ public class InventoryServiceImpl implements InventoryService{
     }
 
     @Override
-    public ChangeStockDto removeStock(ChangeStockDto request) throws InventoryNotFoundException {
+    public ChangeStockDto removeStock(ChangeStockDto request, Integer shopId) throws InventoryNotFoundException {
 
-        Inventory inventory = inventoryRepository.findById(request.getProductId())
-                .orElseThrow(() -> new InventoryNotFoundException("Inventory not found with id: " + request.getProductId()));
+        Inventory inventory = inventoryRepository
+                .findByProductIdAndShopId(request.getProductId(), shopId)
+                .orElseThrow(
+                        () -> new InventoryNotFoundException(
+                                "Inventory not found with id: " + request.getProductId())
+                );
 
         inventory.removeQuantity(
                 request.getQuantity()
