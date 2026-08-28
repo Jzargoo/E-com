@@ -1,14 +1,15 @@
 package com.jzargo.media.storages.persistent;
 
+import com.jzargo.media.exceptions.FileAlreadyExistsException;
 import com.jzargo.media.exceptions.CannotProcessException;
 import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.model.DownloadedFile;
 
 public interface MediaPersistentStorageBackend {
 
-    String storeFile(DownloadedFile file) throws CannotProcessException;
+    String storeFile(DownloadedFile file) throws CannotProcessException, FileAlreadyExistsException;
 
-    String replaceFile(DownloadedFile file, String previousFileUri) throws CannotProcessException;
+    String replaceFile(DownloadedFile file, String previousFileUri, String prevVersion) throws CannotProcessException;
 
     void deleteFile(String fileUri) throws CannotProcessException;
 

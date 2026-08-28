@@ -37,6 +37,14 @@ public class ApplicationPropertyStorage {
         private String savingPath;
 
         public String tempDirectory;
+
+        private String versionPath;
+
+        private String VersionSuffix;
+
+        private String lockPath;
+
+        private String lockSuffix;
     }
 
     @Data

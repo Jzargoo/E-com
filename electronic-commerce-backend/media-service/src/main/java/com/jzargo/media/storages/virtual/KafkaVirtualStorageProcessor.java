@@ -2,6 +2,7 @@ package com.jzargo.media.storages.virtual;
 
 import com.jzargo.media.config.balancing.MediaPersistentStorageBackendRegistry;
 import com.jzargo.media.event.*;
+import com.jzargo.media.exceptions.FileAlreadyExistsException;
 import com.jzargo.media.exceptions.CannotDownloadFileException;
 import com.jzargo.media.exceptions.CannotProcessException;
 import com.jzargo.media.exceptions.WrongContentTypeException;
@@ -116,9 +117,9 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
 
             primaryStorageService.deleteFile(event.getFileURL());
 
-        } catch (CannotDownloadFileException e) {
-            log.debug("CannotDownloadFileException, there might be a problem so file cannot be downloaded; therefore, we will treat like nothing happened", e);
-        }
+        } catch (CannotDownloadFileException | FileAlreadyExistsException e) {
+            log.debug("CannotDownloadFileException, there might be a problem so file cannot be downloaded or added; therefore, we will treat like nothing happened", e);
+        } 
     }
 
 
@@ -222,6 +223,8 @@ public class KafkaVirtualStorageProcessor implements VirtualStorageProcessor {
 
         } catch (WrongContentTypeException e) {
             log.error("Tried to download a file from a secondary storage {} but it was corrupted",event.getStorageType(), e);
+        } catch (FileAlreadyExistsException e) {
+           log.warn("file was already created. Skipping it");
         }
     }
 

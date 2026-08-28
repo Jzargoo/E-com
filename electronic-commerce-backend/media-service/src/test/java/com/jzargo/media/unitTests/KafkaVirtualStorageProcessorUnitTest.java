@@ -4,6 +4,7 @@ package com.jzargo.media.unitTests;
 import com.jzargo.media.StubAzureCloudPersistentMediaBackend;
 import com.jzargo.media.config.balancing.MediaPersistentStorageBackendRegistry;
 import com.jzargo.media.event.*;
+import com.jzargo.media.exceptions.FileAlreadyExistsException;
 import com.jzargo.media.exceptions.CannotDownloadFileException;
 import com.jzargo.media.exceptions.CannotProcessException;
 import com.jzargo.media.exceptions.WrongContentTypeException;
@@ -70,7 +71,7 @@ public class KafkaVirtualStorageProcessorUnitTest {
     }
 
     @Test
-    public void processFileRequestEvent_fileAlreadyExist_successTest() throws CannotProcessException, CannotDownloadFileException {
+    public void processFileRequestEvent_fileAlreadyExist_successTest() throws CannotProcessException, CannotDownloadFileException, FileAlreadyExistsException {
         Mockito.when(
                 registry.getBackendByStorageType(StorageType.NATIVE_DISK)
         ).thenReturn(mediaPersistentStorageBackendNative);
@@ -100,7 +101,7 @@ public class KafkaVirtualStorageProcessorUnitTest {
     }
 
     @Test
-    public void processFileRequestEvent_fileNotExist_successTest() throws CannotProcessException, CannotDownloadFileException {
+    public void processFileRequestEvent_fileNotExist_successTest() throws CannotProcessException, CannotDownloadFileException, FileAlreadyExistsException {
         Mockito.when(
                 registry.getBackendByStorageType(StorageType.NATIVE_DISK)
         ).thenReturn(mediaPersistentStorageBackendNative);
@@ -166,7 +167,7 @@ public class KafkaVirtualStorageProcessorUnitTest {
     }
 
     @Test
-    public void processFileSyncEvent_downloadFile_successTest() throws CannotProcessException, WrongContentTypeException {
+    public void processFileSyncEvent_downloadFile_successTest() throws CannotProcessException, WrongContentTypeException, FileAlreadyExistsException {
         Mockito.when(
                 registry.getBackendByStorageType(StorageType.NATIVE_DISK)
         ).thenReturn(mediaPersistentStorageBackendNative);

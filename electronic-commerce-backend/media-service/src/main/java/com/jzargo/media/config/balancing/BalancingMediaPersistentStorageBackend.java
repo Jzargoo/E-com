@@ -48,7 +48,7 @@ public class BalancingMediaPersistentStorageBackend implements MediaPersistentSt
     }
 
     @Override
-    public String replaceFile(DownloadedFile file, String previousFileUri) throws CannotProcessException {
+    public String replaceFile(DownloadedFile file, String previousFileUri, String prevVersion) throws CannotProcessException {
         while(!registry.isEmpty()){
 
             MediaPersistentStorageBackend next = registry
@@ -57,7 +57,7 @@ public class BalancingMediaPersistentStorageBackend implements MediaPersistentSt
             try {
 
                 if (next != null) {
-                    return next.replaceFile(file, previousFileUri);
+                    return next.replaceFile(file, previousFileUri, prevVersion);
                 }
 
             } catch (ErrorDuringAddingContent | BackendOutOfSpaceException e) {

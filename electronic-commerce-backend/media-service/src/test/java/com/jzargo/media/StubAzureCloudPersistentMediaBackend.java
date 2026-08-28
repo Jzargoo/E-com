@@ -13,7 +13,7 @@ public class StubAzureCloudPersistentMediaBackend implements MediaPersistentStor
     }
 
     @Override
-    public String replaceFile(DownloadedFile file, String previousFileUri) throws CannotProcessException {
+    public String replaceFile(DownloadedFile file, String previousFileUri, String prevVersion) throws CannotProcessException {
         return "";
     }
 
@@ -28,6 +28,11 @@ public class StubAzureCloudPersistentMediaBackend implements MediaPersistentStor
     }
 
     @Override
+    public boolean existsByVersionedURI(String fileUri, String versionId) throws CannotProcessException {
+        return true;
+    }
+
+    @Override
     public boolean existsByURI(String fileUri) throws CannotProcessException {
         return false;
     }
@@ -35,5 +40,10 @@ public class StubAzureCloudPersistentMediaBackend implements MediaPersistentStor
     @Override
     public DownloadedFile getFile(String fileUri) throws CannotProcessException, WrongContentTypeException {
         return null;
+    }
+
+    @Override
+    public void register() {
+
     }
 }
