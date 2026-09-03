@@ -23,6 +23,8 @@ public class ApplicationPropertyStorage {
     @NotNull
     private FallbackMedia fallbackMedia;
 
+    private Security security;
+
     @NotNull
     private Server server;
 
@@ -74,5 +76,12 @@ public class ApplicationPropertyStorage {
         @NotNull(message = "buffer size is expected to exist")
         @Min(value = 0, message = "buffer size has to be a positive number!")
         private Integer bufferSize;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Security {
+        String jwksUri;
     }
 }
