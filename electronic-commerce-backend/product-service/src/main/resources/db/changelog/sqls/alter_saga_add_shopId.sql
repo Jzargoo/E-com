@@ -1,1 +1,1 @@
-ALTER TABLE saga_product_entities ADD COLUMN shop_id INT NOT NULL DEFAULT 0;
+ALTER TABLE saga_product_entities ADD COLUMN IF NOT EXISTS shop_id INT NOT NULL DEFAULT 0;

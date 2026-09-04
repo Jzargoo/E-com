@@ -44,6 +44,8 @@ public class KafkaSagaListener {
             Acknowledgment acknowledgment
     ) {
 
+        GlobalLogger.logStartingExecution("handling inventory command!");
+
         if (
                 messageRepository.existsById(messageId)
         ) {
@@ -53,6 +55,8 @@ public class KafkaSagaListener {
         }
 
         try {
+
+
             inventoryService.createInventory(inventoryCommand.getProductId(), inventoryCommand.getShopId());
 
             messageRepository.save(

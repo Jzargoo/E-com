@@ -28,6 +28,7 @@ public class SecurityConfig {
                                 serverConfigurer.jwt(Customizer.withDefaults())
                 )
 
+
                 .sessionManagement(
                         sessionManagement ->
                                 sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)

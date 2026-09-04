@@ -12,7 +12,13 @@
     "plugin.name": "pgoutput",
     "slot.name": "product_assets_service_slot",
     "publication.name": "product_assets_service_publication",
+
+    "topic.creation.default.replication.factor": "2",
+    "topic.creation.default.partitions": "3",
+    "topic.creation.default.cleanup.policy": "delete",
+    "topic.creation.enable": "true",
     "topic.prefix": "productassetsdbserver1",
+
     "schema.history.internal.kafka.bootstrap.servers": "kafka1:9092",
     "schema.history.internal.kafka.topic": "schema-changes.product-assets-service",
     "decimal.handling.mode": "double"

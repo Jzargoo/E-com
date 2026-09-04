@@ -13,6 +13,7 @@
     "slot.name": "product_service_slot",
     "publication.name": "product_service_publication",
     "topic.prefix": "productdbserver1",
+    "topic.creation.enable": "true",
     "schema.history.internal.kafka.bootstrap.servers": "kafka1:9092",
     "schema.history.internal.kafka.topic": "schema-changes.product-service",
     "decimal.handling.mode": "double"

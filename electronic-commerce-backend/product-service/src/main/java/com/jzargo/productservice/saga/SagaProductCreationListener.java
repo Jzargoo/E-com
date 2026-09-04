@@ -245,8 +245,7 @@ public class SagaProductCreationListener {
     }
 
 
-    @KafkaHandler
-    @Transactional
+    @KafkaHandler(isDefault = true)
     public void handleForeignMessage(Object foreignMessage) {
         log.trace("Received foreign message from kafka! The message is {}", foreignMessage);
     }

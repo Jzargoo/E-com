@@ -2,6 +2,8 @@ package com.jzargo.productservice.config.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jzargo.core.KafkaCustomHeaders;
+import com.jzargo.core.command.createProductSaga.SagaProductCreationCommand;
 import com.jzargo.core.command.createProductSaga.SagaProductCreationFinished;
 import com.jzargo.productservice.entity.SagaStatus;
 import com.jzargo.productservice.helper.DebeziumMessageParser;
@@ -12,12 +14,16 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessor;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext;
+import org.apache.kafka.streams.processor.api.FixedKeyRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.support.serializer.JacksonJsonSerde;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Configuration
 @RequiredArgsConstructor
@@ -81,6 +87,8 @@ public class KafkaTopologyConfig {
                         }
                 )
 
+
+
                 .peek(
                         (key, value) ->
                                 log.info(
@@ -93,6 +101,42 @@ public class KafkaTopologyConfig {
                         (key, value) -> convert(value)
                 )
 
+                .processValues(
+                        () -> new FixedKeyProcessor<String, SagaProductCreationCommand, SagaProductCreationCommand>() {
+
+                            private FixedKeyProcessorContext<String, SagaProductCreationCommand> context;
+
+                            @Override
+                            public void init(FixedKeyProcessorContext<String, SagaProductCreationCommand> context) {
+
+                                FixedKeyProcessor.super.init(context);
+
+                                this.context = context;
+
+                            }
+
+                            @Override
+                            public void process(FixedKeyRecord<String, SagaProductCreationCommand> record) {
+
+                                var productId = record.value().getProductId();
+
+                                record.headers()
+                                        .add(
+                                                KafkaCustomHeaders.IDEMPOTENCY_KEY,
+                                                UUID.randomUUID().toString().getBytes()
+                                        )
+                                        .add(
+                                                KafkaCustomHeaders.SAGA_ID_KEY,
+                                                String.valueOf(productId).getBytes()
+                                        );
+
+                                context.forward(record);
+                            }
+
+                        }
+                )
+
+
                 .to(sagaProductCreateTopicName,
                         Produced.with(
                                 new Serdes.StringSerde(),
@@ -101,7 +145,7 @@ public class KafkaTopologyConfig {
                 );
     }
 
-    private KeyValue<String, Object> convert (Map<String, Object> root) {
+    private KeyValue<String, SagaProductCreationCommand> convert (Map<String, Object> root) {
 
         var after = DebeziumMessageParser.getAfterByRoot(root);
 
@@ -109,7 +153,7 @@ public class KafkaTopologyConfig {
 
         long id = nid.longValue();
 
-        Object command;
+        SagaProductCreationCommand command;
 
         SagaStatus status = SagaStatus.valueOf(
                 (String) after.get("status")

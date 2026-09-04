@@ -7,3 +7,6 @@ spring:
     active: devconfig
   config:
     import: 'optional:configserver:http://localhost:8888'
+application:
+  security:
+    jwks-uri: "http://localhost:8890/realms/e-com-security/protocol/openid-connect/certs"

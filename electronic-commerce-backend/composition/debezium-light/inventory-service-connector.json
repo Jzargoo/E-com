@@ -12,7 +12,13 @@
     "plugin.name": "pgoutput",
     "slot.name": "inventory_service_slot",
     "publication.name": "inventory_service_publication",
+
+    "topic.creation.enable": "true",
     "topic.prefix": "inventorydbserver1",
+    "topic.creation.default.replication.factor": "2",
+    "topic.creation.default.partitions": "3",
+    "topic.creation.default.cleanup.policy": "delete",
+
     "schema.history.internal.kafka.bootstrap.servers": "kafka1:9092",
     "schema.history.internal.kafka.topic": "schema-changes.inventory-service",
     "decimal.handling.mode": "double"

@@ -1,6 +1,5 @@
 package com.jzargo.productservice.service;
 
-import com.jzargo.productservice.config.ApplicationPropertyStorage;
 import com.jzargo.productservice.entity.Product;
 import com.jzargo.productservice.entity.Status;
 import com.jzargo.productservice.exception.CategoryNotFoundException;
@@ -27,14 +26,12 @@ public class ProductServiceImpl implements ProductService{
     private final ProductRepository productRepository;
     private final ReadProductDetailsMapper readProductDetailsMapper;
     private final ProductCreateAndUpdateMapper productCreateAndUpdateMapper;
-    private final ApplicationPropertyStorage applicationPropertyStorage;
     private final CategoryRepository categoryRepository;
 
-    public ProductServiceImpl(ProductRepository productRepository, ReadProductDetailsMapper readProductDetailsMapper, ProductCreateAndUpdateMapper productCreateAndUpdateMapper, ApplicationPropertyStorage applicationPropertyStorage, CategoryRepository categoryRepository) {
+    public ProductServiceImpl(ProductRepository productRepository, ReadProductDetailsMapper readProductDetailsMapper, ProductCreateAndUpdateMapper productCreateAndUpdateMapper, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.readProductDetailsMapper = readProductDetailsMapper;
         this.productCreateAndUpdateMapper = productCreateAndUpdateMapper;
-        this.applicationPropertyStorage = applicationPropertyStorage;
         this.categoryRepository = categoryRepository;
     }
 
@@ -57,10 +54,6 @@ public class ProductServiceImpl implements ProductService{
         if (!categoryRepository.existsByName(createProductDetails.getCategory())) {
             throw new CategoryNotFoundException();
         }
-
-        String defaultAvatarUri = applicationPropertyStorage.getMedia().getDefaultAvatarUri();
-
-        createProductDetails.setAvatarUri(defaultAvatarUri);
 
         Product map = productCreateAndUpdateMapper.map(createProductDetails);
 

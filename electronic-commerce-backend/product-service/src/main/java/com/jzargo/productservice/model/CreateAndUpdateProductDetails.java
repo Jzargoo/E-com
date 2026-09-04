@@ -20,7 +20,6 @@ public class CreateAndUpdateProductDetails {
     @NotNull(message = "name cannot be null")
     @NotEmpty(message = "name cannot be empty")
     private String name;
-    private String avatarUri;
 
     @NotNull(message = "Price cannot be null")
     @Digits(integer = 10, fraction = 2, message =  "Product should have no more than 2 fraction")

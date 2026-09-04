@@ -8,15 +8,11 @@ databaseChangeLog:
             path: db/changelog/sqls/create_category_table.sql
         - sqlFile:
             path: db/changelog/sqls/create_product_table.sql
-        - sqlFile:
-            path: db/changelog/sqls/create_media_content_table.sql
   - changeSet:
       id: 1
       author: jzargo
       comment: "Add the special tables"
       changes:
-        - sqlFile:
-            path: db/changelog/sqls/create_fallback_media_content.sql
         - sqlFile:
             path: db/changelog/sqls/create_message_type_table.sql
         - sqlFile:
@@ -30,10 +26,6 @@ databaseChangeLog:
             path: db/changelog/sqls/alter_saga_create_add_version.sql
         - sqlFile:
             path: db/changelog/sqls/add_aditional_info_saga_product_create.sql
-        - sqlFile:
-            path: db/changelog/sqls/media_versioning.sql
-        - sqlFile:
-            path: db/changelog/sqls/alter_fallback_add_is_avatar_versioning.sql
   - changeSet:
       id: 3
       author: Jzargo

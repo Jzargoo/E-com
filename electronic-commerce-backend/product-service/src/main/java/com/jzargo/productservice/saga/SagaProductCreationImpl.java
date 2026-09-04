@@ -33,6 +33,8 @@ public class SagaProductCreationImpl implements SagaProductCreation {
     @Transactional
     public void initiateProductCreation(CreateAndUpdateProductDetails details) throws CategoryNotFoundException {
 
+        log.info("Details: {}", details);
+
         Long productId = productService.createProduct(details);
 
         Long expirationTimeInSeconds = applicationPropertyStorage.getSaga().getExpirationTimeInSeconds();
@@ -41,6 +43,7 @@ public class SagaProductCreationImpl implements SagaProductCreation {
                 .id(productId)
                 .step(SagaStep.PENDING_INVENTORY)
                 .status(SagaStatus.PROCESSING)
+                .shopId(details.getShopId())
                 .price(
                         details.getPrice()
                 )
@@ -55,13 +58,13 @@ public class SagaProductCreationImpl implements SagaProductCreation {
     @Override
     @Transactional
     public void createdInventoryEntry(Long productId) throws SagaEntityNotFoundException {
-        updateStep(productId, Optional.empty(), SagaStep.PENDING_PRICE, SagaStep.PENDING_INVENTORY);
+        updateStep(productId, Optional.empty(), SagaStep.PENDING_ASSETS, SagaStep.PENDING_INVENTORY);
     }
 
     @Override
     @Transactional
     public void createdPriceEntry(Long productId) throws SagaEntityNotFoundException {
-        updateStep(productId, Optional.empty(),SagaStep.PENDING_ASSETS, SagaStep.PENDING_PRICE);
+        updateStep(productId, Optional.empty(),SagaStep.PENDING_PRICE, SagaStep.PENDING_PRICE);
     }
 
     @Override
@@ -141,6 +144,10 @@ public class SagaProductCreationImpl implements SagaProductCreation {
         errorMessage.ifPresent(sagaProductEntity::setErrorMessage);
 
         sagaProductEntity.setStep(newSagaStep);
+
+        sagaProductEntity.setPrice(
+                sagaProductEntity.getPrice()
+        ); // to include a price into after debezium
 
         sagaProductCreationRepository.save(sagaProductEntity);
     }

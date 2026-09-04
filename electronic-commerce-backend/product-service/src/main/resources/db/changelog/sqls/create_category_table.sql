@@ -3,6 +3,6 @@ CREATE TABLE
     categories
 (
     id SERIAL PRIMARY KEY,
-    name varchar(64),
+    name varchar(64) UNIQUE NOT NULL,
     attributes jsonb
 )

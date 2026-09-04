@@ -28,7 +28,7 @@ public class DebeziumMessageParser extends DebeziumParser {
     }
 
 
-    public static Object getSagaCreateCommandByAfter(Map<String, Object> after) {
+    public static SagaProductCreationCommand getSagaCreateCommandByAfter(Map<String, Object> after) {
 
 
         Number nid = (Number) after.get("id");
@@ -96,7 +96,7 @@ public class DebeziumMessageParser extends DebeziumParser {
 
     }
 
-    public static Object getCompensationCommand(Map<String, Object> after) {
+    public static SagaProductCreationCommand getCompensationCommand(Map<String, Object> after) {
 
         String step = (String) after.get("step");
 
