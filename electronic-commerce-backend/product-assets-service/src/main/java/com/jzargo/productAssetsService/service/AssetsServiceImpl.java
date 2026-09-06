@@ -1,6 +1,7 @@
 package com.jzargo.productAssetsService.service;
 
 import com.jzargo.productAssetsService.entity.ProductAssets;
+import com.jzargo.productAssetsService.exception.AssetNotFoundException;
 import com.jzargo.productAssetsService.repository.MediaContentRepository;
 import com.jzargo.productAssetsService.repository.ProductAssetsRepository;
 import org.springframework.stereotype.Service;
@@ -18,8 +19,12 @@ public class AssetsServiceImpl implements AssetsService{
 
     @Override
     public Mono<Void> initAssetsCompensation(Long productId) {
+        Mono<ProductAssets> byId = productAssetsRepository.findById(productId);
 
-        return productAssetsRepository.findById(productId)
+        return byId
+                .switchIfEmpty(
+                        Mono.error(new AssetNotFoundException("Asset with product id was not found: " + productId))
+                )
                 .flatMap(
                         productAssets ->
                                 mediaContentRepository
@@ -28,22 +33,20 @@ public class AssetsServiceImpl implements AssetsService{
 
                                         .flatMap(mediaContentRepository::delete)
 
-                                        .then()
-
-                                        .flatMap(
-                                            nothing -> productAssetsRepository.delete(productAssets)
-                                        )
+                                        .then(productAssetsRepository.delete(productAssets))
                 );
 
     }
 
     @Override
     public Mono<ProductAssets> initAssetsProduct(Long productId, Integer shopId) {
+
         ProductAssets build = ProductAssets.builder()
                 .productId(productId)
                 .shopId(shopId)
                 .build();
 
-        return productAssetsRepository.save(build);
+        return productAssetsRepository
+                .save(build);
     }
 }
