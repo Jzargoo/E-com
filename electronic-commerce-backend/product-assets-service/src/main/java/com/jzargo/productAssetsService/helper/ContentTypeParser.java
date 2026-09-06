@@ -42,11 +42,11 @@ public class ContentTypeParser {
 
     public static String parseIntoMime(ContentType contentType) throws UnsupportedContentType {
         return switch (contentType) {
-            case JPEG -> "application/jpeg";
-            case PNG -> "application/png";
-            case WEBP -> "application/webp";
-            case MP4 -> "application/mp4";
-            case WEBM -> "application/webm";
+            case JPEG -> "image/jpeg";
+            case PNG -> "image/png";
+            case WEBP -> "image/webp";
+            case MP4 -> "video/mp4";
+            case WEBM -> "video/webm";
             default -> throw new UnsupportedContentType("Cannot return postfix from content type: " + contentType);
         };
     }

@@ -137,7 +137,7 @@ public class MediaServiceImpl implements MediaService {
 
                             ContentType parse = ContentTypeParser.parse(contentType);
 
-                            String key =  getUniqueUriByProductIdAndContentType(productId, parse);
+                            String key = getUniqueUriByProductIdAndContentType(productId, parse);
 
 
                             FallbackMediaContent build = FallbackMediaContent.builder()
@@ -146,11 +146,15 @@ public class MediaServiceImpl implements MediaService {
                                     .productId(productId)
                                     .build();
 
-                            fallbackMediaContentRepository.save(build);
+                            return fallbackMediaContentRepository.save(build);
+                        }
+                )
 
+                .flatMap(
+                        fmc -> {
                             try {
 
-                                return fallbackMediaDriver.saveFile(content, key)
+                                return fallbackMediaDriver.saveFile(content, fmc.getMediaUri())
                                         .flatMap(
                                                 file -> Mono.error(CreatedInFallbackException::new)
                                         );
@@ -162,7 +166,8 @@ public class MediaServiceImpl implements MediaService {
                                 return Mono.error(e);
                             }
 
-                        });
+                        }
+                );
     }
 
     @Override

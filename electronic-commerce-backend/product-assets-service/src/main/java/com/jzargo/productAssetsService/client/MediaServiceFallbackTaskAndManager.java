@@ -142,6 +142,14 @@ public class MediaServiceFallbackTaskAndManager {
                         content.getPreviousUri()
                 )
 
+                .onErrorMap(
+                        error -> new CannotAddMediaFileException(
+                                "Could not add media file for uri %s"
+                                        .formatted(content.getMediaUri())
+                        )
+                )
+
+
                 .map(VersionedURI::getVersion);
 
     }
