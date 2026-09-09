@@ -20,7 +20,7 @@ import java.io.IOException;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/products/media")
+@RequestMapping("/api/media")
 public class MediaController {
 
     private final MediaService mediaService;
