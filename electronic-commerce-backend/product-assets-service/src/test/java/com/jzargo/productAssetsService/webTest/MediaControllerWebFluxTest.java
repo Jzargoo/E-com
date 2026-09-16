@@ -4,6 +4,7 @@ package com.jzargo.productAssetsService.webTest;
 import com.jzargo.productAssetsService.api.MediaController;
 import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
 import com.jzargo.productAssetsService.exception.AssetNotFoundException;
+import com.jzargo.productAssetsService.exception.CreatedInFallbackException;
 import com.jzargo.productAssetsService.helper.ContentTypeParser;
 import com.jzargo.productAssetsService.model.PlainFile;
 import com.jzargo.productAssetsService.service.MediaServiceImpl;
@@ -16,16 +17,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockJwt;
 
 @WebFluxTest(controllers = MediaController.class)
 @ExtendWith(MockitoExtension.class)
@@ -113,6 +119,43 @@ public class MediaControllerWebFluxTest {
                 .expectStatus().isEqualTo(
                         HttpStatus.NOT_FOUND.value()
                 );
+
+    }
+
+    @Test
+    public void test_globalHandler_for_createdInFallback(){
+
+        when(
+                mediaService.addMediaContent(any(), any(), any(), any())
+        ).thenReturn(
+                Mono.error(
+                        new CreatedInFallbackException()
+                )
+        );
+
+        webTestClient
+                .mutateWith(
+                        mockJwt()
+                                .jwt(
+                                        jwt -> jwt
+                                                .claim("shop_id", 1)
+                                                .build()
+                                )
+                )
+                .put()
+                .uri(URI.create("/api/media/1"))
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(
+                        BodyInserters.fromDataBuffers(
+                                Flux.just(
+                                        DefaultDataBufferFactory.sharedInstance.wrap(
+                                                "hello".getBytes(StandardCharsets.UTF_8)
+                                        )
+                                )
+                        )
+                )
+                .exchange()
+                .expectStatus().isCreated();
 
     }
 }

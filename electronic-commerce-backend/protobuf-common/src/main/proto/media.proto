@@ -17,16 +17,20 @@ service MediaService{
 }
 
 message MediaFile{
-  ContentType contentType = 1;
-  string uri = 2;
-  bytes contentChunk = 3;
+  bytes contentChunk = 1;
+}
+
+message MediaFileMetadata{
+  string fileUri = 1;
+  ContentType contentType = 2;
+}
+
+message ChangeMediaFileMetadata{
+  string previousVersion = 1;
 }
 
 message ChangeMediaFile {
-  ContentType contentType = 1;
-  bytes contentChunk = 2;
-  string fileUri = 3;
-  int32 version = 4;
+  bytes contentChunk = 1;
 }
 
 

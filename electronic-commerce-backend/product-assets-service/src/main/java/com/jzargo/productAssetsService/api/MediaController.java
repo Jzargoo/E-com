@@ -12,6 +12,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -74,9 +76,11 @@ public class MediaController {
     public Mono<Long> addMediaContent(
             @RequestBody Flux<DataBuffer> content,
             @PathVariable Long productId,
-            Integer shopId,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(HttpHeaders.CONTENT_TYPE) String contentType
     ) {
+
+        var shopId = (Number) jwt.getClaim("shop_id");
 
         Integer maxContentByteCount =
                 applicationPropertyStorage.getServer().getMaxContentByteCount();
@@ -84,7 +88,8 @@ public class MediaController {
         Flux<DataBuffer> dataBufferFlux =
                 DataBufferUtils.takeUntilByteCount(content, maxContentByteCount);
 
-        return mediaService.addMediaContent(dataBufferFlux, productId, shopId, contentType);
+
+        return mediaService.addMediaContent(dataBufferFlux, productId, shopId.intValue(), contentType);
     }
 
 }

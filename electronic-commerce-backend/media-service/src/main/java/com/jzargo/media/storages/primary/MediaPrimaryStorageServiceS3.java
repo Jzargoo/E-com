@@ -256,6 +256,9 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
 
         HeadObjectResponse headObjectResponse = s3Client.headObject(build);
 
-        return headObjectResponse.versionId().equals(version);
+        return headObjectResponse.metadata().get(
+                versionAttr
+        ).equals(version);
+
     }
 }

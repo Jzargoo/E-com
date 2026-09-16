@@ -29,4 +29,7 @@ public class GlobalLogger {
         log.trace("Caught media content with content {}", mediaContent);
     }
 
+    public static void logFinishedExecuting(String sendingAFile) {
+        log.info("{} finished executing.", sendingAFile);
+    }
 }

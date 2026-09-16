@@ -1,10 +1,13 @@
 package com.jzargo.productAssetsService.client;
 
 import com.google.protobuf.ByteString;
+import com.jzargo.grpc.metadata.MetadataConstantKeys;
 import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
 import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
 import com.jzargo.productAssetsService.helper.GlobalLogger;
 import com.jzargo.protobuf.*;
+import io.grpc.Metadata;
+import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -15,6 +18,8 @@ import reactor.core.publisher.Sinks;
 
 import java.io.IOException;
 import java.io.InputStream;
+
+import static org.springframework.grpc.server.service.GrpcServiceInfo.withInterceptors;
 
 
 @Slf4j
@@ -53,25 +58,40 @@ public class MediaServiceClientImpl implements MediaServiceClient {
 
             @Override
             public void onCompleted() {
+                GlobalLogger.logFinishedExecuting("Sending a file");
             }
+
         };
 
-        StreamObserver<MediaFile> respObserver = mediaServiceStub.addMediaFile(streamObserver);
+
+        Metadata metadata = new Metadata();
+
+        metadata.put(
+                MetadataConstantKeys.fileMetadataKey,
+
+                MediaFileMetadata.newBuilder()
+                        .setFileUri(key)
+                        .setContentType(contentType)
+                        .build().toByteArray()
+        );
+
+        StreamObserver<MediaFile> respObserver = mediaServiceStub.withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(metadata)
+        ).addMediaFile(streamObserver);
 
 
         return data.doOnNext(
                 dataBuffer -> {
 
-                    try(InputStream inputStream = dataBuffer.asInputStream(true)) {
+                    try (
+                            InputStream inputStream = dataBuffer.asInputStream(true)
+                    ) {
 
                         MediaFile build = MediaFile.newBuilder()
                                 .setContentChunk(ByteString.copyFrom(inputStream.readAllBytes()))
-                                .setContentType(contentType)
-                                .setUri(key)
                                 .build();
 
                         respObserver.onNext(build);
-
 
                     } catch (IOException e) {
                         GlobalLogger.logException(e, "sending a file in media service client impl");
@@ -79,6 +99,7 @@ public class MediaServiceClientImpl implements MediaServiceClient {
                         respObserver.onError(e);
                     }
                 }
+
         ).then(sink.asMono());
 
     }
