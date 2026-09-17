@@ -1,6 +1,5 @@
 package com.jzargo.grpc.metadata;
 
-import com.jzargo.protobuf.ChangeMediaFile;
 import com.jzargo.protobuf.ChangeMediaFileMetadata;
 import com.jzargo.protobuf.MediaFileMetadata;
 import io.grpc.Context;

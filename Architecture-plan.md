@@ -98,21 +98,184 @@ Add to catalog(event):
 
 reaction service → catalog service.
 
-# How **media service** works: 
+# Media service
+The Media Service is responsible for the physical storage and retrieval of media files.
+It does not manage product-related metadata, asset versions, or relationships between products and media.
+Its primary responsibility is to reliably transfer and persist file data between the application and the configured storage backends.
 
-## Description:
+The Media Service accepts files as a client-side gRPC stream.
+Each message contains a portion of the file being uploaded.
+
+When a new upload is initiated, the Media Service first retrieves the metadata required to create the storage session.
+It then creates an internal upload session responsible for maintaining the state of the current file transfer.
+
+The gRPC server creates a stream observer associated with this session.
+The observer receives incoming file chunks and delegates their processing to the upload session.
+
+The upload session is responsible for the actual file-processing logic, including:
+
+receiving file chunks;
+writing chunks to the temporary storage or buffer;
+maintaining the state of the current upload;
+determining when the complete file has been received;
+transferring the completed file to the configured storage backend;
+handling failures during the upload;
+cleaning up incomplete or failed uploads.
+
+The gRPC server itself does not contain the file-storage logic.
+Its responsibility is limited to establishing the upload session, connecting the incoming gRPC stream to the session, and reporting the final result of the operation.
+
+Once the complete file has been successfully persisted, the server completes the gRPC stream.
+onCompleted() therefore indicates that the upload operation has been successfully completed.
+
+If an error occurs at any stage of the upload, the session reports the error to the observer.
+The observer terminates the gRPC stream with onError().
+
+Consequently, the upload operation has two terminal states:
+
+onCompleted() → the file was successfully persisted
+onError(...)  → the file was not successfully persisted
+
+No additional success value is required from the upload operation because successful completion of the RPC itself serves as the confirmation that the file has been stored.
+
+Storage
+
+The Media Service abstracts the underlying storage implementation from the rest of the application.
+
+A file may initially be written to a temporary buffer before being persisted to the final storage backend.
+For large files, the service may use multipart storage operations, allowing the file to be persisted in multiple parts without requiring the entire file to be held in memory.
+
+The Media Service is responsible for maintaining consistency between the temporary upload state and the final storage state.
+
+An upload is considered successful only after the service has completed the required storage operation.
+If persistence fails, the incomplete file must not be reported as successfully stored.
+
+The Media Service may use different storage implementations without exposing their internal details through the gRPC API.
+
+Upload session
+
+Each upload is represented internally by an independent upload session.
+
+The session isolates the state of one file transfer from other concurrent uploads.
+It owns the temporary state required while receiving the file and coordinates the transition from an incomplete upload to a successfully persisted file.
+
+The gRPC observer does not contain the upload business logic itself.
+Instead, it acts as an adapter between the gRPC streaming API and the upload session.
+
+Conceptually, the data flow is:
+
+gRPC client
+│
+│ FileChunk
+▼
+StreamObserver
+│
+▼
+UploadSession
+│
+├── temporary buffer
+│
+└── storage backend
+
+This separation prevents the gRPC layer from becoming coupled to the details of file persistence.
+
+Error handling
+
+Errors occurring during the upload are propagated through the gRPC error channel.
+
+The upload session can notify the observer about an error without requiring the session to depend directly on the surrounding gRPC server implementation.
+
+The observer therefore acts as a small boundary between the storage logic and the transport layer.
+
+If the upload cannot be completed, the observer terminates the RPC with onError().
+The caller can then decide how to handle the failure, such as retrying the operation or using its own fallback mechanism.
+
+Completing an upload
+
+Receiving the final chunk does not by itself mean that the upload was successful.
+
+After the final chunk has been received, the upload session must complete the required persistence operations.
+Only after these operations succeed is the gRPC request completed.
+
+The lifecycle is therefore:
+
+Receive chunks
+│
+▼
+Temporary storage
+│
+▼
+Complete storage operation
+│
+├── failure ──────→ onError(...)
+│
+└── success ──────→ onCompleted()
+
+This guarantees that onCompleted() is not merely an indication that the network stream ended, but an indication that the Media Service has successfully completed its storage operation.
+
+Retrieving files
+
+The Media Service also provides operations for retrieving stored files.
+
+The caller provides the identifier required to locate the file.
+The Media Service resolves this identifier through its storage abstraction and streams the file back to the caller.
+
+The file is returned as a stream rather than requiring the complete file to be loaded into memory.
+
+Conceptually:
+
+Storage backend
+│
+▼
+Media Service
+│
+│ file chunks
+▼
+gRPC client
+
+The Media Service does not interpret the business meaning of the file.
+For example, it does not determine whether a file is an avatar, product image, product video, or another type of product asset.
+Such relationships belong to the Product Assets Service.
+
+Responsibility boundaries
+
+The responsibilities of the two services are intentionally separated.
+
+The Product Assets Service manages the business meaning of media:
+
+association between products and assets;
+asset metadata;
+avatar selection;
+asset versions;
+asset lifecycle;
+fallback records.
+
+The Media Service manages the physical files:
+
+accepting file streams;
+persisting file data;
+retrieving file data;
+managing temporary upload state;
+coordinating storage backends;
+guaranteeing successful or failed persistence.
+
+The Media Service therefore remains independent of the product domain and can be used for any type of media without knowing why a particular file exists.
+
+## How **media service** works: 
+
+### Description:
 The Media Service utilizes a high-throughput, low-latency local object storage (such as a local MinIO instance)
 as its Primary Ingestion Buffer. When a client uploads a file, the Media Service immediately generates a permanent,
 uri for the file and writes the raw bytes directly to this primary storage. 
 Concurrently, it publishes an initial event to the ingestion Kafka topic: “File X is available in Primary Storage”. 
 
-## Downstream persistent storages
+### Downstream persistent storages
 Downstream persistent storages (local long-term archives or secondary storages) run 
 as virtualProcessors because they consume events from a bus. 
 Each storage type operates within its own independent Kafka Consumer Group, 
 allowing them to track their read-offsets completely isolated from one another.
 
-## Ingestion event processing
+### Ingestion event processing
 The fastest worker to process the ingestion event downloads the asset from the Primary Storage and 
 persists it to its respective cloud bucket. 
 Immediately following a successful write, this fast worker invokes a deletion command on the 
@@ -123,7 +286,7 @@ Slower, rate-limited, or recovering workers will eventually process the ingestio
 attempt to fetch the file from the Primary Storage, and encounter an expected 404 Not Found error 
 due to the fast worker's cleanup. This is a non-breaking, standard operational routine.
 
-## Replication event processing
+### Replication event processing
 Instead of throwing a critical exception, the worker emits a warning log and shifts its focus 
 to the Replication topic. By reading the gossip log, it discovers alternative peer sources 
 (e.g., “Storage [NATIVE_DISK] hosts File X”). The worker then executes an Idempotency Check against 

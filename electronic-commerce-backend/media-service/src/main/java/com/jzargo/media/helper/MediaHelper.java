@@ -24,7 +24,7 @@ public class MediaHelper {
 
     private MediaHelper() {}
 
-    public static void checkContentType(MediaFile mediaFile)
+    public static void checkContentType(MediaFile mediaFile, ContentType type)
             throws WrongContentTypeException, IOException {
 
         String detect = tika.detect(mediaFile.getContentChunk().newInput());
@@ -33,7 +33,7 @@ public class MediaHelper {
 
         log.trace("Detected content type: {} while parsed is {}", detect, parsedContentType);
 
-        if (mediaFile.getContentType() != parsedContentType) {
+        if (type != parsedContentType) {
             throw new WrongContentTypeException();
         }
     }

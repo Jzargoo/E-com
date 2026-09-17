@@ -1,8 +1,10 @@
 package com.jzargo.media.grpc;
 
 import com.google.protobuf.ByteString;
+import com.jzargo.grpc.metadata.MetadataConstantKeys;
 import com.jzargo.media.config.ApplicationPropertyStorage;
 import com.jzargo.media.exceptions.CannotProcessException;
+import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.media.service.MediaStorageService;
@@ -111,9 +113,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                                     observer.onNext(
                                             MediaFile.newBuilder()
-                                                    .setUri(request.getMediaURI())
                                                     .setContentChunk(ByteString.copyFrom(bytes))
-                                                    .setContentType(fileStream.getContentType())
                                                     .build()
                                     );
 
@@ -161,18 +161,81 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
     }
 
     @Override
-    public StreamObserver<ChangeMediaFile> changeMediaFile(StreamObserver<VersionedURI> responseObserver) {
-        return super.changeMediaFile(responseObserver);
+    public StreamObserver<MediaFile> changeMediaFile(StreamObserver<VersionedURI> responseObserver) {
+
+        log.info("Creating new MediaFile stream for a changing request");
+
+        ChangeMediaFileMetadata changeMediaFileMetadata = MetadataConstantKeys.versionContextKey.get();
+
+        MediaFileMetadata mediaFileMetadata = MetadataConstantKeys.fileContextKey.get();
+
+        UploadSession uploadSession = new UploadSession(
+                tempFileBufferFactory.createBuffer(),
+
+                mediaFileMetadata.getContentType(),
+
+                mediaStorageService,
+
+                MediaHelper.isVideo(
+                        mediaFileMetadata.getContentType()
+                ),
+
+                mediaFileMetadata.getFileUri()
+        );
+
+        return new SaveFileStreamObserver(
+                uploadSession, mediaFileMetadata.getContentType(),
+                exception -> {
+                    log.error("Exception in SAVING a file stream for a changing request {}",
+                            exception.getMessage(), exception
+                    );
+
+                    responseObserver.onError(exception);
+
+                    try {
+                        uploadSession.abort();
+                    } catch (CannotProcessException e) {
+                       log.error("Cannot abort upload session");
+                    }
+                },
+
+                versionedURI -> {
+                    log.info("Changing MediaFile for a changing request {}", versionedURI);
+
+
+
+
+                }
+        );
+
+
     }
 
     @Override
     public StreamObserver<MediaFile> addMediaFile(StreamObserver<VersionedURI> responseObserver) {
 
-        log.info("Creating new MediaFile stream for a request");
+        log.info("Creating new MediaFile stream for a adding media file request");
+
+        MediaFileMetadata mediaFileMetadata = MetadataConstantKeys.fileContextKey.get();
+
 
         AtomicBoolean isFirst = new AtomicBoolean(true);
 
-        final UploadSession[] uploadSession = new UploadSession[1];
+        var uploadSession = new UploadSession(
+                tempFileBufferFactory.createBuffer(),
+
+                mediaFileMetadata.getContentType(),
+
+                mediaStorageService,
+
+                MediaHelper.isVideo(
+                        mediaFileMetadata.getContentType()
+                ),
+
+                mediaFileMetadata.getFileUri()
+        );
+
+
 
         return new StreamObserver<>() {
 
@@ -185,14 +248,9 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                         log.info("Processing First chunk");
 
-                        MediaHelper.checkContentType(mediaFile);
-
-                        uploadSession[0] = new UploadSession(
-                                tempFileBufferFactory.createBuffer(),
-                                mediaFile.getContentType(),
-                                mediaStorageService,
-                                MediaHelper.isVideo(mediaFile.getContentType()),
-                                mediaFile.getUri()
+                        MediaHelper.checkContentType(
+                                mediaFile,
+                                mediaFileMetadata.getContentType()
                         );
 
                         isFirst.set(false);
@@ -201,13 +259,19 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                     log.debug("Processing a chunk!");
 
-                    uploadSession[0].process(mediaFile);
-
+                    uploadSession.process(mediaFile);
 
                 } catch (Exception e) {
                     log.error("MediaServer addMediaFile failed", e);
+
+                    try {
+                        uploadSession.abort();
+                    } catch (CannotProcessException ignored) {}
+
                     throw new RuntimeException(e);
+
                 }
+
             }
 
 
@@ -218,7 +282,8 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                 try {
 
-                    uploadSession[0].abort();
+                    uploadSession.abort();
+
                     responseObserver.onError(throwable);
 
                 } catch (CannotProcessException e) {
@@ -233,7 +298,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                 try {
 
-                    VersionedURI uri = uploadSession[0].complete();
+                    VersionedURI uri = uploadSession.complete();
 
                     responseObserver.onNext(uri);
 
