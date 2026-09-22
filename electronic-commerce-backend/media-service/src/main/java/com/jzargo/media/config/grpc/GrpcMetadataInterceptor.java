@@ -1,4 +1,4 @@
-package com.jzargo.media.config;
+package com.jzargo.media.config.grpc;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.jzargo.grpc.metadata.MetadataConstantKeys;

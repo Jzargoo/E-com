@@ -29,6 +29,7 @@ message MediaFileMetadata{
 
 message ChangeMediaFileMetadata{
   string previousVersion = 1;
+  string previousUri = 2;
 }
 
 
