@@ -11,6 +11,7 @@ import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.media.storages.persistent.MediaPersistentStorageBackend;
 import com.jzargo.media.storages.primary.MediaPrimaryStorageService;
+import com.jzargo.protobuf.ContentType;
 import com.jzargo.protobuf.MediaFile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -50,10 +51,10 @@ public class MediaStorageServiceImpl implements MediaStorageService {
     }
 
     @Override
-    public String initiateFile(MediaFile mediaFile, String key, String version) throws WrongContentTypeException {
+    public String initiateFile(ContentType contentType, String key, String version) throws WrongContentTypeException {
 
         return mediaPrimaryStorageService.startUploadingFile(
-                mediaFile.getContentType(), key, version
+                contentType, key, version
         );
 
     }
@@ -69,6 +70,7 @@ public class MediaStorageServiceImpl implements MediaStorageService {
         );
 
         if (isVideo) {
+
             try {
 
                 DownloadedFile downloadedFile = mediaPrimaryStorageService.downloadFile(
@@ -78,6 +80,7 @@ public class MediaStorageServiceImpl implements MediaStorageService {
                 generatePosterAndPublishIt(downloadedFile);
 
             } catch (CannotDownloadFileException ignored) {}
+
         }
 
     }

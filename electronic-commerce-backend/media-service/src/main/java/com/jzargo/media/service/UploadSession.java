@@ -18,7 +18,7 @@ public class UploadSession {
 
     private boolean isMultipart = false;
 
-    private String version = UUID.randomUUID().toString();
+    private final String version;
 
     private final TempFileBufferFactory.TempFileBuffer tempFileBuffer;
 
@@ -28,7 +28,8 @@ public class UploadSession {
 
     private final ContentType contentType;
 
-    public UploadSession(TempFileBufferFactory.TempFileBuffer tempFileBuffer, ContentType contentType , MediaStorageService mediaStorageService, boolean isVideo, String key) {
+    public UploadSession(String version, TempFileBufferFactory.TempFileBuffer tempFileBuffer, ContentType contentType , MediaStorageService mediaStorageService, boolean isVideo, String key) {
+        this.version = version;
         this.tempFileBuffer = tempFileBuffer;
         this.contentType = contentType;
         this.mediaStorageService = mediaStorageService;
@@ -51,7 +52,7 @@ public class UploadSession {
                 if (!isMultipart) {
 
                     uploadId = mediaStorageService.initiateFile(
-                            mediaFile, key, version
+                            contentType, key, version
                     );
 
                     isMultipart = true;
@@ -73,7 +74,8 @@ public class UploadSession {
 
             log.error(
                     "Occurred exception while a processing command was executed with message {}",
-                    e.getMessage(), e);
+                    e.getMessage(), e
+            );
 
             throw new CannotProcessException();
 

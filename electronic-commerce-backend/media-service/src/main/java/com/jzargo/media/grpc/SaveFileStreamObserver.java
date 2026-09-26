@@ -26,7 +26,10 @@ public class SaveFileStreamObserver implements StreamObserver<MediaFile> {
 
     private final Consumer<VersionedURI> doOnSuccess;
 
+    private final Checker checker;
+
     volatile boolean isFirst =  true;
+
 
     @Override
     public void onNext(MediaFile mediaFile) {
@@ -71,11 +74,13 @@ public class SaveFileStreamObserver implements StreamObserver<MediaFile> {
 
         try {
 
+            checker.check();
+
             VersionedURI complete = session.complete();
 
             doOnSuccess.accept(complete);
 
-        } catch (CannotProcessException e) {
+        } catch (CannotProcessException | CheckIsNotSatisfiedException e) {
            doOnError.accept(e);
         }
     }

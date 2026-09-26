@@ -1,10 +1,10 @@
 package com.jzargo.media.grpc;
 
 import com.google.protobuf.ByteString;
+import com.jzargo.grpc.exception.MediaFileVersionMissmatchException;
 import com.jzargo.grpc.metadata.MetadataConstantKeys;
 import com.jzargo.media.config.ApplicationPropertyStorage;
 import com.jzargo.media.exceptions.CannotProcessException;
-import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.media.service.MediaStorageService;
@@ -18,7 +18,6 @@ import org.springframework.grpc.server.service.GrpcService;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -169,7 +168,25 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
         MediaFileMetadata mediaFileMetadata = MetadataConstantKeys.fileContextKey.get();
 
+        if (!mediaStorageService.existsByVersion(
+                changeMediaFileMetadata.getPreviousUri(),
+                changeMediaFileMetadata.getPreviousVersion())) {
+
+            responseObserver.onError(
+                    new MediaFileVersionMissmatchException(
+                            String.format("Version %s or uri %s does not exist",
+                                    changeMediaFileMetadata.getPreviousVersion(),
+                                    changeMediaFileMetadata.getPreviousUri()
+                            )
+                    )
+            );
+
+            return null;
+        }
+
         UploadSession uploadSession = new UploadSession(
+                mediaFileMetadata.getVersion(),
+
                 tempFileBufferFactory.createBuffer(),
 
                 mediaFileMetadata.getContentType(),
@@ -185,25 +202,31 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
         return new SaveFileStreamObserver(
                 uploadSession, mediaFileMetadata.getContentType(),
-                exception -> {
-                    log.error("Exception in SAVING a file stream for a changing request {}",
-                            exception.getMessage(), exception
-                    );
 
-                    responseObserver.onError(exception);
-
-                    try {
-                        uploadSession.abort();
-                    } catch (CannotProcessException e) {
-                       log.error("Cannot abort upload session");
-                    }
-                },
+                exception -> abortException(exception, uploadSession,  responseObserver),
 
                 versionedURI -> {
-                    log.info("Changing MediaFile for a changing request {}", versionedURI);
+                    log.info("Changing MediaFile for a request {}", versionedURI);
 
+                    responseObserver.onNext(versionedURI);
 
+                    responseObserver.onCompleted();
+                },
 
+                () -> {
+
+                    if(
+                            !mediaStorageService.existsByVersion(
+                                    changeMediaFileMetadata.getPreviousUri(),
+                                    changeMediaFileMetadata.getPreviousVersion()
+                            )
+                    ) {
+
+                        throw new CheckIsNotSatisfiedException(
+                                "Version or uri already exists"
+                        );
+
+                    }
 
                 }
         );
@@ -218,10 +241,9 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
         MediaFileMetadata mediaFileMetadata = MetadataConstantKeys.fileContextKey.get();
 
-
-        AtomicBoolean isFirst = new AtomicBoolean(true);
-
         var uploadSession = new UploadSession(
+                mediaFileMetadata.getVersion(),
+
                 tempFileBufferFactory.createBuffer(),
 
                 mediaFileMetadata.getContentType(),
@@ -235,85 +257,45 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
                 mediaFileMetadata.getFileUri()
         );
 
+        return new SaveFileStreamObserver(
+                uploadSession,
 
+                mediaFileMetadata.getContentType(),
 
-        return new StreamObserver<>() {
+                exception -> abortException(exception, uploadSession,  responseObserver),
 
-            @Override
-            public void onNext(MediaFile mediaFile) {
+                versionedURI -> {
 
-                try {
-
-                    if (isFirst.get()) {
-
-                        log.info("Processing First chunk");
-
-                        MediaHelper.checkContentType(
-                                mediaFile,
-                                mediaFileMetadata.getContentType()
-                        );
-
-                        isFirst.set(false);
-
-                    }
-
-                    log.debug("Processing a chunk!");
-
-                    uploadSession.process(mediaFile);
-
-                } catch (Exception e) {
-                    log.error("MediaServer addMediaFile failed", e);
-
-                    try {
-                        uploadSession.abort();
-                    } catch (CannotProcessException ignored) {}
-
-                    throw new RuntimeException(e);
-
-                }
-
-            }
-
-
-            @Override
-            public void onError(Throwable throwable) {
-
-                log.error("Error while processing request", throwable);
-
-                try {
-
-                    uploadSession.abort();
-
-                    responseObserver.onError(throwable);
-
-                } catch (CannotProcessException e) {
-                    log.error("Aborting an upload session finished with error!", e);
-                }
-
-            }
-
-            @Override
-            public void onCompleted() {
-                log.info("New MediaFile stream has been created");
-
-                try {
-
-                    VersionedURI uri = uploadSession.complete();
-
-                    responseObserver.onNext(uri);
+                    responseObserver.onNext(versionedURI);
 
                     responseObserver.onCompleted();
+                },
 
-                } catch (CannotProcessException e) {
+                () -> {
 
-                    log.error("Error while processing request. Cannot send the residual bytes", e);
-
-                    throw new RuntimeException(e);
                 }
+        );
 
-            }
 
-        };
+    }
+
+    private void abortException(
+            Exception exception,
+            UploadSession uploadSession,
+            StreamObserver<?> responseObserver
+    ) {
+
+        log.error("Exception in SAVING a file stream for a changing request {}",
+                exception.getMessage(), exception
+        );
+
+        responseObserver.onError(exception);
+
+        try {
+            uploadSession.abort();
+        } catch (CannotProcessException e) {
+            log.error("Cannot abort upload session");
+        }
 
     }
 }
