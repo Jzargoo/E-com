@@ -7,6 +7,7 @@ import com.jzargo.productservice.entity.MessageType;
 import com.jzargo.productservice.exception.SagaEntityNotFoundException;
 import com.jzargo.productservice.repository.MessageRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Header;
@@ -23,6 +24,7 @@ import java.time.Instant;
         groupId = "#{@kafkaPropertyStorage.groupId}"
 )
 @Component
+@ConditionalOnBooleanProperty("kafka.enabled")
 public class SagaProductCreationListener {
 
 

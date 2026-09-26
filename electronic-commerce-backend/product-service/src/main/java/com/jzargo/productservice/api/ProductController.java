@@ -1,5 +1,6 @@
 package com.jzargo.productservice.api;
 
+import com.jzargo.productservice.exception.CategoryNotFoundException;
 import com.jzargo.productservice.exception.InvalidUpdateRequest;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
@@ -69,7 +70,7 @@ public class ProductController {
     )    ResponseEntity<ProductDetails> updateProduct(
             @PathVariable Long id,
             @RequestBody CreateAndUpdateProductDetails createAndUpdateProductDetails
-            ) throws ShopDoesNotOwnProductException, InvalidUpdateRequest, ProductNotFoundException {
+            ) throws ShopDoesNotOwnProductException, InvalidUpdateRequest, ProductNotFoundException, CategoryNotFoundException {
 
         if (
                 id == null ||

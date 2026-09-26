@@ -39,4 +39,10 @@ public class Product {
     @Enumerated(value = EnumType.STRING)
     @Builder.Default
     private Status status = Status.WAITING;
+
+    public void setCategory(Category category) {
+       this.category = category;
+
+       category.getProducts().add(this);
+    }
 }

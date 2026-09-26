@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 
@@ -25,4 +27,9 @@ public class Category {
 
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, AttributeType> attributes;
+
+    @OneToMany(mappedBy = "category")
+    @Builder.Default
+    private List<Product> products = new ArrayList<>();
+
 }

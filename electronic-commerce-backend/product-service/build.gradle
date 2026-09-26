@@ -39,7 +39,9 @@ dependencies {
     implementation 'org.apache.kafka:kafka-streams'
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
     annotationProcessor 'org.projectlombok:lombok'
+
     implementation 'org.projectlombok:lombok'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
@@ -54,6 +56,9 @@ dependencies {
     testImplementation 'org.springframework.kafka:spring-kafka-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.security:spring-security-test'
+
+    runtimeOnly 'com.h2database:h2'
+
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     runtimeOnly 'org.postgresql:postgresql'

@@ -18,7 +18,9 @@ import org.apache.kafka.streams.processor.api.FixedKeyProcessor;
 import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext;
 import org.apache.kafka.streams.processor.api.FixedKeyRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.support.serializer.JacksonJsonSerde;
 
@@ -29,6 +31,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 @EnableKafkaStreams
+@ConditionalOnBooleanProperty("kafka.enabled")
 public class KafkaTopologyConfig {
 
     private final KafkaPropertyStorage kafkaPropertyStorage;

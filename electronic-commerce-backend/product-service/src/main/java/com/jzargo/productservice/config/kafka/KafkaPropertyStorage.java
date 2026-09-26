@@ -2,6 +2,7 @@ package com.jzargo.productservice.config.kafka;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
@@ -11,6 +12,7 @@ import org.springframework.validation.annotation.Validated;
 @RefreshScope
 @Validated
 @ConfigurationProperties(prefix = "kafka")
+@ConditionalOnBooleanProperty("kafka.enabled")
 @Data
 public class KafkaPropertyStorage {
 

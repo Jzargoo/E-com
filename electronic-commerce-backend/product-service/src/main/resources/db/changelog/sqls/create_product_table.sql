@@ -5,7 +5,7 @@ CREATE TABLE
     name VARCHAR(64),
     description VARCHAR(512),
     shop_id INTEGER,
-    characteristics jsonb,
+    characteristics json,
     status varchar(32) NOT NULL,
     stock_price DECIMAL(10, 2),
     category_id INT REFERENCES categories

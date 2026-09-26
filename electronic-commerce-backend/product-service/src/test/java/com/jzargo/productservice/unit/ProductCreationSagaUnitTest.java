@@ -1,5 +1,6 @@
 package com.jzargo.productservice.unit;
 
+import com.jzargo.productservice.config.ApplicationPropertyStorage;
 import com.jzargo.productservice.entity.SagaProductEntity;
 import com.jzargo.productservice.entity.SagaStep;
 import com.jzargo.productservice.exception.CategoryNotFoundException;
@@ -42,6 +43,9 @@ public class ProductCreationSagaUnitTest {
     @Mock
     public ProductServiceImpl productService;
 
+    @Mock
+    public ApplicationPropertyStorage applicationPropertyStorage;
+
     @Spy
     public SagaProductCreationRepository repository;
 
@@ -50,11 +54,10 @@ public class ProductCreationSagaUnitTest {
         details = new CreateAndUpdateProductDetails(
                 0L,
                 "product",
-                "/products/default",
                 BigDecimal.valueOf(100),
                 HashMap.newHashMap(1),
                 "Good product",
-                "Electronics",
+                1,
                 12
         );
 
@@ -71,6 +74,12 @@ public class ProductCreationSagaUnitTest {
         when(
                 productService.createProduct(details)
         ).thenReturn(PRODUCT_ID);
+
+        when(
+                applicationPropertyStorage.getSaga()
+        ).thenReturn(
+                new ApplicationPropertyStorage.ProductCreateSaga(10_000_000L, 5_000L)
+        );
 
         // Act
         sagaProductCreation.initiateProductCreation(details);
@@ -98,7 +107,7 @@ public class ProductCreationSagaUnitTest {
         sagaProductCreation.createdInventoryEntry(PRODUCT_ID);
 
         // Assert
-        verifyStepUpdate(SagaStep.PENDING_PRICE);
+        verifyStepUpdate(SagaStep.PENDING_ASSETS);
     }
 
     @Test

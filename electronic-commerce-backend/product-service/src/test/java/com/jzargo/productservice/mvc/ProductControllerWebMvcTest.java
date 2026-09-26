@@ -6,11 +6,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jzargo.productservice.api.ProductController;
 import com.jzargo.productservice.config.security.ProductSecurity;
+import com.jzargo.productservice.exception.CategoryNotFoundException;
 import com.jzargo.productservice.exception.InvalidUpdateRequest;
 import com.jzargo.productservice.exception.ProductNotFoundException;
 import com.jzargo.productservice.exception.ShopDoesNotOwnProductException;
 import com.jzargo.productservice.model.CreateAndUpdateProductDetails;
 import com.jzargo.productservice.model.ProductDetails;
+import com.jzargo.productservice.saga.SagaProductCreation;
+import com.jzargo.productservice.saga.SagaProductCreationImpl;
 import com.jzargo.productservice.saga.SagaProductCreationManager;
 import com.jzargo.productservice.service.ProductService;
 import org.junit.jupiter.api.DisplayName;
@@ -59,7 +62,7 @@ public class ProductControllerWebMvcTest {
     ProductService productService;
 
     @MockitoBean
-    SagaProductCreationManager sagaProductCreationManager;
+    SagaProductCreationImpl sagaProductCreation;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -77,7 +80,6 @@ public class ProductControllerWebMvcTest {
                         BigDecimal.valueOf(24.12)
                 )
                 .name("Product1")
-                .avgRate(4.6F)
                 .shopId(shopId)
                 .description("Description 1")
                 .category("Category1")
@@ -109,7 +111,7 @@ public class ProductControllerWebMvcTest {
                 .name("Product1")
                 .shopId(shopId)
                 .description("Description 1")
-                .category("Category1")
+                .category(1)
                 .characteristics(new HashMap<>())
                 .build();
 
@@ -134,7 +136,7 @@ public class ProductControllerWebMvcTest {
                 .shopId(shopId)
                 .name("Product1")
                 .price(BigDecimal.ONE)
-                .category("Category1")
+                .category(1)
                 .build();
 
         mockMvc
@@ -160,7 +162,7 @@ public class ProductControllerWebMvcTest {
                 .shopId(shopId + 10)
                 .name("Product1")
                 .price(BigDecimal.ONE)
-                .category("Category1")
+                .category(1)
                 .build();
 
         mockMvc
@@ -197,13 +199,13 @@ public class ProductControllerWebMvcTest {
     @Test
     @WithJwt("shop-owner.json")
     @DisplayName("PUT update a product; success case")
-    public void updateProduct_whenJwtIsProvided_successCase() throws JsonProcessingException, ShopDoesNotOwnProductException, InvalidUpdateRequest, ProductNotFoundException {
+    public void updateProduct_whenJwtIsProvided_successCase() throws JsonProcessingException, ShopDoesNotOwnProductException, InvalidUpdateRequest, ProductNotFoundException, CategoryNotFoundException {
 
         CreateAndUpdateProductDetails createAndUpdateProductDetails = CreateAndUpdateProductDetails.builder()
                 .shopId(shopId)
                 .name("Product1")
                 .price(BigDecimal.ONE)
-                .category("Category1")
+                .category(1)
                 .id(productId)
                 .build();
 
@@ -213,7 +215,6 @@ public class ProductControllerWebMvcTest {
                 .category("Category1")
                 .price(BigDecimal.ONE)
                 .shopId(shopId)
-                .avgRate(5.0F)
                 .build();
 
         when(

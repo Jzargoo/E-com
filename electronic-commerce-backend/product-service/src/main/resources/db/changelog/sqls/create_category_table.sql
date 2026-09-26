@@ -4,5 +4,5 @@ CREATE TABLE
 (
     id SERIAL PRIMARY KEY,
     name varchar(64) UNIQUE NOT NULL,
-    attributes jsonb
+    attributes json
 )

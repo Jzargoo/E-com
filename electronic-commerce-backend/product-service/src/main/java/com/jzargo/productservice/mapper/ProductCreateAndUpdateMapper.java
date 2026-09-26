@@ -31,7 +31,7 @@ public class ProductCreateAndUpdateMapper implements Mapper<CreateAndUpdateProdu
     public void updateMap(CreateAndUpdateProductDetails from, Product old) throws InvalidUpdateRequest {
 
         if (from.getCategory() != null) {
-            Category category = categoryRepository.findByName(from.getCategory())
+            Category category = categoryRepository.findById(from.getCategory())
                     .stream()
                     .findAny().orElseThrow(
                             () -> new InvalidUpdateRequest("Category not found")

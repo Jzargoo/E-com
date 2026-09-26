@@ -49,16 +49,17 @@ public class ProductServiceImpl implements ProductService{
     @Override
     @Transactional
     public Long createProduct(CreateAndUpdateProductDetails createProductDetails) throws CategoryNotFoundException {
+
         log.debug("Product creation starting...");
 
-        if (!categoryRepository.existsByName(createProductDetails.getCategory())) {
+        if (!categoryRepository.existsById(createProductDetails.getCategory())) {
             throw new CategoryNotFoundException();
         }
 
         Product map = productCreateAndUpdateMapper.map(createProductDetails);
 
         map.setCategory(
-                categoryRepository.findByName(
+                categoryRepository.findById(
                         createProductDetails.getCategory()
                 ).orElseThrow(
                         CategoryNotFoundException::new
@@ -78,7 +79,7 @@ public class ProductServiceImpl implements ProductService{
     @Transactional
     @CacheEvict(value = "product", key = "#updateProductDetails.id")
     public ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails)
-            throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest {
+            throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest, CategoryNotFoundException {
 
         Product product = productRepository.findById(
                 updateProductDetails.getId()
@@ -90,6 +91,13 @@ public class ProductServiceImpl implements ProductService{
                 )
         ) {
             throw new ShopDoesNotOwnProductException();
+        }
+
+        if (
+                updateProductDetails.getCategory() != null &&
+                !categoryRepository.existsById(updateProductDetails.getCategory())
+        ){
+            throw new CategoryNotFoundException();
         }
 
         productCreateAndUpdateMapper.updateMap(updateProductDetails, product);
@@ -116,5 +124,4 @@ public class ProductServiceImpl implements ProductService{
 
         return "Deletion of the process started successfully";
     }
-
 }
