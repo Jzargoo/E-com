@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    username: sa
+    password:
+    url: jdbc:h2:mem:testdb
+
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+
+    consumer:
+      group-id: test-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      bootstrap-servers: ${spring.embedded.kafka.brokers}
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+
+    producer:
+      bootstrap-servers: ${spring.embedded.kafka.brokers}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+
+    properties:
+      spring.json.trusted.packages: "com.jzargo.core.*"
+
+    admin:
+      close-timeout: 10s
+      auto-create: true
+
+kafka:
+  group-id: test-group
+  topics:
+    productCreateSaga:
+      name: product-create-saga
+      numPartitions: 2
+      replicas: 1
+      inSyncReplicas: 1
+
+    debeziumInventoryTopic: "public.inventory.table"

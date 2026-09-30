@@ -9,6 +9,7 @@ import com.jzargo.inventory.entity.MessageType;
 import com.jzargo.inventory.exception.InventoryHasReservationException;
 import com.jzargo.inventory.repository.MessageRepository;
 import com.jzargo.inventory.service.InventoryService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -21,11 +22,12 @@ import java.time.LocalDateTime;
 
 @Component
 @KafkaListener(
-        topics = "#{kafkaPropertyStorage.topics.productCreateSaga.name}",
-        groupId = "#{kafkaPropertyStorage.groupId}",
+        topics = "#{@kafkaPropertyStorage.topics.productCreateSaga.name}",
+        groupId = "#{@kafkaPropertyStorage.groupId}",
         properties = {"enable.auto.commit=false"},
         containerFactory = "manualListenerContainerFactory"
 )
+@ConditionalOnBooleanProperty("kafka.enabled")
 public class KafkaSagaListener {
 
     private final MessageRepository messageRepository;
