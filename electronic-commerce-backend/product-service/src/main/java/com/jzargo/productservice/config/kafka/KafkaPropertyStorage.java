@@ -9,14 +9,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 @Component
-@RefreshScope
+// @RefreshScope
 @Validated
 @ConfigurationProperties(prefix = "kafka")
 @ConditionalOnBooleanProperty("kafka.enabled")
 @Data
 public class KafkaPropertyStorage {
 
+    @NotNull
     private Topics topics;
+    @NotNull
     private String groupId;
 
     @Data
@@ -25,8 +27,6 @@ public class KafkaPropertyStorage {
         private TopicSettings productEventsTopic; // UPDATE, STATUS CHANGE
 
         private TopicSettings productCreateSaga;
-
-        private String fallbackMediaTopic;
 
         private String sagaEntitiesDebeziumTopicName;
 

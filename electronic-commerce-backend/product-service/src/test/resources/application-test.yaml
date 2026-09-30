@@ -28,14 +28,15 @@ kafka:
   topics:
     productEventsTopic:
       name: "product-events-topic"
-      numPartitions: 1
-      replicas: 1
+      numPartitions: 2
+      replicas: 2
       inSyncReplicas: 1
     productCreateSaga:
       name: "product-create-saga-topic"
-      numPartitions: 1
-      replicas: 1
+      numPartitions: 2
+      replicas: 2
       inSyncReplicas: 1
+  group-id: "test-product-service"
 eureka:
   client:
     enabled: false

@@ -44,7 +44,7 @@ public class SagaProductCreationListener {
         ){
             log.trace("Received inventory command message from kafka");
 
-            if (messageRepository.findById(messageId).isPresent()) {
+            if (messageRepository.existsById(messageId)) {
                 logRepeatedMessage();
                 return;
             }
@@ -72,7 +72,7 @@ public class SagaProductCreationListener {
         ){
             log.trace("Received price command message from kafka");
 
-            if (messageRepository.findById(messageId).isPresent()) {
+            if (messageRepository.existsById(messageId)) {
                 logRepeatedMessage();
                 return;
             }
@@ -100,7 +100,7 @@ public class SagaProductCreationListener {
     ) {
         log.trace("Received assets command message from kafka");
 
-        if (messageRepository.findById(messageId).isPresent()) {
+        if (messageRepository.existsById(messageId)) {
 
             logRepeatedMessage();
             return;
@@ -136,7 +136,7 @@ public class SagaProductCreationListener {
     ) {
         log.trace("Received compensation inventory command message from kafka");
 
-        if (messageRepository.findById(messageId).isPresent()) {
+        if (messageRepository.existsById(messageId)) {
             logRepeatedMessage();
             return;
         }
@@ -165,7 +165,7 @@ public class SagaProductCreationListener {
     ) {
         log.trace("Received compensation price command message from kafka");
 
-        if (messageRepository.findById(messageId).isPresent()) {
+        if (messageRepository.existsById(messageId)) {
             logRepeatedMessage();
             return;
         }
@@ -200,7 +200,7 @@ public class SagaProductCreationListener {
 
         log.trace("Received compensation assets command message from kafka");
 
-        if (messageRepository.findById(messageId).isPresent()) {
+        if (messageRepository.existsById(messageId)) {
             logRepeatedMessage();
             return;
         }
@@ -227,7 +227,7 @@ public class SagaProductCreationListener {
     ) {
         log.trace("Received media compensation command message from kafka");
 
-        if (messageRepository.findById(messageId).isPresent()) {
+        if (messageRepository.existsById(messageId)) {
             logRepeatedMessage();
             return;
         }
@@ -238,7 +238,9 @@ public class SagaProductCreationListener {
             messageRepository.save(
                     new Message(messageId, MessageType.COMMAND, Instant.now())
             );
-            log.info("Successfully handled compensation product command message with product id {}", command.getProductId());
+
+            log.info(
+                    "Successfully handled compensation product command message with product id {}", command.getProductId());
 
         } catch (Exception e) {
             log.error("Unexpected exception occurred!", e);

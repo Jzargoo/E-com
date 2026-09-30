@@ -31,7 +31,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 @EnableKafkaStreams
-@ConditionalOnBooleanProperty("kafka.enabled")
+@ConditionalOnBooleanProperty("kafka.streams.enabled")
 public class KafkaTopologyConfig {
 
     private final KafkaPropertyStorage kafkaPropertyStorage;
