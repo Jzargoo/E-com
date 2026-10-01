@@ -1,6 +1,7 @@
 package com.jzargo.inventory.service;
 
 import com.jzargo.inventory.dto.ChangeStockDto;
+import com.jzargo.inventory.exception.InventoryAlreadyExistException;
 import com.jzargo.inventory.exception.InventoryHasReservationException;
 import com.jzargo.inventory.exception.InventoryNotFoundException;
 import com.jzargo.inventory.repository.InventoryRepository;
@@ -21,7 +22,13 @@ public class InventoryServiceImpl implements InventoryService{
 
     @Override
     @Transactional
-    public void createInventory(Long productId, Integer shopId) {
+    public void createInventory(Long productId, Integer shopId) throws InventoryAlreadyExistException {
+
+        if (
+                inventoryRepository.existsByProductIdAndShopId(productId, shopId)
+        ) {
+            throw new InventoryAlreadyExistException();
+        }
 
         Inventory inventory = Inventory.builder()
                 .productId(productId)
@@ -57,6 +64,7 @@ public class InventoryServiceImpl implements InventoryService{
     }
 
     @Override
+    @Transactional
     public ChangeStockDto removeStock(ChangeStockDto request, Integer shopId) throws InventoryNotFoundException {
 
         Inventory inventory = inventoryRepository
@@ -81,16 +89,23 @@ public class InventoryServiceImpl implements InventoryService{
 
     @Override
     @Transactional
-    public void deleteInventory(Long productId) throws InventoryHasReservationException {
+    public void deleteInventory(Long productId, Integer shopId) throws InventoryHasReservationException {
 
         try {
+
+            if (
+                    inventoryRepository.existsByProductIdAndShopId(productId, shopId)
+            ) {
+                throw new InventoryNotFoundException(
+                        "Inventory not found with id: " + productId + " or shop does not own to do that"
+                );
+            }
 
             inventoryRepository.deleteById(productId);
 
         } catch (Exception e){
             throw new InventoryHasReservationException("Could not delete the inventory with id" + productId);
         }
-
     }
 
 }

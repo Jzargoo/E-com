@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CompensateInventoryCommand implements  SagaProductCreationCommand {
     private Long productId;
+    private Integer shopId;
 }

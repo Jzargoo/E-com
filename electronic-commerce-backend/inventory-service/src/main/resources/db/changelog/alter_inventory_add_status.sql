@@ -1,0 +1,1 @@
+ALTER TABLE inventory ADD COLUMN status VARCHAR(32) DEFAULT 'unavailable';

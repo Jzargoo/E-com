@@ -1,8 +1,7 @@
 CREATE TABLE IF NOT EXISTS inventory (
-    id BIGSERIAL PRIMARY KEY,
+    product_id BIGINT PRIMARY KEY ,
     quantity INT NOT NULL,
     version INT NOT NULL,
-    product_id BIGINT NOT NULL UNIQUE,
     shop_id INT NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

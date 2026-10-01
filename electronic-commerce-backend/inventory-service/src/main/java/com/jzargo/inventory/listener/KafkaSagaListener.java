@@ -76,7 +76,6 @@ public class KafkaSagaListener {
                     "handling inventory command with product id: " + inventoryCommand.getProductId()
             );
 
-            throw e;
         }
 
     }
@@ -100,7 +99,7 @@ public class KafkaSagaListener {
 
 
         try {
-            inventoryService.deleteInventory(command.getProductId());
+            inventoryService.deleteInventory(command.getProductId(), command.getShopId());
 
             messageRepository.save(
                     new Message(messageId, MessageType.COMMAND, LocalDateTime.now())

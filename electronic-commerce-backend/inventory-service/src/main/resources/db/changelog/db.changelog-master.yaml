@@ -14,3 +14,10 @@ databaseChangeLog:
         changes:
             - sqlFile:
                 path: db/changelog/create_message.sql
+
+    - changeSet:
+        id: 3
+        author: Jzargo
+        changes:
+            - sqlFile:
+                  path: db/changelog/alter_inventory_add_status.sql

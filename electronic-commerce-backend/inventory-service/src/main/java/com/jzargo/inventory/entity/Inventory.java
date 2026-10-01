@@ -16,9 +16,6 @@ import java.util.List;
 @Setter
 public class Inventory {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     private Long productId;
 
     private Integer shopId;
@@ -32,13 +29,20 @@ public class Inventory {
     @Builder.Default
     private Instant updatedAt = Instant.now();
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Status status = Status.DEPLETED;
+
     @OneToMany(targetEntity = Reservation.class, mappedBy = "inventory")
     @Builder.Default
     private List<Reservation>  reservedProducts = new ArrayList<>();
 
     public void addQuantity(Integer quantity) {
+
         if (quantity <= 0) {
             throw new  IllegalArgumentException("Quantity must be greater than zero");
+        } else if (this.quantity == 0) {
+            this.status = Status.POPULATED;
         }
 
         this.quantity += quantity;
@@ -53,9 +57,11 @@ public class Inventory {
         }
 
         this.quantity -= quantity;
+
+        if  (this.quantity == 0) {
+            this.status = Status.DEPLETED;
+        }
+
     }
-
-
-
 }
 
