@@ -53,6 +53,8 @@ public class KafkaSagaListener {
         ) {
             GlobalLogger.logRepeatedMessage(messageId);
 
+            acknowledgment.acknowledge();
+
             return;
         }
 
@@ -93,6 +95,8 @@ public class KafkaSagaListener {
                 messageRepository.existsById(messageId)
         ) {
             GlobalLogger.logRepeatedMessage(messageId);
+
+            acknowledgment.acknowledge();
 
             return;
         }

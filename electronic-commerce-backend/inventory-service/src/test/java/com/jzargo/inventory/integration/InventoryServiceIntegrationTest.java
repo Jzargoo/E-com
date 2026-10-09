@@ -7,7 +7,6 @@ import com.jzargo.inventory.exception.InventoryAlreadyExistException;
 import com.jzargo.inventory.exception.InventoryNotFoundException;
 import com.jzargo.inventory.repository.InventoryRepository;
 import com.jzargo.inventory.service.InventoryService;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,13 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(properties = {"kafka.enabled=false", "kafka.streams.enabled=false"})
 @ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-@DirtiesContext
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class InventoryServiceIntegrationTest {
     private final Long productId = 1L;
     private final Integer shopId = 2;
@@ -49,6 +47,22 @@ public class InventoryServiceIntegrationTest {
 
         assertEquals(0, inventory.get().getQuantity());
 
+    }
+
+    @Test
+    @DisplayName("should throws inventory already exists")
+    public void test_createInventory_throws() {
+        inventoryRepository.save(
+                Inventory.builder()
+                        .shopId(shopId)
+                        .productId(productId)
+                        .build()
+        );
+
+       assertThrows(
+               InventoryAlreadyExistException.class,
+               () -> inventoryService.createInventory(productId, shopId)
+       );
     }
 
     @Test
@@ -112,6 +126,5 @@ public class InventoryServiceIntegrationTest {
 
         assertEquals(Status.DEPLETED, inventory.get().getStatus());
     }
-
 
 }
