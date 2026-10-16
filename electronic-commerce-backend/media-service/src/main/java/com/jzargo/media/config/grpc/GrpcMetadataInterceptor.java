@@ -2,16 +2,22 @@ package com.jzargo.media.config.grpc;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.jzargo.grpc.metadata.MetadataConstantKeys;
+import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.protobuf.ChangeMediaFileMetadata;
 import com.jzargo.protobuf.MediaFileMetadata;
 import io.grpc.*;
+import org.jspecify.annotations.NonNull;
 import org.springframework.grpc.server.GlobalServerInterceptor;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 @GlobalServerInterceptor
 public class GrpcMetadataInterceptor implements ServerInterceptor {
 
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
+
+        Context finalContext = Context.current();
 
         if (
                 metadata.containsKey(
@@ -26,9 +32,9 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
 
             try {
 
-                putFileMetadataToContext(metadata, context);
+                context = putFileMetadataToContext(metadata, context);
 
-                putVersionMetadataToContext(metadata, context);
+                context = putVersionMetadataToContext(metadata, context);
 
 
             } catch (InvalidProtocolBufferException e) {
@@ -37,21 +43,56 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
                         Status.ABORTED.augmentDescription("Error while parsing file metadata."),
                         metadata
                 );
+
+                return new ServerCall.Listener<>() {};
+
             }
 
-
-
-            return Contexts.interceptCall(
-                    context, serverCall, metadata, serverCallHandler
-            );
-
+            finalContext = context;
         }
 
-        return interceptCall(serverCall, metadata, serverCallHandler);
+        ServerCall<ReqT, RespT> wrappedCall = getReqTRespTServerCall(serverCall, finalContext);
+
+        return Contexts.interceptCall(
+                finalContext, wrappedCall, metadata, serverCallHandler
+        );
 
     }
 
-    private void putVersionMetadataToContext(Metadata metadata, Context context) throws InvalidProtocolBufferException {
+    private static <ReqT, RespT> @NonNull ServerCall<ReqT, RespT> getReqTRespTServerCall(ServerCall<ReqT, RespT> serverCall, Context finalContext) {
+
+        return new ForwardingServerCall.SimpleForwardingServerCall<>(serverCall) {
+
+            @Override
+            public void sendHeaders(Metadata responseHeaders) {
+
+                MediaFileMetadata fileMeta = MetadataConstantKeys.fileContextKey.get(finalContext).get();
+
+                if (fileMeta != null) {
+
+                    responseHeaders.put(
+
+                            MetadataConstantKeys.fileMetadataKey,
+
+                            MediaFileMetadata.newBuilder()
+                                    .setFileUri(fileMeta.getFileUri())
+                                    .setContentType(
+                                            fileMeta.getContentType()
+                                    )
+                                    .build().toByteArray()
+                    );
+
+                }
+
+                super.sendHeaders(responseHeaders);
+
+            }
+
+        };
+
+    }
+
+    private Context putVersionMetadataToContext(Metadata metadata, Context context) throws InvalidProtocolBufferException {
 
         if (
                 metadata.containsKey(
@@ -68,16 +109,17 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
 
 
 
-            context.withValue(
+            return context.withValue(
                     MetadataConstantKeys.versionContextKey,
                     changeMediaFileMetadata
             );
 
         }
 
+        return context;
     }
 
-    private void putFileMetadataToContext(Metadata metadata, Context context) throws  InvalidProtocolBufferException {
+    private Context putFileMetadataToContext(Metadata metadata, Context context) throws  InvalidProtocolBufferException {
 
         if (
                 metadata.containsKey(
@@ -92,13 +134,14 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
             MediaFileMetadata mediaFileMetadata = MediaFileMetadata.parseFrom(bytes);
 
 
-            context.withValue(
+            return context.withValue(
                     MetadataConstantKeys.fileContextKey,
-                    mediaFileMetadata
+                    new AtomicReference<>(mediaFileMetadata)
             );
 
         }
 
+        return context;
     }
 
 }

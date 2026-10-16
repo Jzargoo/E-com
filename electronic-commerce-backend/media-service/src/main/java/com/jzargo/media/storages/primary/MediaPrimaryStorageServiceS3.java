@@ -8,6 +8,7 @@ import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.protobuf.ContentType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -23,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
+@ConditionalOnBooleanProperty("spring.cloud.aws.parameterstore.enabled")
 public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService {
     private final S3Client s3Client;
 

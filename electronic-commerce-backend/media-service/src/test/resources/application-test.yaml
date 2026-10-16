@@ -1,0 +1,84 @@
+spring:
+
+  security:
+    enabled: false
+
+  grpc:
+    server:
+      port: 0
+
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+
+    properties:
+      spring.json.trusted.packages: "com.jzargo.core.*, com.jzargo.media.event.*"
+    admin:
+      auto-create: true
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      bootstrap-servers: localhost:9090, localhost:9091
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: media-service-consumer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      bootstrap-servers: ${spring.embedded.kafka.brokers}
+
+
+  cloud:
+    aws:
+      parameterstore:
+        enabled: false
+    config:
+      enabled: false
+
+application:
+
+  async:
+    executor:
+      core-pool-size: 5
+      max-pool-size: 16
+      queue-capacity: 100
+      keep-alive-time-in-seconds: 60
+
+  native-storage-options:
+    saving-path: C:\Users\Jzargo\Documents\projects\IdeaProjects\E-com\e-com-storage
+
+  aws:
+    bucket: product-media
+    object-ttl: 1-days
+    smartStreamProperties:
+      threshold: 5242880  # 5 * 1024 * 1024
+
+
+kafka:
+
+  file-transfer-topic:
+    name: "media.file.transfer"
+    options:
+      partitions: 3
+      replication: 3
+      minInSyncReplicas: 2
+
+  file-sync-topic:
+    name: "media.file.sync.event"
+    options:
+      partitions: 3
+      replication: 3
+      minInSyncReplicas: 2
+
+  failed-file-operation-topic:
+    name: "media.failed.file.operation"
+    options:
+      partitions: 3
+      replication: 3
+      minInSyncReplicas: 2
+
+  storage-recovery-topic:
+    name: "media.storage.recovery.event"
+    options:
+      partitions: 3
+      replication: 3
+      minInSyncReplicas: 2

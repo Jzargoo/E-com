@@ -1,5 +1,6 @@
 package com.jzargo.media.config.grpc;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.grpc.server.GlobalServerInterceptor;
@@ -8,6 +9,7 @@ import org.springframework.grpc.server.security.GrpcSecurity;
 import org.springframework.security.config.Customizer;
 
 @Configuration
+@ConditionalOnBooleanProperty("spring.security.enabled")
 public class AuthenticationInterceptor {
 
     @Bean

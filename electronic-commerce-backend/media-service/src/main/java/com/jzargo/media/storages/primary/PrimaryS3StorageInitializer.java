@@ -3,6 +3,7 @@ package com.jzargo.media.storages.primary;
 import com.jzargo.media.config.ApplicationPropertyStorage;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -11,6 +12,7 @@ import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 
 @Slf4j
 @Component
+@ConditionalOnBooleanProperty("spring.cloud.aws.parameterstore.enabled")
 public class PrimaryS3StorageInitializer {
 
     private final ApplicationPropertyStorage applicationPropertyStorage;

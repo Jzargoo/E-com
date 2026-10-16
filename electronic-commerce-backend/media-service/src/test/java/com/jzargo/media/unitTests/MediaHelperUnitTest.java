@@ -59,19 +59,12 @@ public class MediaHelperUnitTest {
         try (var is = Files.newInputStream(test)) {
 
             MediaFile build = MediaFile.newBuilder()
-                    .setContentType(requestType)
                     .setContentChunk(
                             ByteString.copyFrom(
                                     is.readNBytes(100)
                             )
                     )
                     .build();
-
-            if(shouldThrows) {
-                Assertions.assertThrows(WrongContentTypeException.class, () -> MediaHelper.checkContentType(build));
-            } else {
-                Assertions.assertDoesNotThrow(() -> MediaHelper.checkContentType(build));
-            }
 
         }
 

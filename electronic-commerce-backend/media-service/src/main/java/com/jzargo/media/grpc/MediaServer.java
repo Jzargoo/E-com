@@ -58,12 +58,9 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
         observer.disableAutoInboundFlowControl();
 
-
         log.info("Caught a request with uri {}", request.getMediaURI());
 
         Integer portion = applicationPropertyStorage.getPortion();
-
-
 
         try {
 
@@ -74,6 +71,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
                 log.warn("file stream either is null or has 0 length");
 
                 observer.setOnReadyHandler(() -> {
+
                     observer.onNext(
                             MediaFile.newBuilder().build()
                     );
@@ -82,6 +80,14 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
                 });
 
             } else {
+
+                MetadataConstantKeys.fileContextKey.get().set(
+                        MediaFileMetadata.newBuilder()
+                                .setContentType(fileStream.getContentType())
+                                .setVersion(fileStream.getVersionId())
+                                .build()
+                );
+
 
                 try (
                         InputStream content = fileStream.getContent()
@@ -166,7 +172,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
         ChangeMediaFileMetadata changeMediaFileMetadata = MetadataConstantKeys.versionContextKey.get();
 
-        MediaFileMetadata mediaFileMetadata = MetadataConstantKeys.fileContextKey.get();
+        MediaFileMetadata mediaFileMetadata = MetadataConstantKeys.fileContextKey.get().get();
 
         if (!mediaStorageService.existsByVersion(
                 changeMediaFileMetadata.getPreviousUri(),
@@ -239,7 +245,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
         log.info("Creating new MediaFile stream for a adding media file request");
 
-        MediaFileMetadata mediaFileMetadata = MetadataConstantKeys.fileContextKey.get();
+        MediaFileMetadata mediaFileMetadata = MetadataConstantKeys.fileContextKey.get().get();
 
         var uploadSession = new UploadSession(
                 mediaFileMetadata.getVersion(),

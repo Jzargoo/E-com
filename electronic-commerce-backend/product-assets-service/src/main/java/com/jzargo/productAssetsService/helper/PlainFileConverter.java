@@ -19,12 +19,9 @@ public class PlainFileConverter {
     private final DataBufferFactory dataBufferFactory =
             new NettyDataBufferFactory(ByteBufAllocator.DEFAULT);
 
-    public PlainFile convertFromFlux(Flux<MediaFile> mediaFileFlux) {
+    public PlainFile convertFromFlux(Flux<MediaFile> mediaFileFlux, ContentType contentType) {
         Flux<MediaFile> shared = mediaFileFlux.share();
 
-        Mono<ContentType> map = shared
-                .next()
-                .map(MediaFile::getContentType);
 
         Flux<DataBuffer> buffer = mediaFileFlux
                 .map(MediaFile::getContentChunk)
@@ -33,7 +30,7 @@ public class PlainFileConverter {
 
         return PlainFile.builder()
                 .upload(buffer)
-                .contentType(map)
+                .contentType(contentType)
                 .build();
     }
 }
