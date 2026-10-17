@@ -6,11 +6,15 @@ import com.jzargo.media.helper.MediaHelper;
 import com.jzargo.protobuf.ChangeMediaFileMetadata;
 import com.jzargo.protobuf.MediaFileMetadata;
 import io.grpc.*;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.grpc.server.GlobalServerInterceptor;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+@Slf4j
+@Component
 @GlobalServerInterceptor
 public class GrpcMetadataInterceptor implements ServerInterceptor {
 
@@ -18,6 +22,8 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
 
         Context finalContext = Context.current();
+
+        log.info("Intercepting request");
 
         if (
                 metadata.containsKey(
@@ -28,6 +34,8 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
                         )
         ) {
 
+            log.info("Received request for file metadata");
+
             Context context = Context.current();
 
             try {
@@ -36,6 +44,7 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
 
                 context = putVersionMetadataToContext(metadata, context);
 
+                log.info("Putting file metadata to context");
 
             } catch (InvalidProtocolBufferException e) {
 
@@ -43,6 +52,8 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
                         Status.ABORTED.augmentDescription("Error while parsing file metadata."),
                         metadata
                 );
+
+                log.error("Closing stream");
 
                 return new ServerCall.Listener<>() {};
 
@@ -66,6 +77,8 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
             @Override
             public void sendHeaders(Metadata responseHeaders) {
 
+                log.info("Sending headers");
+
                 MediaFileMetadata fileMeta = MetadataConstantKeys.fileContextKey.get(finalContext).get();
 
                 if (fileMeta != null) {
@@ -82,6 +95,7 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
                                     .build().toByteArray()
                     );
 
+                    log.info("putted headers");
                 }
 
                 super.sendHeaders(responseHeaders);
@@ -105,9 +119,6 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
 
 
             ChangeMediaFileMetadata changeMediaFileMetadata = ChangeMediaFileMetadata.parseFrom(bytes);
-
-
-
 
             return context.withValue(
                     MetadataConstantKeys.versionContextKey,

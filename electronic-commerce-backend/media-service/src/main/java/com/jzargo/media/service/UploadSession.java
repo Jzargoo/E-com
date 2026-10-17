@@ -131,9 +131,7 @@ public class UploadSession {
         } catch (IOException e) {
 
             throw new CannotProcessException();
-
         }
-
     }
 
 }

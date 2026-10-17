@@ -19,6 +19,7 @@ import org.springframework.grpc.server.service.GrpcService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @GrpcService
@@ -246,6 +247,10 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
         log.info("Creating new MediaFile stream for a adding media file request");
 
         MediaFileMetadata mediaFileMetadata = MetadataConstantKeys.fileContextKey.get().get();
+
+        log.info("Adding new MediaFile for a content type {}, key {}, version {}",
+                mediaFileMetadata.getContentType(), mediaFileMetadata.getFileUri(), mediaFileMetadata.getVersion()
+        );
 
         var uploadSession = new UploadSession(
                 mediaFileMetadata.getVersion(),

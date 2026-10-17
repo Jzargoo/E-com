@@ -97,6 +97,11 @@ public class TempFileBufferFactory {
             this.threshold = threshold;
         }
 
+        /**
+         * @param chunk: a chunk of data
+         * @return true when first chunk is higher than threshold => should use multipart
+         * false when all processed data less than threshold
+         **/
         public boolean addChunkRespectToThreshold(byte[] chunk) throws IOException {
             outputStream.write(chunk);
 
