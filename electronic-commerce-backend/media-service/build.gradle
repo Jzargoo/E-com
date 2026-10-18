@@ -11,6 +11,9 @@ group = 'com.jzargo'
 version = '0.0.1-SNAPSHOT'
 description = 'media-service'
 
+def os = org.gradle.internal.os.OperatingSystem.current()
+def nativePlatform= os.isWindows() ? 'windows-x86_64' : os.isMacOsX() ? 'macosx-arm64' : 'linux-x86_64'
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -23,8 +26,8 @@ repositories {
 }
 
 dependencies {
-    implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.1.0")
-    implementation"io.awspring.cloud:spring-cloud-aws-starter-s3"
+    implementation platform ("io.awspring.cloud:spring-cloud-aws-dependencies:4.1.0")
+    implementation "io.awspring.cloud:spring-cloud-aws-starter-s3"
 
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-grpc-server'
@@ -43,9 +46,14 @@ dependencies {
 
     implementation 'org.bytedeco:javacv:1.5.11'
 
-    implementation("org.bytedeco:ffmpeg:8.0.1-1.5.13:windows-x86_64")
-    implementation 'org.bytedeco:opencv:4.13.0-1.5.13:windows-x86_64'
-    implementation 'org.bytedeco:openblas:0.3.31-1.5.13:windows-x86_64'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-minio'
+
+    implementation "org.bytedeco:ffmpeg:8.0.1-1.5.13:$nativePlatform"
+    implementation "org.bytedeco:opencv:4.13.0-1.5.13:$nativePlatform"
+    implementation "org.bytedeco:openblas:0.3.31-1.5.13:$nativePlatform"
+
 
     implementation 'org.apache.tika:tika-core:3.2.2'
 }

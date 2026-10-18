@@ -131,7 +131,7 @@ public class MediaStorageServiceImpl implements MediaStorageService {
     }
 
     @Override
-    public void storeFullFile(DownloadedFile file) {
+    public void storeFullFile(DownloadedFile file) throws WrongContentTypeException {
 
         mediaPrimaryStorageService.uploadFullFile(
                 file, Optional.empty()

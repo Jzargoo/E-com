@@ -38,7 +38,7 @@ public interface MediaPrimaryStorageService {
      * @return the version ID of the saved file. If no version is provided,
      *         the storage must generate one.
      */
-    String uploadFullFile(DownloadedFile file, Optional<String> ttl);
+    String uploadFullFile(DownloadedFile file, Optional<String> ttl) throws WrongContentTypeException;
 
     Boolean existsByVersion(String uri, String version) throws NoSuchKeyException;
 }

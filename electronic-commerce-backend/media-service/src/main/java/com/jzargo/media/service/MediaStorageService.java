@@ -22,7 +22,7 @@ public interface MediaStorageService {
 
     DownloadedFile getFileStream(String uri) throws CannotProcessException, FileNotFoundException, WrongContentTypeException;
 
-    void storeFullFile(DownloadedFile file);
+    void storeFullFile(DownloadedFile file) throws WrongContentTypeException;
 
     Boolean existsByVersion(String uri, String version);
 }

@@ -118,6 +118,7 @@ public class MediaHelper {
             InputStream stream,
             Long contentLength,
             String contentType,
+            String versionId,
             String fileUri ) throws IOException, CannotProcessException, WrongContentTypeException {
 
         log.info("Creating a file representation with content type {} and length {}", contentType, contentLength);
@@ -127,6 +128,7 @@ public class MediaHelper {
         return DownloadedFile.builder()
                 .content(stream)
                 .fileUri(fileUri)
+                .versionId(versionId)
                 .contentLength(contentLength)
                 .contentType(parsedContentType)
                 .build();

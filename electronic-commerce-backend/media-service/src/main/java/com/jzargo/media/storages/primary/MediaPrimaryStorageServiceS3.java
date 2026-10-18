@@ -75,6 +75,7 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
                     object,
                     object.response().contentLength(),
                     contentType,
+                    object.response().metadata().get(versionAttr),
                     fileUri
             );
 
@@ -203,7 +204,7 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
     }
 
     @Override
-    public String uploadFullFile(DownloadedFile file, Optional<String> ttl) {
+    public String uploadFullFile(DownloadedFile file, Optional<String> ttl) throws WrongContentTypeException {
 
         var versionValue = file.getVersionId() == null?
                 UUID.randomUUID().toString() :
@@ -216,6 +217,12 @@ public class MediaPrimaryStorageServiceS3 implements MediaPrimaryStorageService 
                                 versionAttr, versionValue
                         )
                 )
+                .contentType(
+                       MediaHelper.parseToMime(
+                               file.getContentType()
+                       )
+                )
+                .contentLength(file.getContentLength())
                 .key(file.getFileUri());
 
         ttl.ifPresent((value) -> {

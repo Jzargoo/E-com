@@ -11,7 +11,7 @@ spring:
   cloud:
     aws:
       region:
-        static: kz-central-1
+        static: eu-central-1
 
 application:
   native-storage-options:

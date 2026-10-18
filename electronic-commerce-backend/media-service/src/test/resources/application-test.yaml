@@ -29,8 +29,8 @@ spring:
 
   cloud:
     aws:
-      parameterstore:
-        enabled: false
+      s3:
+        path-style-access-enabled: true
     config:
       enabled: false
 
@@ -51,6 +51,7 @@ application:
     object-ttl: 1-days
     smartStreamProperties:
       threshold: 5242880  # 5 * 1024 * 1024
+    version-attribute: version-id
 
 
 kafka:

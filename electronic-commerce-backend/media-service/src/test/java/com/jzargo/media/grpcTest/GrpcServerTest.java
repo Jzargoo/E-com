@@ -3,6 +3,7 @@ package com.jzargo.media.grpcTest;
 import com.google.protobuf.ByteString;
 import com.jzargo.grpc.metadata.MetadataConstantKeys;
 import com.jzargo.media.event.KafkaEventPublisher;
+import com.jzargo.media.exceptions.WrongContentTypeException;
 import com.jzargo.media.storages.primary.MediaPrimaryStorageService;
 import com.jzargo.protobuf.*;
 import io.grpc.ManagedChannel;
@@ -38,7 +39,7 @@ import static org.mockito.Mockito.verify;
 
 @Slf4j
 @ActiveProfiles("test")
-@SpringBootTest(properties = "kafka.enabled=false")
+@SpringBootTest(properties = {"kafka.enabled=false", "spring.cloud.aws.parameterstore.enabled=false"})
 public class GrpcServerTest {
     private static final String KEY = "bucket/media/content.jpg";
 
@@ -58,7 +59,7 @@ public class GrpcServerTest {
 
     @Test
     @DisplayName("adding a file")
-    public void test_sendingContent() {
+    public void test_sendingContent() throws WrongContentTypeException {
 
         String address =  String.format("localhost:%d", port);
 

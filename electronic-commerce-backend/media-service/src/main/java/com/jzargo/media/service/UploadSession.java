@@ -104,7 +104,7 @@ public class UploadSession {
                         )
                 );
 
-            } catch (IOException e) {
+            } catch (IOException | WrongContentTypeException e) {
 
                 log.error("Exception while storing full file {} ", key, e);
                 throw new CannotProcessException();
