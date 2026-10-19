@@ -1,11 +1,11 @@
-package com.jzargo.productAssetsService.config;
+package com.jzargo.productAssetsService.config.grpc;
 
+import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
 import com.jzargo.protobuf.MediaServiceGrpc;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.grpc.client.GrpcChannelFactory;
-import org.springframework.grpc.client.ImportGrpcClients;
 
 @Configuration
 @ConditionalOnBooleanProperty("grpc.enabled")

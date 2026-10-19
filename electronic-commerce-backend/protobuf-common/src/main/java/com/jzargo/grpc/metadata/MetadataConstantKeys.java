@@ -2,6 +2,7 @@ package com.jzargo.grpc.metadata;
 
 import com.jzargo.protobuf.ChangeMediaFileMetadata;
 import com.jzargo.protobuf.MediaFileMetadata;
+import io.grpc.CallOptions;
 import io.grpc.Context;
 import io.grpc.Metadata;
 
@@ -20,4 +21,5 @@ public class  MetadataConstantKeys {
     public static final Context.Key<ChangeMediaFileMetadata> versionContextKey =
             Context.key("version-metadata-key");
 
+    public static final CallOptions.Key<AtomicReference<MediaFileMetadata>> mediaFileOptions = CallOptions.Key.create("file-metadata-key");
 }

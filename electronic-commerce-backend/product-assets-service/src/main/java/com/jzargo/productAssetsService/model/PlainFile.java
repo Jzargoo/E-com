@@ -13,5 +13,5 @@ import reactor.core.publisher.Mono;
 @Builder
 public class PlainFile {
     private Flux<DataBuffer> upload;
-    private ContentType contentType;
+    private Mono<ContentType> contentType;
 }

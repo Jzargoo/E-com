@@ -3,7 +3,6 @@ package com.jzargo.productAssetsService.client;
 import com.google.protobuf.ByteString;
 import com.jzargo.grpc.metadata.MetadataConstantKeys;
 import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
-import com.jzargo.productAssetsService.exception.CannotAddMediaFileException;
 import com.jzargo.productAssetsService.helper.GlobalLogger;
 import com.jzargo.protobuf.*;
 import io.grpc.Metadata;
@@ -18,8 +17,7 @@ import reactor.core.publisher.Sinks;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import static org.springframework.grpc.server.service.GrpcServiceInfo.withInterceptors;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 @Slf4j
@@ -105,7 +103,8 @@ public class MediaServiceClientImpl implements MediaServiceClient {
     }
 
     @Override
-    public Flux<MediaFile> receiveFile(Mono<String> mediaUri) {
+    public Flux<MediaFile> receiveFile(Mono<String> mediaUri, AtomicReference<MediaFileMetadata> metadataHolder) {
+
 
         return mediaUri.flatMapMany(
 
@@ -131,19 +130,19 @@ public class MediaServiceClientImpl implements MediaServiceClient {
                                 }
                             };
 
-                            mediaServiceStub.getMediaContent(
-                                    MediaContentURI.newBuilder()
-                                            .setMediaURI(uri)
-                                            .build(),
-                                    fluxObserver
+                            mediaServiceStub
+                                    .withOption(MetadataConstantKeys.mediaFileOptions, metadataHolder)
+                                    .getMediaContent(
+                                            MediaContentURI.newBuilder()
+                                                .setMediaURI(uri)
+                                                .build(),
+                                            fluxObserver
                             );
 
                         }
 
                 )
-
         );
-
     }
 
     @Override

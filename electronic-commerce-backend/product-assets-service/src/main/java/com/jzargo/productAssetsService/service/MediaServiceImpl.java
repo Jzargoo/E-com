@@ -18,6 +18,7 @@ import com.jzargo.productAssetsService.repository.FallbackMediaContentRepository
 import com.jzargo.productAssetsService.repository.MediaContentRepository;
 import com.jzargo.productAssetsService.repository.ProductAssetsRepository;
 import com.jzargo.protobuf.ContentType;
+import com.jzargo.protobuf.MediaFileMetadata;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -28,6 +29,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.jzargo.productAssetsService.helper.UriCreator.getUniqueUriByProductIdAndContentType;
 
@@ -383,9 +385,10 @@ public class MediaServiceImpl implements MediaService {
 
                         .map(MediaContent::getUri);
 
+        AtomicReference<MediaFileMetadata> metadataHolder =  new AtomicReference<>();
 
         return plainFileConverter.convertFromFlux(
-                mediaServiceClient.receiveFile(mediaUri)
+                mediaServiceClient.receiveFile(mediaUri, metadataHolder), metadataHolder
         );
 
     }
