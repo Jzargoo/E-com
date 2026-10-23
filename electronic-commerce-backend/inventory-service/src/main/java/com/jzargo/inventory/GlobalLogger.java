@@ -18,7 +18,10 @@ public class GlobalLogger {
     }
 
     public static void logProcessedStreamMessage(String key, Object value) {
-
         log.info("sending a message with key {} with a value {}", key, value);
+    }
+
+    public static void logUnknownMessage(String messageId) {
+        log.trace("Unknown message with message id {}", messageId);
     }
 }

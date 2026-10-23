@@ -67,8 +67,14 @@ public class DebeziumMessageParser extends DebeziumParser {
                 yield new AssetsInitializationCommand(id, shop_id);
             }
 
-            case COMPENSATE_INVENTORY ->
-                    new CompensateInventoryCommand(id);
+            case COMPENSATE_INVENTORY -> {
+                Number shop_nid= (Number) after.get("shop_id");
+
+                Integer shop_id = shop_nid.intValue();
+
+                yield new CompensateInventoryCommand(id, shop_id);
+
+                }
 
 
             case COMPENSATE_ASSETS ->
@@ -105,11 +111,19 @@ public class DebeziumMessageParser extends DebeziumParser {
         Long id = nid.longValue();
 
         return switch (SagaStep.valueOf(step)) {
-            case PENDING_INVENTORY -> new CompensateInventoryCommand(id);
+            case PENDING_INVENTORY -> {
+                Number shop_nid= (Number) after.get("shop_id");
+
+                Integer shop_id = shop_nid.intValue();
+
+                yield new CompensateInventoryCommand(id, shop_id);
+            }
             case PENDING_PRICE -> new CompensatePricingCommand(id);
             case PENDING_ASSETS -> new AssetsCompensationCommand(id);
             default ->
                     throw new IllegalStateException("There is not any pending states. There is no need to compensate" + step);
         };
+
     }
+
 }

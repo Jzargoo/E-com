@@ -58,6 +58,8 @@ public class KafkaTopologyConfig {
                         )
                 )
 
+                .filter((key, value) -> value != null && !value.isBlank())
+
                 .peek(
                         (key, value) -> log.info("Kafka streams started processing a message with key {}", key)
                 )

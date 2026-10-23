@@ -47,7 +47,9 @@ public class CategoryController {
     }
 
     @GetMapping("/{categoryName}")
-    public ResponseEntity<CategoryDetails> getCategory(String categoryName) {
+    public ResponseEntity<CategoryDetails> getCategory(
+            @PathVariable String categoryName
+    ) {
         log.debug("Get category started to execute");
 
         try {

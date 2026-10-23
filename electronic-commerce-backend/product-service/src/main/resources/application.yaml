@@ -7,11 +7,3 @@ spring:
     import: optional:configserver:http://localhost:8888
   profiles:
     active: devconfig
-
-kafka:
-  enabled: true
-
-application:
-  media:
-    path: /media
-    default-avatar-uri: /products/default-avatar.png

@@ -206,10 +206,10 @@ public class MediaServiceFallbackTaskAndManager {
                 .findById(content.getProductId())
                 .switchIfEmpty(
                         Mono.just(
-                                new Avatar(
-                                        saved.getProductId(),
-                                        saved.getId()
-                                )
+                                Avatar.builder()
+                                        .contentId(content.getProductId())
+                                        .productId(content.getProductId())
+                                        .build()
                         )
                 )
                 .flatMap(avatarRepository::save)

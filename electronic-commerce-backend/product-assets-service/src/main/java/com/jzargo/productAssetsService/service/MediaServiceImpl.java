@@ -354,7 +354,10 @@ public class MediaServiceImpl implements MediaService {
         return fallbackAddingMediaContent(content, productId, shopId, contentType)
                 .flatMap(
                         val -> avatarRepository.save(
-                                new Avatar(productId, val)
+                               Avatar.builder()
+                                       .contentId(val)
+                                       .productId(productId)
+                                       .build()
                         )
                 )
                 .mapNotNull(Avatar::getContentId);

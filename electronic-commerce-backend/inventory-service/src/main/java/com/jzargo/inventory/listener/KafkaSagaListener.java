@@ -124,4 +124,11 @@ public class KafkaSagaListener {
         }
 
     }
+
+    @KafkaHandler(isDefault = true)
+    public void handleUnknown(
+            @Payload Object ignored
+    ) {
+      GlobalLogger.logUnknownMessage("handling object");
+    }
 }

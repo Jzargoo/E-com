@@ -11,3 +11,9 @@ spring:
 
   config:
     import: 'optional:configserver:http://localhost:8888'
+
+
+kafka:
+  enabled: true
+  streams.enabled: true
+  group-id: ${spring.kafka.consumer.group-id}

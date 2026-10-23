@@ -5,6 +5,7 @@ import com.jzargo.core.command.createProductSaga.AssetsCompensationCommand;
 import com.jzargo.core.command.createProductSaga.AssetsInitializationCommand;
 import com.jzargo.productAssetsService.entity.Message;
 import com.jzargo.productAssetsService.entity.MessageType;
+import com.jzargo.productAssetsService.helper.GlobalLogger;
 import com.jzargo.productAssetsService.repository.MessageRepository;
 import com.jzargo.productAssetsService.service.AssetsService;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,8 @@ public class KafkaSagaListener {
             @Header(KafkaCustomHeaders.IDEMPOTENCY_KEY) String messageId,
             Acknowledgment acknowledgment) {
 
+        GlobalLogger.logHandlingMessage(messageId);
+
         messageRepository.findById(messageId)
 
                 .map(message -> true)
@@ -69,11 +72,18 @@ public class KafkaSagaListener {
 
                 .flatMap(
                         productAssets -> messageRepository.save(
-                                new Message(messageId, Instant.now(), MessageType.COMMAND)
+                                Message.builder()
+                                        .messageId(messageId)
+                                        .messageType(MessageType.COMMAND)
+                                        .build()
                         )
                 )
 
-                .doOnSuccess(message -> acknowledgment.acknowledge())
+                .doOnSuccess(message -> {
+                    GlobalLogger.logHandledMessage(messageId);
+
+                    acknowledgment.acknowledge();
+                })
 
                 .subscribe();
     }
@@ -111,7 +121,10 @@ public class KafkaSagaListener {
 
                 .flatMap(
                         nothing -> messageRepository.save(
-                                new Message(messageId, Instant.now(), MessageType.COMMAND)
+                                Message.builder()
+                                        .messageId(messageId)
+                                        .messageType(MessageType.COMMAND)
+                                        .build()
                         )
                 )
 
@@ -125,7 +138,7 @@ public class KafkaSagaListener {
         log.debug("Caught a repeated message!");
     }
 
-    @KafkaHandler
+    @KafkaHandler(isDefault = true)
     public void handle(Object ignored) {
         log.trace("Received command that is not published for assets service");
     }

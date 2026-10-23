@@ -5,10 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 
-@Table
+@Table(name = "product_assets")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -16,6 +17,8 @@ import org.springframework.data.relational.core.mapping.Table;
 public class ProductAssets {
 
     @Id
+    private Long id;
+
     private Long productId;
 
     private Integer shopId;

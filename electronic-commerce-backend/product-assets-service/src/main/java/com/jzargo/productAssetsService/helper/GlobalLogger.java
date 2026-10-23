@@ -32,4 +32,12 @@ public class GlobalLogger {
     public static void logFinishedExecuting(String sendingAFile) {
         log.info("{} finished executing.", sendingAFile);
     }
+
+    public static void logHandlingMessage(String messageId) {
+        log.debug("handling message with id {}", messageId);
+    }
+
+    public static void logHandledMessage(String messageId) {
+        log.info("handled message with id {}", messageId);
+    }
 }
