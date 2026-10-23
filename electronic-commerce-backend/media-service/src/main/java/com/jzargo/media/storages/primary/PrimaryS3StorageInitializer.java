@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Slf4j
 @Component
@@ -36,6 +37,7 @@ public class PrimaryS3StorageInitializer {
     }
 
     private void initBucketIfNotExist(String bucket){
+
         log.debug("Initializing Primary Storage Bucket");
 
         try{
@@ -55,6 +57,8 @@ public class PrimaryS3StorageInitializer {
             );
 
             log.debug("Created a bucket. {}", e.getMessage());
+        } catch (S3Exception e) {
+            log.error("{} {}", e.statusCode(), e.awsErrorDetails());
         }
 
     }

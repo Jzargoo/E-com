@@ -2,11 +2,15 @@ package com.jzargo.productAssetsService.config;
 
 import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.reactor.netty.NettyServerCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 
 @Configuration
+@ConditionalOnBooleanProperty("security.enabled")
 public class NettyServerConfigurer {
 
     @Bean
@@ -32,5 +36,4 @@ public class NettyServerConfigurer {
                                 new FixedRecvByteBufAllocator(server.getBufferSize())
                         );
     }
-
 }

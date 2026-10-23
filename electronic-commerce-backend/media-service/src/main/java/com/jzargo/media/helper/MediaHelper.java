@@ -26,8 +26,9 @@ public class MediaHelper {
 
     public static void checkContentType(MediaFile mediaFile, ContentType type)
             throws WrongContentTypeException, IOException {
+        var contentChunk = mediaFile.getContentChunk();
 
-        String detect = tika.detect(mediaFile.getContentChunk().newInput());
+        String detect = tika.detect(contentChunk.toByteArray());
 
         ContentType parsedContentType = parseContentType(detect);
 

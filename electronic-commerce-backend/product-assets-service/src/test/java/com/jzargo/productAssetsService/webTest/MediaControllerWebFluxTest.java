@@ -3,6 +3,7 @@ package com.jzargo.productAssetsService.webTest;
 
 import com.jzargo.productAssetsService.api.MediaController;
 import com.jzargo.productAssetsService.config.ApplicationPropertyStorage;
+import com.jzargo.productAssetsService.config.grpc.GrpcClientMetadataInterceptor;
 import com.jzargo.productAssetsService.exception.AssetNotFoundException;
 import com.jzargo.productAssetsService.exception.CreatedInFallbackException;
 import com.jzargo.productAssetsService.helper.ContentTypeParser;
@@ -19,6 +20,7 @@ import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Flux;

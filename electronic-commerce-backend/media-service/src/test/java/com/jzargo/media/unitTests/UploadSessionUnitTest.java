@@ -8,14 +8,13 @@ import com.jzargo.media.model.DownloadedFile;
 import com.jzargo.media.service.MediaStorageService;
 import com.jzargo.media.service.TempFileBufferFactory;
 import com.jzargo.media.service.UploadSession;
-import com.jzargo.protobuf.ContentType;
-import com.jzargo.protobuf.MediaFile;
-import com.jzargo.protobuf.VersionedURI;
+import com.jzargo.protobuf.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.testcontainers.shaded.com.google.common.io.BaseEncoding;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -250,5 +249,32 @@ public class UploadSessionUnitTest {
         );
 
         assertThrows(CannotProcessException.class, uploadSession::abort);
+    }
+
+    @Test
+    public void test_base64() {
+        MediaFileMetadata build = MediaFileMetadata.newBuilder()
+                .setContentType(ContentType.PNG)
+                .setVersion(
+                        UUID.randomUUID().toString()
+                )
+                .setFileUri(
+                        "ftoc.png"
+                ).build();
+
+        String encode = BaseEncoding.base64().encode(
+                build.toByteArray()
+        );
+
+        ChangeMediaFileMetadata change = ChangeMediaFileMetadata.newBuilder()
+                .setPreviousUri("ftoc.png")
+                .setPreviousVersion("b978bbe9-f9a3-4c5c-b9cf-a9c8a6fb0c76")
+                .build();
+
+        String encodeChange = BaseEncoding.base64().encode(
+                change.toByteArray()
+        );
+
+        System.out.println(encodeChange);
     }
 }

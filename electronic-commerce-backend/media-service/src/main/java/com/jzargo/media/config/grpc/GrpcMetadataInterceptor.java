@@ -21,28 +21,20 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
 
-        Context finalContext = Context.current();
+        Context context = Context.current();
 
         log.info("Intercepting request");
 
         if (
                 metadata.containsKey(
                         MetadataConstantKeys.fileMetadataKey
-                ) ||
-                        metadata.containsKey(
-                                MetadataConstantKeys.fileVersionMetadataKey
-                        )
+                )
         ) {
-
             log.info("Received request for file metadata");
-
-            Context context = Context.current();
 
             try {
 
                 context = putFileMetadataToContext(metadata, context);
-
-                context = putVersionMetadataToContext(metadata, context);
 
                 log.info("Putting file metadata to context");
 
@@ -59,13 +51,42 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
 
             }
 
-            finalContext = context;
+        } else {
+            context = context.withValue(
+                    MetadataConstantKeys.fileContextKey,
+                    new AtomicReference<>()
+            );
         }
 
-        ServerCall<ReqT, RespT> wrappedCall = getReqTRespTServerCall(serverCall, finalContext);
+        if (
+                metadata.containsKey(
+                        MetadataConstantKeys.fileVersionMetadataKey
+                )
+        ) {
+            try {
+
+                context = putVersionMetadataToContext(metadata, context);
+
+                log.info("Putting version metadata to context");
+
+            } catch (InvalidProtocolBufferException e) {
+
+                serverCall.close(
+                        Status.ABORTED.augmentDescription("Error while parsing file metadata."),
+                        metadata
+                );
+
+                log.error("Closing a stream");
+
+                return new ServerCall.Listener<>() {};
+
+            }
+        }
+
+        ServerCall<ReqT, RespT> wrappedCall = getReqTRespTServerCall(serverCall, context);
 
         return Contexts.interceptCall(
-                finalContext, wrappedCall, metadata, serverCallHandler
+                context, wrappedCall, metadata, serverCallHandler
         );
 
     }
@@ -131,28 +152,18 @@ public class GrpcMetadataInterceptor implements ServerInterceptor {
     }
 
     private Context putFileMetadataToContext(Metadata metadata, Context context) throws  InvalidProtocolBufferException {
-
-        if (
-                metadata.containsKey(
-                        MetadataConstantKeys.fileMetadataKey
-                )
-        ) {
-            byte[] bytes = metadata.get(
-                    MetadataConstantKeys.fileMetadataKey
-            );
+        byte[] bytes = metadata.get(
+                MetadataConstantKeys.fileMetadataKey
+        );
 
 
-            MediaFileMetadata mediaFileMetadata = MediaFileMetadata.parseFrom(bytes);
+        MediaFileMetadata mediaFileMetadata = MediaFileMetadata.parseFrom(bytes);
 
 
-            return context.withValue(
-                    MetadataConstantKeys.fileContextKey,
-                    new AtomicReference<>(mediaFileMetadata)
-            );
-
-        }
-
-        return context;
+        return context.withValue(
+                MetadataConstantKeys.fileContextKey,
+                new AtomicReference<>(mediaFileMetadata)
+        );
     }
 
 }

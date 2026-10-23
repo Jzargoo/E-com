@@ -16,6 +16,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class MediaHelperUnitTest {
 
     @TempDir
@@ -65,6 +68,17 @@ public class MediaHelperUnitTest {
                             )
                     )
                     .build();
+
+            if (shouldThrows) {
+                assertThrows(
+                        WrongContentTypeException.class,
+                        () -> MediaHelper.checkContentType(build, requestType)
+                );
+            } else {
+                assertDoesNotThrow(
+                        () -> MediaHelper.checkContentType(build, requestType)
+                );
+            }
 
         }
 

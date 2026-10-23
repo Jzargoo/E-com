@@ -412,9 +412,10 @@ public class MediaServiceImpl implements MediaService {
                 )
                 .map(MediaContent::getUri);
 
+        AtomicReference<MediaFileMetadata> mediaFileMetadataAtomicReference = new AtomicReference<>();
 
         PlainFile plainFile = plainFileConverter.convertFromFlux(
-                mediaServiceClient.receiveFile(mediaUri)
+                mediaServiceClient.receiveFile(mediaUri, mediaFileMetadataAtomicReference), mediaFileMetadataAtomicReference
         );
 
         plainFile

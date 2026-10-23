@@ -8,6 +8,7 @@ import com.jzargo.productAssetsService.entity.MessageType;
 import com.jzargo.productAssetsService.repository.MessageRepository;
 import com.jzargo.productAssetsService.service.AssetsService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -26,6 +27,7 @@ import java.time.Instant;
         containerFactory = "manualListenerContainerFactory",
         groupId = "#{kafkaPropertyStorage.groupId}"
 )
+@ConditionalOnBooleanProperty("kafka.enabled")
 @Component
 public class KafkaSagaListener {
 

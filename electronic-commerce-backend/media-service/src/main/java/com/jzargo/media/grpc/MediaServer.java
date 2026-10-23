@@ -49,15 +49,14 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
                         .build()
         );
 
+        responseObserver.onCompleted();
+
     }
 
     // URI ->
     @Override
     public void getMediaContent(MediaContentURI request, StreamObserver<MediaFile> responseObserver) {
 
-        ServerCallStreamObserver<MediaFile> observer = (ServerCallStreamObserver<MediaFile>) responseObserver;
-
-        observer.disableAutoInboundFlowControl();
 
         log.info("Caught a request with uri {}", request.getMediaURI());
 
@@ -71,21 +70,15 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                 log.warn("file stream either is null or has 0 length");
 
-                observer.setOnReadyHandler(() -> {
-
-                    observer.onNext(
-                            MediaFile.newBuilder().build()
-                    );
-
-                    observer.onCompleted();
-                });
+                responseObserver.onCompleted();
 
             } else {
 
                 MetadataConstantKeys.fileContextKey.get().set(
                         MediaFileMetadata.newBuilder()
-                                .setContentType(fileStream.getContentType())
+                                .setFileUri(request.getMediaURI())
                                 .setVersion(fileStream.getVersionId())
+                                .setContentType(fileStream.getContentType())
                                 .build()
                 );
 
@@ -98,51 +91,44 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
                     long totalChunks = Math.ceilDiv(fileStream.getContentLength(), portion);
 
+                    for (int i = 0; i < totalChunks; i++) {
+
+                        long min = Math.min(remSize.get(), portion);
+
+                        remSize.addAndGet(-min);
+
+                        try {
+                            byte[] bytes = content.readNBytes((int) min);
+
+                            responseObserver.onNext(
+                                    MediaFile.newBuilder()
+                                            .setContentChunk(ByteString.copyFrom(bytes))
+                                            .build()
+                            );
+
+                            log.debug("sending a file chunk for uri {} ({}/{})",
+                                    request.getMediaURI(),
+                                    i, totalChunks
+                            );
+
+                        } catch (IOException e) {
+
+                            log.error("Exception in SENDING a file {}",
+                                    request.getMediaURI(), e
+                            );
+
+                            responseObserver.onError(e);
+
+                        }
+
+                    }
+
                     log.debug(
                             "Starting sending a pieces: {} of the file by {} bytes portions",
                             totalChunks,
                             portion
                     );
 
-                    observer.setOnReadyHandler(() -> {
-
-                        while (observer.isReady()) {
-
-                            for (int i = 0; i < totalChunks; i++) {
-
-                                long min = Math.min(remSize.get(), portion);
-
-                                remSize.addAndGet(-min);
-
-                                try {
-                                    byte[] bytes = content.readNBytes((int) min);
-
-                                    observer.onNext(
-                                            MediaFile.newBuilder()
-                                                    .setContentChunk(ByteString.copyFrom(bytes))
-                                                    .build()
-                                    );
-
-                                    log.debug("sending a file chunk for uri {} ({}/{})",
-                                            request.getMediaURI(),
-                                            i, totalChunks
-                                    );
-
-                                } catch (IOException e) {
-
-                                    log.error("Exception in SENDING a file {}",
-                                            request.getMediaURI(), e
-                                    );
-
-                                    observer.onError(e);
-
-                                }
-
-                            }
-
-                        }
-
-                    });
 
                     responseObserver.onCompleted();
 
@@ -160,7 +146,7 @@ public class MediaServer extends MediaServiceGrpc.MediaServiceImplBase {
 
             log.error("Occurred an exception while processing a file with uri {}", request.getMediaURI(), e);
 
-            observer.onError(e);
+            responseObserver.onError(e);
 
         }
 

@@ -41,6 +41,7 @@ public class SaveFileStreamObserver implements StreamObserver<MediaFile> {
                 MediaHelper.checkContentType(mediaFile, contentType);
             } catch (WrongContentTypeException | IOException e) {
                 doOnError.accept(e);
+                return;
             }
 
             isFirst =  false;

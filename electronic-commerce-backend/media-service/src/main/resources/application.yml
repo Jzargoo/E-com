@@ -8,10 +8,6 @@ spring:
   grpc:
     server:
       port: 8081
-  cloud:
-    aws:
-      region:
-        static: eu-central-1
 
 application:
   native-storage-options:
