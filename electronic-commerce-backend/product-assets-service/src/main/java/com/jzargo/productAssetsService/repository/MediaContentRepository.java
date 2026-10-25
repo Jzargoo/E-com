@@ -13,12 +13,14 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface MediaContentRepository extends R2dbcRepository<MediaContent, Long> {
 
-    Flux<MediaContent> findAllByProductId(Long productId);
-
     Mono<MediaContent> findByUri(String uri);
 
 
     @Modifying
     @Query("UPDATE media_content SET media_content.media_version=:version WHERE media_content.uri=:uri")
     Mono<Integer> updateVersion(String uri, String version);
+
+    Mono<Boolean> existsByProductId(Long productId);
+
+    Flux<MediaContent> findAllByProductAssetsId(Long id);
 }

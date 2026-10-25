@@ -3,6 +3,7 @@ package com.jzargo.productAssetsService.unit;
 import com.jzargo.productAssetsService.entity.MediaContent;
 import com.jzargo.productAssetsService.entity.ProductAssets;
 import com.jzargo.productAssetsService.exception.AssetNotFoundException;
+import com.jzargo.productAssetsService.exception.AssetsAlreadyExistsException;
 import com.jzargo.productAssetsService.repository.MediaContentRepository;
 import com.jzargo.productAssetsService.repository.ProductAssetsRepository;
 import com.jzargo.productAssetsService.service.AssetsServiceImpl;
@@ -23,9 +24,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class ProductAssetsServiceUnitTest {
 
-    private int SHOP_ID  = 1;
-    private long PRODUCT_ID = 12L;
-    private String ERROR_MESSAGE = "Test exception";
+    private final int SHOP_ID  = 1;
+    private final long PRODUCT_ID = 12L;
+    private final String ERROR_MESSAGE = "Test exception";
 
     @Mock
     public ProductAssetsRepository productAssetsRepository;
@@ -83,7 +84,11 @@ public class ProductAssetsServiceUnitTest {
 
         // ARRANGE
 
-        ProductAssets input = new ProductAssets(PRODUCT_ID, SHOP_ID);
+        ProductAssets input = ProductAssets.builder()
+                .productId(PRODUCT_ID)
+                .shopId(SHOP_ID)
+                .id(PRODUCT_ID)
+                .build();
 
         when(
                 productAssetsRepository.findById(anyLong())
@@ -92,7 +97,7 @@ public class ProductAssetsServiceUnitTest {
         );
 
         when(
-                mediaContentRepository.findAllByProductId(PRODUCT_ID)
+                mediaContentRepository.findAllByProductAssetsId(PRODUCT_ID)
         ).thenReturn(
                 Flux.just(
                         MediaContent.builder().build(), MediaContent.builder().build()
@@ -128,7 +133,7 @@ public class ProductAssetsServiceUnitTest {
 
         verify(productAssetsRepository).findById(anyLong());
 
-        verify(mediaContentRepository).findAllByProductId(anyLong());
+        verify(mediaContentRepository).findAllByProductAssetsId(anyLong());
 
         verify(mediaContentRepository, times(2)).delete(any());
 

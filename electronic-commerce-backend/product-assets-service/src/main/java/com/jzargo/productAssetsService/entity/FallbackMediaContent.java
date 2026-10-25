@@ -3,7 +3,6 @@ package com.jzargo.productAssetsService.entity;
 import com.jzargo.protobuf.ContentType;
 import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Builder
@@ -22,7 +21,7 @@ public class FallbackMediaContent {
 
     private String previousUri;
 
-    private Long productId;
+    private Long productAssetsId;
 
     @Builder.Default
     private Boolean isFree = true;

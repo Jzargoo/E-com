@@ -17,7 +17,7 @@ public class MediaContent {
 
     private String uri;
 
-    private Long productId;
+    private Long productAssetsId;
 
     private String mediaVersion;
 

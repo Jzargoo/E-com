@@ -27,36 +27,38 @@ ext {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-grpc-client'
-    implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.apache.kafka:kafka-streams'
+    implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-grpc-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 
     implementation 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
-    testImplementation 'org.springframework.security:spring-security-test'
-    annotationProcessor 'org.projectlombok:lombok'
 
-    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
-    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
     implementation 'org.springframework.boot:spring-boot-starter-liquibase'
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
 
     implementation 'com.jzargo:core:0.0.1-SNAPSHOT'
     implementation 'com.jzargo:protobuf-common:1.0-SNAPSHOT'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     runtimeOnly 'org.postgresql:postgresql'
-    testImplementation 'org.springframework.boot:spring-boot-starter-grpc-client-test'
+    runtimeOnly 'org.postgresql:r2dbc-postgresql'
+
     testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-kafka-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-grpc-client-test'
 
-    runtimeOnly 'org.postgresql:r2dbc-postgresql'
+    testRuntimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'io.r2dbc:r2dbc-h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
 }
 
 dependencyManagement {

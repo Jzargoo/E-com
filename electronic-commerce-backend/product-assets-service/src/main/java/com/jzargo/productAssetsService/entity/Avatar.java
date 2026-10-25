@@ -2,7 +2,6 @@ package com.jzargo.productAssetsService.entity;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Table("product_avatar_mapping")
@@ -15,7 +14,7 @@ public class Avatar {
     @Id
     private Long id;
 
-    private Long productId;
+    private Long productAssetsId;
 
     private Long contentId;
 }

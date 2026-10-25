@@ -10,4 +10,8 @@ import reactor.core.publisher.Mono;
 @ConditionalOnBooleanProperty("database.enabled")
 public interface ProductAssetsRepository extends R2dbcRepository<ProductAssets, Long> {
     Mono<ProductAssets> findByProductIdAndShopId(Long productId, Integer shopId);
+
+    Mono<ProductAssets> findByProductId(long l);
+
+    Mono<Boolean> existsByProductId(Long productId);
 }

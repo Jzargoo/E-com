@@ -9,5 +9,5 @@ import reactor.core.publisher.Mono;
 @ConditionalOnBooleanProperty("database.enabled")
 @Repository
 public interface AvatarRepository extends R2dbcRepository<Avatar,Long> {
-    Mono<Avatar> findByProductId(Long productId);
+    Mono<Avatar> findByProductAssetsId(Long productAssetsId);
 }
