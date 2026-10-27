@@ -1,6 +1,7 @@
 package com.jzargo.inventory.service;
 
 import com.jzargo.inventory.dto.ChangeStockDto;
+import com.jzargo.inventory.entity.Status;
 import com.jzargo.inventory.exception.InventoryAlreadyExistException;
 import com.jzargo.inventory.exception.InventoryHasReservationException;
 import com.jzargo.inventory.exception.InventoryNotFoundException;

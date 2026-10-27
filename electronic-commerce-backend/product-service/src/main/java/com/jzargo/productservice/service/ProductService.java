@@ -13,5 +13,7 @@ public interface ProductService {
     Long createProduct(CreateAndUpdateProductDetails createProductDetails) throws CategoryNotFoundException;
     ProductDetails updateProduct(CreateAndUpdateProductDetails updateProductDetails) throws ProductNotFoundException, ShopDoesNotOwnProductException, InvalidUpdateRequest, CategoryNotFoundException;
     String deleteProduct(Long productId) throws ProductNotFoundException;
+    void availableProduct(Long productId);
+    void unavailableProduct(Long productId);
 
 }

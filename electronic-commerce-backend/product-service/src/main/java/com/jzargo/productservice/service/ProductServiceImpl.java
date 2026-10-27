@@ -124,4 +124,26 @@ public class ProductServiceImpl implements ProductService{
 
         return "Deletion of the process started successfully";
     }
+
+    @Transactional
+    @Override
+    public void availableProduct(Long productId) {
+
+        Product product = productRepository.findById(productId).orElseThrow();
+
+        product.setStatus(Status.AVAILABLE);
+
+        productRepository.save(product);
+    }
+
+    @Override
+    public void unavailableProduct(Long productId) {
+
+        Product product = productRepository.findById(productId).orElseThrow();
+
+        product.setStatus(Status.OUT_OF_STOCK);
+
+        productRepository.save(product);
+
+    }
 }

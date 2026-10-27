@@ -128,6 +128,7 @@ public class KafkaTopologyConfig {
 
     }
 
+
     @SuppressWarnings("unchecked")
     @Autowired
     public void changeStockStream(StreamsBuilder builder) {
