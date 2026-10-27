@@ -9,6 +9,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Builder
 @NoArgsConstructor
 @Getter
+@ToString
 @Setter
 public class MediaContent {
 

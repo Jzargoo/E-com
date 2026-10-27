@@ -1,5 +1,9 @@
 spring:
 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
   r2dbc:
     url: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;CASE_INSENSITIVE_IDENTIFIERS=TRUE
     name:
@@ -39,7 +43,6 @@ spring:
 
   config:
     import: ""
-
 eureka:
   client:
     enabled: false
@@ -67,3 +70,7 @@ application:
   grpc:
     channel-media-name: "media-service"
     portion-size: 65536 # 64 * 1024
+logging:
+  level:
+    org.apache.kafka: ERROR
+    kafka: ERROR

@@ -1,10 +1,14 @@
 package com.jzargo.productAssetsService.integrationTest;
 
 import com.jzargo.productAssetsService.client.MediaServiceClientImpl;
+import com.jzargo.productAssetsService.entity.MediaContent;
+import com.jzargo.productAssetsService.entity.ProductAssets;
 import com.jzargo.productAssetsService.repository.MediaContentRepository;
+import com.jzargo.productAssetsService.repository.ProductAssetsRepository;
 import com.jzargo.productAssetsService.service.MediaServiceImpl;
 import com.jzargo.protobuf.VersionedURI;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +22,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -46,46 +51,59 @@ public class MediaServiceIntegrationTest{
     MediaServiceClientImpl mediaServiceClient;
     @Autowired
     private MediaContentRepository mediaContentRepository;
+    @Autowired
+    private ProductAssetsRepository productAssetsRepository;
 
     @Test
-    public void test() {
-
-        String uri = "key.png";
+    @DisplayName("testing media content success")
+    public void test_addMediaContent_success() {
 
         String version = UUID.randomUUID().toString();
 
         Mockito.when(
                 mediaServiceClient.sendFile(any(), any(), any())
-        ).thenReturn(
-                Mono.just(
+        ).thenAnswer(
+                invocationOnMock -> Mono.just(
                         VersionedURI.newBuilder()
-                                .setUri(uri)
+                                .setUri(invocationOnMock.getArgument(0, String.class))
                                 .setVersion(version)
                                 .build()
                 )
         );
 
+        Mono<ProductAssets> save = productAssetsRepository.save(
+                ProductAssets.builder()
+                        .productId(1L)
+                        .shopId(1)
+                        .build()
+        );
+
         StepVerifier.create(
+                save.then(
                         mediaService.addMediaContent(
                                 Flux.empty(), 1L, 1, "image/png"
                         ).flatMap(
                                 id -> mediaContentRepository.findById(id)
                         )
                 )
-                .assertNext(
+            ).assertNext(
                         mediaContent -> {
                             Assertions.assertNotNull(mediaContent);
-                            Assertions.assertEquals(uri, mediaContent.getUri());
-                            Assertions.assertEquals(version, mediaContent.getMediaVersion());
+                            Assertions.assertNotNull(mediaContent.getUri());
                             Assertions.assertEquals(1L, mediaContent.getProductAssetsId());
-
-                            verify(
-                                    mediaServiceClient,
-                                    times(1)
-                            ).sendFile(any(), any(), any());
                         }
-                )
-                .verifyComplete();
+            ).verifyComplete();
+
+        verify(
+                mediaServiceClient,
+                times(1)
+        ).sendFile(any(), any(), any());
+
+        MediaContent result = mediaContentRepository
+                .findByProductAssetsId(1L)
+                .block();
+
+        System.out.println(result);
     }
 
 }

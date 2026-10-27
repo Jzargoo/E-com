@@ -13,6 +13,7 @@ import com.jzargo.productAssetsService.repository.AvatarRepository;
 import com.jzargo.productAssetsService.repository.FallbackMediaContentRepository;
 import com.jzargo.productAssetsService.repository.MediaContentRepository;
 import com.jzargo.productAssetsService.repository.ProductAssetsRepository;
+import com.jzargo.productAssetsService.service.MediaContentUploadService;
 import com.jzargo.productAssetsService.service.MediaServiceImpl;
 import com.jzargo.protobuf.ContentType;
 import com.jzargo.protobuf.VersionedURI;
@@ -32,8 +33,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class MediaServiceUnitTest {
@@ -48,6 +48,8 @@ public class MediaServiceUnitTest {
     @Mock
     public MediaServiceClient mediaServiceClient;
     @Mock
+    public MediaContentUploadService mediaContentUploadService;
+    @Mock
     public FallbackMediaContentRepository fallbackMediaContentRepository;
     @Mock
     public FallbackMediaDriver fallbackMediaDriver;
@@ -60,15 +62,27 @@ public class MediaServiceUnitTest {
     @Mock
     public AvatarRepository avatarRepository;
 
+    public Mono<ProductAssets> assets = Mono.just(
+            ProductAssets.builder()
+                    .id(1L)
+                    .productId(PRODUCT_ID)
+                    .shopId(SHOP_ID)
+                    .build()
+    );
+
 
     @Test
     public void findIdsByProductId_whenNoContent_throws(){
 
         when(
-                mediaContentRepository.findAllByProductId(anyLong())
+                mediaContentRepository.findAllByProductAssetsId(anyLong())
         ).thenReturn(
                 Flux.empty()
         );
+
+        when(
+                productAssetsRepository.findByProductId(anyLong())
+        ).thenReturn(assets);
 
         Flux<Long> idsByProductId = mediaService.findIdsByProductId(1L);
 
@@ -83,7 +97,11 @@ public class MediaServiceUnitTest {
     public void findIdsByProductId_whenContent_success(){
 
         when(
-                mediaContentRepository.findAllByProductId(anyLong())
+                productAssetsRepository.findByProductId(anyLong())
+        ).thenReturn(assets);
+
+        when(
+                mediaContentRepository.findAllByProductAssetsId(anyLong())
         ).thenReturn(
                 Flux.just(
                         MediaContent.builder()
@@ -108,7 +126,7 @@ public class MediaServiceUnitTest {
     }
 
     @Test
-    public void getMediaContent_whenClientStable_success(){
+    public void addMediaContent_whenClientStable_success(){
 
 
         Flux<DataBuffer> content = Flux.just(
@@ -120,6 +138,7 @@ public class MediaServiceUnitTest {
         ).thenReturn(
                 Mono.just(
                         ProductAssets.builder()
+                                .id(1L)
                                 .shopId(SHOP_ID)
                                 .productId(PRODUCT_ID)
                                 .build()
@@ -127,16 +146,22 @@ public class MediaServiceUnitTest {
         );
 
         when(
-                mediaContentRepository.save(any())
-        ).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-
-        when(
-                mediaServiceClient.sendFile(any(), any(), any())
+                mediaContentUploadService.saveAndUpload(any(), any(), any())
         ).thenReturn(
                 Mono.just(
-                        VersionedURI.newBuilder()
-                                .setVersion(UUID.randomUUID().toString())
-                                .setUri("")
+                        new MediaContentUploadService.MediaUploadResult(
+                                1L, 1L, UUID.randomUUID().toString()
+                        )
+                )
+        );
+
+        when(
+                mediaContentRepository.findByUri(anyString())
+        ).thenReturn(
+                Mono.just(
+                        MediaContent.builder()
+                                .id(1L)
+                                .uri("1.png")
                                 .build()
                 )
         );
@@ -144,16 +169,6 @@ public class MediaServiceUnitTest {
         when(
                 mediaContentRepository.updateVersion(any(), any())
         ).thenReturn(Mono.just(1));
-
-        when(
-                mediaContentRepository.findByUri(any())
-        ).thenReturn(
-                Mono.just(
-                        MediaContent.builder()
-                                .id(1L)
-                                .build()
-                )
-        );
 
         Mono<Long> longMono = mediaService.addMediaContent(
                 content,
@@ -167,6 +182,16 @@ public class MediaServiceUnitTest {
                 .expectNext(1L)
                 .expectComplete()
                 .verify();
+
+        verify(
+                mediaContentUploadService,
+                times(1)
+        ).saveAndUpload(any(), any(), any());
+
+        verify(
+                mediaContentRepository,
+                times(1)
+        ).updateVersion(any(), any());
     }
 
     @Test
@@ -177,20 +202,15 @@ public class MediaServiceUnitTest {
         );
 
         when(
-                productAssetsRepository.findById(PRODUCT_ID)
+                productAssetsRepository.findByProductIdAndShopId(PRODUCT_ID, SHOP_ID)
         ).thenReturn(
                 Mono.just(
                         ProductAssets.builder()
+                                .id(1L)
                                 .shopId(SHOP_ID)
                                 .productId(PRODUCT_ID)
                                 .build()
                 )
-        );
-
-        when(
-                fallbackMediaContentRepository.save(any())
-        ).thenAnswer(
-                invocation -> Mono.just(invocation.getArgument(0))
         );
 
         when(
@@ -199,7 +219,13 @@ public class MediaServiceUnitTest {
                 Mono.just("")
         );
 
-        Mono<Long> longMono = mediaService.fallbackAddingMediaContent(
+        when(
+                fallbackMediaContentRepository.save(any())
+        ).thenAnswer(
+                invocation -> Mono.just(invocation.getArgument(0))
+        );
+
+        Mono<Long> longMono = mediaService.fallbackAddMediaContent(
                 content,
                 PRODUCT_ID,
                 SHOP_ID,

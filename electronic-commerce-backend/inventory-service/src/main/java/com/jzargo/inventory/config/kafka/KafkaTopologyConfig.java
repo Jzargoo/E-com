@@ -4,8 +4,11 @@ import com.jzargo.core.KafkaCustomHeaders;
 import com.jzargo.core.command.createProductSaga.InventoryCommandResponse;
 import com.jzargo.core.command.createProductSaga.InventoryCompensationCommandResponse;
 import com.jzargo.core.command.createProductSaga.SagaProductCreationCommand;
+import com.jzargo.core.events.DepopulatedInventoryEvent;
+import com.jzargo.core.events.PopulatedInventoryEvent;
 import com.jzargo.core.helper.DebeziumParser;
 import com.jzargo.inventory.GlobalLogger;
+import com.jzargo.inventory.entity.Status;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -124,6 +127,99 @@ public class KafkaTopologyConfig {
                 );
 
     }
+
+    @SuppressWarnings("unchecked")
+    @Autowired
+    public void changeStockStream(StreamsBuilder builder) {
+        String fromTopic = kafkaPropertyStorage.getTopics().getDebeziumInventoryTopic();
+        String toTopic = kafkaPropertyStorage.getTopics().getProductEventsTopic().getName();
+
+        builder
+                .stream(
+                        fromTopic,
+                        Consumed.with(Serdes.String(), Serdes.String())
+                )
+                .mapValues(
+                        value -> objectMapper.readValue(value, Map.class)
+                )
+
+                .filter(
+                        (key, value) -> DebeziumParser.getOperationByRoot(value) != null &&
+                                DebeziumParser.getOperationByRoot(value).equalsIgnoreCase("u")
+                )
+
+                .filter(
+                        (key, value) -> {
+                            Map<String, Object> beforeByRoot = DebeziumParser.getBeforeByRoot(value);
+                            Map<String, Object> afterByRoot = DebeziumParser.getAfterByRoot(value);
+
+
+                            return ((String) beforeByRoot.get("status"))
+                                            .equalsIgnoreCase(
+                                                    (String) afterByRoot.get("status")
+                                            );
+                        }
+                )
+
+                .map(
+                        (key, value) -> determineChangeStockPair(value)
+                )
+
+                .processValues(
+                        () -> new FixedKeyProcessor<String, Object, Object>() {
+
+                            private FixedKeyProcessorContext<String, Object> context;
+
+                            @Override
+                            public void init(FixedKeyProcessorContext<String, Object> context) {
+
+                                FixedKeyProcessor.super.init(context);
+
+                                this.context = context;
+                            }
+
+                            @Override
+                            public void process(FixedKeyRecord<String, Object> record) {
+
+                                record.headers()
+                                        .add(
+                                                KafkaCustomHeaders.IDEMPOTENCY_KEY,
+                                                UUID.randomUUID().toString().getBytes()
+                                        );
+
+                                context.forward(record);
+                            }
+                        }
+                )
+
+                .to(
+                        toTopic,
+                        Produced.with(Serdes.String(), new JacksonJsonSerde<>())
+                );
+    }
+
+
+
+    private KeyValue<String, Object> determineChangeStockPair(Map<String, Object> value) {
+
+        String status = (String) DebeziumParser.getAfterByRoot(value).get("status");
+
+        Long productId = (Long) DebeziumParser.getAfterByRoot(value).get("productId");
+
+        if (
+                Status.valueOf(status) == Status.POPULATED
+        ) {
+            PopulatedInventoryEvent populatedInventoryEvent = new PopulatedInventoryEvent(productId);
+
+            return new KeyValue<>(productId.toString(), populatedInventoryEvent);
+        } else {
+            DepopulatedInventoryEvent depopulatedInventoryEvent = new DepopulatedInventoryEvent(productId);
+
+            return new KeyValue<>(productId.toString(), depopulatedInventoryEvent);
+        }
+
+    }
+
 
     private KeyValue<String, SagaProductCreationCommand> determineNewPair(String s, Map<String, Object> root) {
 

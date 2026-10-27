@@ -173,7 +173,7 @@ public class MediaServiceFallbackTaskAndManager {
                     MediaContent.builder()
                             .uri(content.getMediaUri())
                             .mediaVersion(version)
-                            .productId(content.getProductId())
+                            .productAssetsId(content.getProductAssetsId())
                             .build()
             );
         }
@@ -203,12 +203,12 @@ public class MediaServiceFallbackTaskAndManager {
         }
 
         return avatarRepository
-                .findById(content.getProductId())
+                .findByProductAssetsId(content.getProductAssetsId())
                 .switchIfEmpty(
                         Mono.just(
                                 Avatar.builder()
-                                        .contentId(content.getProductId())
-                                        .productId(content.getProductId())
+                                        .contentId(saved.getId())
+                                        .productAssetsId(content.getProductAssetsId())
                                         .build()
                         )
                 )

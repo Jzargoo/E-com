@@ -11,4 +11,6 @@ spring:
 logging:
   level:
     org.springframework: INFO
-    com.jzargo: DEBUG
+    com.jzargo: TRACE
+    org.apache.kafka: WARN
+    kafka: WARN

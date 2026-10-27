@@ -2,8 +2,10 @@ package com.jzargo.productAssetsService.config.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jzargo.core.KafkaCustomHeaders;
 import com.jzargo.core.command.createProductSaga.AssetsCompensationResponse;
 import com.jzargo.core.command.createProductSaga.AssetsInitializationCommandResponse;
+import com.jzargo.core.command.createProductSaga.SagaProductCreationCommand;
 import com.jzargo.core.helper.DebeziumParser;
 import com.jzargo.productAssetsService.helper.DebeziumMessageParser;
 import com.jzargo.productAssetsService.helper.GlobalLogger;
@@ -13,6 +15,9 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessor;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext;
+import org.apache.kafka.streams.processor.api.FixedKeyRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +25,7 @@ import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.support.serializer.JacksonJsonSerde;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Configuration
@@ -86,6 +92,7 @@ public class KafkaTopologyConfig {
                         }
                 )
 
+
                 .map(
                         (key, value) -> {
 
@@ -115,6 +122,42 @@ public class KafkaTopologyConfig {
 
                         }
                 )
+
+                .processValues(
+                        () -> new FixedKeyProcessor<String, SagaProductCreationCommand, SagaProductCreationCommand>() {
+
+                            private FixedKeyProcessorContext<String, SagaProductCreationCommand> context;
+
+                            @Override
+                            public void init(FixedKeyProcessorContext<String, SagaProductCreationCommand> context) {
+
+                                FixedKeyProcessor.super.init(context);
+
+                                this.context = context;
+
+                            }
+
+                            @Override
+                            public void process(FixedKeyRecord<String, SagaProductCreationCommand> record) {
+
+                                var productId = record.value().getProductId();
+
+                                record.headers()
+                                        .add(
+                                                KafkaCustomHeaders.IDEMPOTENCY_KEY,
+                                                UUID.randomUUID().toString().getBytes()
+                                        )
+                                        .add(
+                                                KafkaCustomHeaders.SAGA_ID_KEY,
+                                                String.valueOf(productId).getBytes()
+                                        );
+
+                                context.forward(record);
+                            }
+
+                        }
+                )
+
 
                 .to(
                         toTopic,

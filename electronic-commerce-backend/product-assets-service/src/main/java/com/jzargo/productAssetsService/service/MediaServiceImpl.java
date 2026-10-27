@@ -20,6 +20,7 @@ import com.jzargo.protobuf.ContentType;
 import com.jzargo.protobuf.MediaFileMetadata;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,8 +32,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Slf4j
 @Service
-@Transactional(readOnly = true) // if not provided, data must be in immutable state
 public class MediaServiceImpl implements MediaService {
 
     private final MediaServiceClient mediaServiceClient;
@@ -42,7 +43,7 @@ public class MediaServiceImpl implements MediaService {
     private final MediaContentRepository mediaContentRepository;
     private final PlainFileConverter plainFileConverter;
     private final AvatarRepository avatarRepository;
-    private final MediaVersionUpdater mediaVersionUpdater;
+    private final MediaContentUploadService mediaContentUploadService;
 
     public MediaServiceImpl(
             MediaServiceClient mediaServiceClient,
@@ -50,7 +51,7 @@ public class MediaServiceImpl implements MediaService {
             FallbackMediaDriver fallbackMediaDriver,
             ProductAssetsRepository productAssetsRepository,
             MediaContentRepository mediaContentRepository, PlainFileConverter plainFileConverter,
-            AvatarRepository avatarRepository, MediaVersionUpdater mediaVersionUpdater) {
+            AvatarRepository avatarRepository, MediaContentUploadService mediaContentUploadService) {
 
         this.mediaServiceClient = mediaServiceClient;
         this.fallbackMediaContentRepository = fallbackMediaContentRepository;
@@ -59,11 +60,12 @@ public class MediaServiceImpl implements MediaService {
         this.mediaContentRepository = mediaContentRepository;
         this.plainFileConverter = plainFileConverter;
         this.avatarRepository = avatarRepository;
-        this.mediaVersionUpdater = mediaVersionUpdater;
+        this.mediaContentUploadService = mediaContentUploadService;
     }
 
 
     @Override
+    @Transactional
     @CircuitBreaker(name = "mediaService", fallbackMethod = "fallbackAddingMediaContent")
     @Bulkhead(name = "mediaService", fallbackMethod = "fallbackAddingMediaContent")
     public Mono<Long> addMediaContent(
@@ -88,15 +90,16 @@ public class MediaServiceImpl implements MediaService {
 
                     MediaContent mediaContent = MediaContent.builder()
                             .uri(key)
+                            .productAssetsId(asset.getId())
                             .build();
 
-                    return saveAndUpload(mediaContent, key, content, parsed);
+                    return saveAndUpload(mediaContent, content, parsed);
                 });
     }
 
 
     @SuppressWarnings("unused")
-    public Mono<Long> fallbackAddingMediaContent(
+    public Mono<Long> fallbackAddMediaContent(
             Flux<DataBuffer> content,
             Long productId,
             Integer shopId,
@@ -118,6 +121,7 @@ public class MediaServiceImpl implements MediaService {
                     );
 
                     FallbackMediaContent fallback = FallbackMediaContent.builder()
+                            .productAssetsId(asset.getId())
                             .contentType(parsed)
                             .mediaUri(key)
                             .build();
@@ -182,7 +186,7 @@ public class MediaServiceImpl implements MediaService {
                 .uri(key)
                 .build();
 
-        return saveAndUpload(mediaContent, key, content, contentType)
+        return saveAndUpload(mediaContent, content, contentType)
                 .flatMap(contentId ->
                         avatarRepository.findById(productAssetId)
                                 .flatMap(existingAvatar ->
@@ -208,22 +212,24 @@ public class MediaServiceImpl implements MediaService {
 
     protected Mono<Long> saveAndUpload(
             MediaContent mediaContent,
-            String key,
             Flux<DataBuffer> content,
             ContentType contentType
     ) {
 
-        return mediaContentRepository.save(mediaContent)
-                .flatMap(saved -> mediaServiceClient.sendFile(
-                        key, content, contentType
-                ))
-                .flatMap(versionedUri ->
-                        mediaVersionUpdater.updateVersionByUri(
-                                versionedUri.getUri(),
-                                versionedUri.getVersion()
+        return mediaContentUploadService
+                .saveAndUpload(mediaContent, content,contentType)
+                .switchIfEmpty(
+                        Mono.error(
+                                new IllegalStateException("could not save or upload content")
                         )
                 )
-                .then(mediaContentRepository.findByUri(key))
+                .flatMap(
+                        result ->
+                                mediaContentRepository.updateVersion(
+                                        result.id(), result.version()
+                                )
+                )
+                .then(mediaContentRepository.findByUri(mediaContent.getUri()))
                 .mapNotNull(MediaContent::getId);
     }
 
@@ -367,7 +373,7 @@ public class MediaServiceImpl implements MediaService {
             ContentType contentType
     ) throws UnsupportedContentType {
 
-        return "products/%s/%s.%s".formatted(
+        return "products/%s/%s%s".formatted(
                 productAssetId,
                 UUID.randomUUID().toString().replace(".", ""),
                 ContentTypeParser.getMediaPostfix(contentType)
@@ -381,6 +387,13 @@ public class MediaServiceImpl implements MediaService {
                 .findByProductId(productId)
                 .flatMapMany(asset ->
                         mediaContentRepository.findAllByProductAssetsId(asset.getId())
+                )
+                .switchIfEmpty(
+                        Mono.error(
+                                new AssetNotFoundException(
+                                        "assets with product id %s not found".formatted(productId)
+                                )
+                        )
                 )
                 .map(MediaContent::getId);
     }

@@ -30,6 +30,9 @@ public class KafkaPropertyStorage {
         @NotNull
         private String debeziumInventoryTopic;
 
+        @NotNull
+        private TopicSettings productEventsTopic;
+
         @Data
         public static class TopicSettings {
             @NotNull

@@ -17,10 +17,12 @@ public interface MediaContentRepository extends R2dbcRepository<MediaContent, Lo
 
 
     @Modifying
-    @Query("UPDATE media_content SET media_content.media_version=:version WHERE media_content.uri=:uri")
-    Mono<Integer> updateVersion(String uri, String version);
+    @Query("UPDATE media_content SET media_version=:version WHERE id=:id")
+    Mono<Integer> updateVersion(Long id, String version);
 
-    Mono<Boolean> existsByProductId(Long productId);
+    Mono<Boolean> existsByProductAssetsId(Long productAssetsId);
 
     Flux<MediaContent> findAllByProductAssetsId(Long id);
+
+    Mono<MediaContent> findByProductAssetsId(Long productAssetsId);
 }

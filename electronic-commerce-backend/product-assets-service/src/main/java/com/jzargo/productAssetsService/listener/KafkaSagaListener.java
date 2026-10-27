@@ -48,9 +48,7 @@ public class KafkaSagaListener {
 
         GlobalLogger.logHandlingMessage(messageId);
 
-        messageRepository.findById(messageId)
-
-                .map(message -> true)
+        messageRepository.existsByMessageId(messageId)
 
                 .switchIfEmpty(Mono.just(false))
 
